@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>ContextWareAI Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white font-sans h-screen overflow-hidden">
+    <div class="flex h-full">
+        <!-- Sidebar -->
+        <div id="sidebar" class="w-20 hover:w-80 bg-gray-800 shadow-xl flex flex-col transition-all duration-300 ease-in-out group z-10">
+            <div class="p-3 border-b border-gray-700 overflow-hidden flex justify-center group-hover:justify-start">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-cyan-400 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-gray-900" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                        <h1 class="text-2xl font-bold text-cyan-400">ContextWareAI</h1>
+                        <p class="text-sm text-gray-400 mt-1">Application Dashboard</p>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="flex-1 p-2 space-y-2 overflow-hidden">
+                <!-- Home -->
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 border-l-4 border-cyan-400 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="showWelcome()">
+                    <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-6 h-6 text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div class="text-lg font-semibold text-cyan-400 truncate">Home</div>
+                    </div>
+                </div>
+
+                <!-- Pangolin -->
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://subdomain.yourdomain.com', 'Pangolin', this)">
+                    <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
+                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/pangolin.webp" alt="Pangolin Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">P</div>
+                    </div>
+                    <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div class="text-lg font-semibold text-cyan-400 truncate">Pangolin</div>
+                    </div>
+                </div>
+
+                <!-- Komodo -->
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://komodo.yourdomain.com', 'Komodo', this)">
+                    <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
+                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/komodo.webp" alt="Komodo Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">K</div>
+                    </div>
+                    <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div class="text-lg font-semibold text-cyan-400 truncate">Komodo</div>
+                    </div>                    
+                </div>
+
+                <!-- Middleware Manager -->
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://middleware-manager.yourdomain.com', 'Middleware Manager', this)">
+                    <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
+                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/middleware-manager.webp" alt="Middleware Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">M</div>
+                    </div>
+                    <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div class="text-lg font-semibold text-cyan-400 truncate">Middleware Manager</div>
+                    </div>                    
+                </div>
+
+                <!-- Traefik -->
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://traefik.yourdomain.com/dashboard/', 'Traefik Dashboard', this)">
+                    <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
+                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/traefik.webp" alt="Traefik Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">T</div>
+                    </div>
+                    <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div class="text-lg font-semibold text-cyan-400 truncate">Traefik</div>
+                    </div>                    
+                </div>
+            </nav>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col">
+            <!-- Header -->
+            <div class="bg-gray-800 p-4 border-b border-gray-700 shadow-lg">
+                <div class="flex items-center justify-between">
+                    <h2 id="current-app-title" class="text-xl font-semibold text-cyan-400">Welcome</h2>
+                    <div class="flex items-center space-x-4">
+                        <div id="loading-indicator" class="hidden">
+                            <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-cyan-400"></div>
+                        </div>
+                        <button id="refresh-btn" class="hidden bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded-lg text-sm transition-colors duration-200" onclick="refreshIframe()">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="flex-1 relative">
+                <!-- Welcome Screen -->
+                <div id="welcome-screen" class="flex items-center justify-center h-full bg-gray-900">
+                    <div class="text-center max-w-2xl px-8">
+                        <h1 class="text-6xl font-bold mb-6 text-cyan-400 animate-pulse">Welcome to ContextWareAI</h1>
+                        <p class="text-xl text-gray-400 mb-8">Click on the menu on the left to access your applications</p>
+                        <div class="grid grid-cols-2 gap-4 text-sm text-gray-500">
+                            <div class="bg-gray-800 p-4 rounded-lg">
+                                <div class="font-semibold text-cyan-400 mb-2">Management Tools</div>
+                                <div>Pangolin • Komodo</div>
+                            </div>
+                            <div class="bg-gray-800 p-4 rounded-lg">
+                                <div class="font-semibold text-cyan-400 mb-2">Infrastructure</div>
+                                <div>Middleware • Traefik</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Iframe Container -->
+                <iframe id="app-iframe" class="w-full h-full border-0 hidden" src="about:blank"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentActiveItem = document.querySelector('.sidebar-item');
+        
+        function showWelcome() {
+            // Hide iframe and show welcome screen
+            document.getElementById('app-iframe').classList.add('hidden');
+            const welcomeScreen = document.getElementById('welcome-screen');
+            welcomeScreen.innerHTML = `
+                <div class="text-center max-w-2xl px-8">
+                    <h1 class="text-6xl font-bold mb-6 text-cyan-400 animate-pulse">Welcome to ContextWareAI</h1>
+                    <p class="text-xl text-gray-400 mb-8">Click on the menu on the left to access your applications</p>
+                    <div class="grid grid-cols-2 gap-4 text-sm text-gray-500">
+                        <div class="bg-gray-800 p-4 rounded-lg">
+                            <div class="font-semibold text-cyan-400 mb-2">Management Tools</div>
+                            <div>Pangolin • Komodo</div>
+                        </div>
+                        <div class="bg-gray-800 p-4 rounded-lg">
+                            <div class="font-semibold text-cyan-400 mb-2">Infrastructure</div>
+                            <div>Middleware • Traefik</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            welcomeScreen.classList.remove('hidden');
+            document.getElementById('current-app-title').textContent = 'Welcome';
+            document.getElementById('refresh-btn').classList.add('hidden');
+            
+            // Update active item
+            updateActiveItem(document.querySelector('.sidebar-item'));
+        }
+        
+        function loadApp(url, title, element) {
+            const iframe = document.getElementById('app-iframe');
+            const welcomeScreen = document.getElementById('welcome-screen');
+            const titleElement = document.getElementById('current-app-title');
+            const loadingIndicator = document.getElementById('loading-indicator');
+            const refreshBtn = document.getElementById('refresh-btn');
+            
+            // Show loading indicator
+            loadingIndicator.classList.remove('hidden');
+            titleElement.textContent = `Loading ${title}...`;
+            
+            // Hide welcome screen and show iframe
+            welcomeScreen.classList.add('hidden');
+            iframe.classList.remove('hidden');
+
+            if (url.includes('traefik') && url.includes('/dashboard/')) {
+              // For Traefik dashboard, use a different approach to avoid parameter issues
+              iframe.src = url;
+            }
+            else {
+              // Force iframe refresh by adding timestamp to prevent caching issues
+              const timestamp = new Date().getTime();
+              const separator = url.includes('?') ? '&' : '?';
+              const urlWithTimestamp = url+separator+'_t='+timestamp;
+
+              // Load the application
+              iframe.src = urlWithTimestamp;
+            }            
+
+            // Update active sidebar item
+            updateActiveItem(element);
+            
+            // Set up iframe blocking detection
+            let iframeBlocked = false;
+            let loadTimeout;
+            
+            // Timeout to detect if iframe is blocked (most blocking happens immediately)
+            loadTimeout = setTimeout(() => {
+                if (!iframeBlocked) {
+                    // Likely blocked by X-Frame-Options or CSP
+                    handleIframeBlocked(url, title);
+                }
+            }, 10000);
+            
+            // Handle iframe load success
+            iframe.onload = function() {
+                clearTimeout(loadTimeout);
+                
+                try {
+                    // Try to access iframe content to detect if it's blocked
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                    
+                    // If we can access it and it's not empty, it loaded successfully
+                    if (iframeDoc && iframeDoc.body && iframeDoc.body.innerHTML.trim() !== '') {
+                        loadingIndicator.classList.add('hidden');
+                        titleElement.textContent = title;
+                        refreshBtn.classList.remove('hidden');
+                    } else {
+                        // Empty or blocked content
+                        handleIframeBlocked(url, title);
+                    }
+                } catch (e) {
+                    // Cross-origin access denied - try to detect if it's actually blocked
+                    // If we get here, the iframe loaded but we can't access content
+                    // This could be normal cross-origin or actual blocking
+                    setTimeout(() => {
+                        // Check if iframe is displaying content by checking its location
+                        try {
+                            if (iframe.contentWindow.location.href === 'about:blank') {
+                                handleIframeBlocked(url, title);
+                            } else {
+                                // Likely loaded successfully but cross-origin
+                                loadingIndicator.classList.add('hidden');
+                                titleElement.textContent = title;
+                                refreshBtn.classList.remove('hidden');
+                            }
+                        } catch (e2) {
+                            // Assume it loaded successfully if we can't check
+                            loadingIndicator.classList.add('hidden');
+                            titleElement.textContent = title;
+                            refreshBtn.classList.remove('hidden');
+                        }
+                    }, 1000);
+                }
+            };
+            
+            // Handle iframe load errors
+            iframe.onerror = function() {
+                clearTimeout(loadTimeout);
+                handleIframeBlocked(url, title);
+            };
+        }
+        
+        function handleIframeBlocked(url, title) {
+            const iframe = document.getElementById('app-iframe');
+            const welcomeScreen = document.getElementById('welcome-screen');
+            const titleElement = document.getElementById('current-app-title');
+            const loadingIndicator = document.getElementById('loading-indicator');
+            const refreshBtn = document.getElementById('refresh-btn');
+            
+            // Hide loading indicator
+            loadingIndicator.classList.add('hidden');
+            refreshBtn.classList.add('hidden');
+            
+            // Show blocking message
+            iframe.classList.add('hidden');
+            welcomeScreen.innerHTML = `
+                <div class="text-center max-w-2xl px-8">
+                    <div class="bg-yellow-900 border border-yellow-600 rounded-lg p-6 mb-6">
+                        <div class="flex items-center justify-center mb-4">
+                            <svg class="w-12 h-12 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <h2 class="text-2xl font-bold text-yellow-400 mb-2">${title} Cannot Be Embedded</h2>
+                        <p class="text-yellow-200 mb-4">This application blocks iframe embedding for security reasons.</p>
+                        <div class="space-y-3">
+                            <button onclick="window.open('${url}', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes')" 
+                                    class="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200 mr-3">
+                                Open in New Window!
+                            </button>
+                            <button onclick="window.open('${url}', '_blank')" 
+                                    class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200">
+                                Open in New Tab
+                            </button>
+                        </div>
+                        <p class="text-yellow-300 text-sm mt-4">The application will open in a separate window/tab where it can function normally.</p>
+                    </div>
+                    <button onclick="showWelcome()" class="text-cyan-400 hover:text-cyan-300 underline">
+                        ← Back to Welcome
+                    </button>
+                </div>
+            `;
+            welcomeScreen.classList.remove('hidden');
+            titleElement.textContent = `${title} - Blocked`;
+        }
+        
+        function updateActiveItem(element) {
+            // Remove active state from all items
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.classList.remove('border-l-4', 'border-cyan-400', 'bg-gray-600');
+                item.classList.add('bg-gray-700');
+            });
+            
+            // Add active state to clicked item
+            element.classList.remove('bg-gray-700');
+            element.classList.add('border-l-4', 'border-cyan-400', 'bg-gray-600');
+            currentActiveItem = element;
+        }
+        
+        function refreshIframe() {
+            const iframe = document.getElementById('app-iframe');
+            const loadingIndicator = document.getElementById('loading-indicator');
+            
+            if (iframe.src !== 'about:blank') {
+                loadingIndicator.classList.remove('hidden');
+                iframe.src = iframe.src; // Reload the iframe
+            }
+            
+        }
+        
+        // Initialize with welcome screen active
+        showWelcome();
+    </script>
+</body>
+</html>

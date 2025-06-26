@@ -1,0 +1,3 @@
+roleId,orgId,isAdmin,name,description
+1,admin,t,Admin,Admin role with the most permissions
+2,admin,,Member,Members can only view resources
