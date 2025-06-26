@@ -1,4 +1,4 @@
-# Manidae - Pangolin + CrowdSec + Traefik Stack
+# Manidae - Pangolin + Middleware-Manager + CrowdSec + Traefik Stack
 
 A pre-packaged, pre-integrated, containerized deployment of Pangolin, Middleware-Manager with CrowdSec security and Traefik reverse proxy. Everything runs in Docker containers and automatically creates the required host folder structure.
 
