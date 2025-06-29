@@ -1,0 +1,11 @@
+# Editor/IDE specific
+.vscode/
+.idea/
+*.swp
+*.swo
+*.DS_Store
+
+config/
+public_html/
+compose.yaml
+DEPLOYMENT_INFO.txt
