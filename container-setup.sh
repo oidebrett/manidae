@@ -388,8 +388,26 @@ create_static_page_html() {
     # Check if template exists in the templates directory
     if [ -f "/host-setup/templates/index.html" ]; then
         echo "Using template from templates directory"
-        # Copy template and replace placeholders
-        cat "/host-setup/templates/index.html" | sed "s/yourdomain\.com/${DOMAIN}/g"  | sed "s/subdomain/${ADMIN_SUBDOMAIN}/g" > /host-setup/public_html/index.html
+        
+        # Copy template to a temporary file
+        cp "/host-setup/templates/index.html" "/tmp/index.html.template"
+        
+        # If KOMODO_HOST_IP is not set, remove the Komodo section from the template
+        if [ -z "$KOMODO_HOST_IP" ]; then
+            echo "Removing Komodo section from template as KOMODO_HOST_IP is not set"
+            
+            # Use sed to remove everything between the start and end Komodo comments
+            sed -i '/<!-- Start of Komodo -->/,/<!-- End of Komodo -->/d' "/tmp/index.html.template"
+            
+            # Also remove Komodo from the welcome screen grid
+            sed -i 's/Pangolin • Komodo/Pangolin/g' "/tmp/index.html.template"
+        fi
+        
+        # Replace domain placeholders and write to final location
+        cat "/tmp/index.html.template" | sed "s/yourdomain\.com/${DOMAIN}/g" | sed "s/subdomain/${ADMIN_SUBDOMAIN}/g" > /host-setup/public_html/index.html
+        
+        # Clean up temporary file
+        rm "/tmp/index.html.template"
     else
         echo "Template not found, using embedded version"
         # Create basic index.html (fallback to embedded version)

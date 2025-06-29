@@ -7,53 +7,24 @@ services:
       - ./:/host-setup
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
+      # Required variables
       - DOMAIN=${DOMAIN:-}
       - EMAIL=${EMAIL:-}
       - ADMIN_USERNAME=${ADMIN_USERNAME:-}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+      # Important variables with defaults that you might want to customize
       - ADMIN_SUBDOMAIN=${ADMIN_SUBDOMAIN:-pangolin}
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - POSTGRES_HOST=${POSTGRES_HOST:-pangolin-postgres}
-      - GITHUB_USER=${GITHUB_USER:-oidebrett}
-      - GITHUB_REPO=${GITHUB_REPO:-manidae}
-      - GITHUB_BRANCH=${GITHUB_BRANCH:-main}
+      # Optional features
       - CROWDSEC_ENROLLMENT_KEY=${CROWDSEC_ENROLLMENT_KEY:-}
       - STATIC_PAGE_DOMAIN=${STATIC_PAGE_DOMAIN:-}
+      # OAuth configuration (if needed)
       - CLIENT_ID=${CLIENT_ID:-}
       - CLIENT_SECRET=${CLIENT_SECRET:-}
-      - OAUTH_DOMAIN=oauth.${DOMAIN}
-      - KOMODO_HOST_IP=${KOMODO_HOST_IP:-}
-      ####################################
-      # 🦎  KOMODO ENVIRONMENT VARIABLES 🦎  #
-      ####################################
-      # Komodo Image Version
-      - COMPOSE_KOMODO_IMAGE_TAG=${COMPOSE_KOMODO_IMAGE_TAG:-latest}
-      - KOMODO_DB_USERNAME=${POSTGRES_USER:-postgres}
-      - KOMODO_DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
-      - KOMODO_PASSKEY=${KOMODO_PASSKEY:-a_random_passkey}
-      - TZ=${TZ:-Etc/UTC}
-      - KOMODO_HOST=${KOMODO_HOST:-https://komodo.contextware.ai}
-      - KOMODO_TITLE=${KOMODO_TITLE:-Komodo}
-      - KOMODO_FIRST_SERVER=https://${KOMODO_HOST_IP:-periphery}:8120
-      - KOMODO_DISABLE_CONFIRM_DIALOG=${KOMODO_DISABLE_CONFIRM_DIALOG:-false}
-      - KOMODO_MONITORING_INTERVAL=${KOMODO_MONITORING_INTERVAL:-15-sec}
-      - KOMODO_RESOURCE_POLL_INTERVAL=${KOMODO_RESOURCE_POLL_INTERVAL:-1-hr}
-      - KOMODO_WEBHOOK_SECRET=${KOMODO_WEBHOOK_SECRET:-a_random_secret}
-      - KOMODO_JWT_SECRET=${KOMODO_JWT_SECRET:-a_random_jwt_secret}
-      - KOMODO_JWT_TTL=${KOMODO_JWT_TTL:-1-day}
-      - KOMODO_LOCAL_AUTH=${KOMODO_LOCAL_AUTH:-true}
-      - KOMODO_DISABLE_USER_REGISTRATION=${KOMODO_DISABLE_USER_REGISTRATION:-false}
-      - KOMODO_ENABLE_NEW_USERS=${KOMODO_ENABLE_NEW_USERS:-false}
-      - KOMODO_DISABLE_NON_ADMIN_CREATE=${KOMODO_DISABLE_NON_ADMIN_CREATE:-false}
-      - KOMODO_TRANSPARENT_MODE=${KOMODO_TRANSPARENT_MODE:-false}
-      - KOMODO_LOGGING_PRETTY=${KOMODO_LOGGING_PRETTY:-false}
-      - KOMODO_PRETTY_STARTUP_CONFIG=${KOMODO_PRETTY_STARTUP_CONFIG:-false}
-      - KOMODO_OIDC_ENABLED=${KOMODO_OIDC_ENABLED:-false}
-      - KOMODO_GITHUB_OAUTH_ENABLED=${KOMODO_GITHUB_OAUTH_ENABLED:-false}
-      - KOMODO_GOOGLE_OAUTH_ENABLED=${KOMODO_GOOGLE_OAUTH_ENABLED:-false}
-      - KOMODO_AWS_ACCESS_KEY_ID=${KOMODO_AWS_ACCESS_KEY_ID:-}
-      - KOMODO_AWS_SECRET_ACCESS_KEY=${KOMODO_AWS_SECRET_ACCESS_KEY:-}
+      # Komodo integration (if needed)
+      - KOMODO_HOST_IP=${KOMODO_HOST_IP:-} # if set you must use komodo-postgres-1 as the POSTGRES_HOST
     command: |
       sh -c "
         # This will be set to true to enable CrowdSec config setup only if you have provided a CROWDSEC_ENROLLMENT_KEY
@@ -155,6 +126,7 @@ services:
         # Part 1.1: Conditionally append standalone postgres if POSTGRES_HOST not the komodo postgres
         if [ -z "$POSTGRES_HOST" ] || [ "$POSTGRES_HOST" != "komodo-postgres-1" ]; then
           echo '🛡️ Adding Standalone Postgres database...'
+          cat >> /host-setup/compose.yaml << EOF
 
           # postgres for pangoln
           postgres:
@@ -162,13 +134,13 @@ services:
             container_name: pangolin-postgres
             restart: unless-stopped
             environment:
-              POSTGRES_USER: ${POSTGRES_USER:-postgres} 
-              POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+              POSTGRES_USER: \$\{POSTGRES_USER:-postgres} 
+              POSTGRES_PASSWORD: \$\{POSTGRES_PASSWORD:-postgres}
               POSTGRES_DB: postgres
             volumes:
               - ./config/postgres:/var/lib/postgresql/data
             healthcheck:
-              test: [\"CMD-SHELL\", \"pg_isready -U ${POSTGRES_USER:-postgres}\"]
+              test: [\"CMD-SHELL\", \"pg_isready -U \$\{POSTGRES_USER:-postgres}\"]
               interval: 10s
               timeout: 5s
               retries: 5
@@ -177,9 +149,10 @@ services:
 
         fi
 
-        # Append gerbil block (always)
-        cat >> /host-setup/compose.yaml << EOF
-
+        # Part 2: Conditionally append MCPAuth if CLIENT_ID is set
+        if [ -n \"$CLIENT_ID\" ]; then
+          echo '🛡️ Adding CrowdSec configuration...'
+          cat >> /host-setup/compose.yaml << EOF
           # Auth management
           mcpauth:
             image: oideibrett/mcpauth:latest
@@ -192,6 +165,13 @@ services:
             restart: unless-stopped
             ports:
               - "11000:11000"
+
+      EOF
+
+        fi
+
+        # Append gerbil block (always)
+        cat >> /host-setup/compose.yaml << EOF
 
           # Gerbil WireGuard management
           gerbil:
@@ -358,7 +338,7 @@ services:
               KOMODO_DATABASE_PASSWORD: \$\{KOMODO_DB_PASSWORD}
               KOMODO_PASSKEY: \$\{KOMODO_PASSKEY}
               TZ: ${TZ:-Etc/UTC}
-              KOMODO_HOST: \$\{KOMODO_HOST}
+              KOMODO_HOST: https://komodo.\$\{DOMAIN}
               KOMODO_TITLE: \$\{KOMODO_TITLE:-Komodo}
               KOMODO_FIRST_SERVER: \$\{KOMODO_FIRST_SERVER}
               KOMODO_DISABLE_CONFIRM_DIALOG: \$\{KOMODO_DISABLE_CONFIRM_DIALOG:-false}
