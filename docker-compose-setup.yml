@@ -141,13 +141,20 @@ services:
       EOF
 
         # Part 1: Conditionally append standalone postgres if POSTGRES_HOST not the komodo postgres
-        if [ -z "$POSTGRES_HOST" ] || [ "$POSTGRES_HOST" != "komodo-postgres-1" ]; then
+        if [ -n \"$KOMODO_HOST_IP\" ] || [ -z "$POSTGRES_HOST" ] || [ "$POSTGRES_HOST" != "komodo-postgres-1" ]; then
           echo '🛡️ Adding Standalone Postgres database...'
           cat >> /host-setup/compose.yaml << EOF
 
             depends_on:
               postgres:
                 condition: service_healthy
+      EOF
+
+        fi
+
+        # Part 1.1: Conditionally append standalone postgres if POSTGRES_HOST not the komodo postgres
+        if [ -z "$POSTGRES_HOST" ] || [ "$POSTGRES_HOST" != "komodo-postgres-1" ]; then
+          echo '🛡️ Adding Standalone Postgres database...'
 
           # postgres for pangoln
           postgres:
@@ -398,7 +405,7 @@ services:
         fi
 
         # Part 5: Conditionally make docker use externa network if POSTGRES_HOST not the komodo postgres
-        if [ -z "$POSTGRES_HOST" ] || [ "$POSTGRES_HOST" != "komodo-postgres-1" ]; then
+        if [ -n \"$KOMODO_HOST_IP\" ] || [ -z "$POSTGRES_HOST" ] || [ "$POSTGRES_HOST" != "komodo-postgres-1" ]; then
           echo '🛡️ Adding Standalone Postgres database...'
           cat >> /host-setup/compose.yaml << EOF
 
