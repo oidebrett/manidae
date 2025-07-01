@@ -452,7 +452,7 @@ if [ -n "$CROWDSEC_ENROLLMENT_KEY" ]; then
     echo "✅ CrowdSec configuration files created"
 
 # Check if Static page should be enabled
-else if [ -n "$STATIC_PAGE_DOMAIN" ]; then
+elif [ -n "$STATIC_PAGE_DOMAIN" ]; then
     echo "🛡️ Static page detected - setting up dynamic config..."
     # Create basic dynamic_config.yml without CrowdSec
     cat > /host-setup/config/traefik/rules/dynamic_config.yml << EOF
