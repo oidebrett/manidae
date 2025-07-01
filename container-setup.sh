@@ -450,10 +450,10 @@ if [ -n "$CROWDSEC_ENROLLMENT_KEY" ]; then
     update_dynamic_config_with_crowdsec
     
     echo "✅ CrowdSec configuration files created"
-else
-    echo "ℹ️ No CrowdSec enrollment key - creating basic dynamic config..."
-    ENABLE_CROWDSEC=false
-    
+
+# Check if Static page should be enabled
+else if [ -n "$STATIC_PAGE_DOMAIN" ]; then
+    echo "🛡️ Static page detected - setting up dynamic config..."
     # Create basic dynamic_config.yml without CrowdSec
     cat > /host-setup/config/traefik/rules/dynamic_config.yml << EOF
 http:
@@ -543,6 +543,68 @@ http:
         loadBalancer:
             servers:
                 - url: "noop@internal"
+
+EOF
+
+else
+    echo "ℹ️ No CrowdSec enrollment key or static page - creating basic dynamic config..."
+    ENABLE_CROWDSEC=false
+    
+    # Create basic dynamic_config.yml without CrowdSec
+    cat > /host-setup/config/traefik/rules/dynamic_config.yml << EOF
+http:
+  middlewares:
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+
+  routers:
+    # HTTP to HTTPS redirect router
+    main-app-router-redirect:
+      rule: "Host(\`${ADMIN_SUBDOMAIN}.${DOMAIN}\`)"
+      service: next-service
+      entryPoints:
+        - web
+      middlewares:
+        - redirect-to-https
+
+    # Next.js router (handles everything except API and WebSocket paths)
+    next-router:
+      rule: "Host(\`${ADMIN_SUBDOMAIN}.${DOMAIN}\`) && !PathPrefix(\`/api/v1\`)"
+      service: next-service
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+
+    # API router (handles /api/v1 paths)
+    api-router:
+      rule: "Host(\`${ADMIN_SUBDOMAIN}.${DOMAIN}\`) && PathPrefix(\`/api/v1\`)"
+      service: api-service
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+
+    # WebSocket router
+    ws-router:
+      rule: "Host(\`${ADMIN_SUBDOMAIN}.${DOMAIN}\`)"
+      service: api-service
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+
+  services:
+    next-service:
+      loadBalancer:
+        servers:
+          - url: "http://pangolin:3002" # Next.js server
+
+    api-service:
+      loadBalancer:
+        servers:
+          - url: "http://pangolin:3000" # API/WebSocket server
 
 EOF
 fi
