@@ -245,6 +245,20 @@ services:
               - "15000:15000"
             restart: unless-stopped
 
+          # Setup orchestrator
+          setup-orchestrator:
+            build:
+              context: .
+              dockerfile: Dockerfile.orchestrator
+            container_name: setup-orchestrator
+            restart: unless-stopped
+            volumes:
+              - ./config:/app/config
+              - ./initialize_postgres.sh:/app/initialize_postgres.sh
+              - ./postgres_export:/app/postgres_export
+            depends_on:
+              - pangolin
+
       EOF
 
         # Part 2: Conditionally append CrowdSec if CROWDSEC_ENROLLMENT_KEY is set

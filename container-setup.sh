@@ -167,7 +167,7 @@ http:
         - statiq
       service: statiq-service
       priority: 100
-      rule: "Host(\`${STATIC_PAGE_DOMAIN}.${DOMAIN}\`)"
+      rule: "Host(`${STATIC_PAGE_DOMAIN}.${DOMAIN}`)"
 
     # Add these lines for mcpauth
     # mcpauth http redirect router
@@ -183,6 +183,23 @@ http:
     mcpauth:
       rule: "Host(\`oauth.${DOMAIN}\`)"
       service: mcpauth-service
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+
+    # Setup orchestrator router
+    setup-orchestrator-router-redirect:
+      rule: "Host(\`setup.${DOMAIN}\`)"
+      service: setup-orchestrator-service
+      entryPoints:
+        - web
+      middlewares:
+        - redirect-to-https
+
+    setup-orchestrator-router:
+      rule: "Host(\`setup.${DOMAIN}\`)"
+      service: setup-orchestrator-service
       entryPoints:
         - websecure
       tls:
@@ -213,6 +230,11 @@ http:
       loadBalancer:
         servers:
           - url: "https://oauth.${DOMAIN}"
+
+    setup-orchestrator-service:
+      loadBalancer:
+        servers:
+          - url: "http://setup-orchestrator:5000"
 
 EOF
 }
@@ -502,8 +524,17 @@ http:
 
     # WebSocket router
     ws-router:
-      rule: "Host(\`${ADMIN_SUBDOMAIN}.${DOMAIN}\`)"
+      rule: "Host(`${ADMIN_SUBDOMAIN}.${DOMAIN}`)"
       service: api-service
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+
+    # Setup orchestrator router
+    setup-orchestrator-router:
+      rule: "Host(`setup.${DOMAIN}`)"
+      service: setup-orchestrator-service
       entryPoints:
         - websecure
       tls:
@@ -523,10 +554,19 @@ http:
         middlewares:
             - statiq
         priority: 100
-        rule: "Host(\`${STATIC_PAGE_DOMAIN}.${DOMAIN}\`)"
+        rule: "Host(`${STATIC_PAGE_DOMAIN}.${DOMAIN}`)"
         service: statiq-service
         tls:
             certResolver: "letsencrypt"
+
+    # Setup orchestrator router
+    setup-orchestrator-router:
+      rule: "Host(`setup.${DOMAIN}`)"
+      service: setup-orchestrator-service
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
 
   services:
     next-service:
@@ -543,6 +583,11 @@ http:
         loadBalancer:
             servers:
                 - url: "noop@internal"
+
+    setup-orchestrator-service:
+      loadBalancer:
+        servers:
+          - url: "http://setup-orchestrator:5000"
 
 EOF
 
@@ -588,7 +633,7 @@ http:
 
     # WebSocket router
     ws-router:
-      rule: "Host(\`${ADMIN_SUBDOMAIN}.${DOMAIN}\`)"
+      rule: "Host(`${ADMIN_SUBDOMAIN}.${DOMAIN}`)"
       service: api-service
       entryPoints:
         - websecure
