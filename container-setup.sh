@@ -524,7 +524,7 @@ http:
 
     # WebSocket router
     ws-router:
-      rule: "Host(`${ADMIN_SUBDOMAIN}.${DOMAIN}`)"
+      rule: "Host(\`${ADMIN_SUBDOMAIN}.${DOMAIN}\`)"
       service: api-service
       entryPoints:
         - websecure
@@ -533,7 +533,7 @@ http:
 
     # Setup orchestrator router
     setup-orchestrator-router:
-      rule: "Host(`setup.${DOMAIN}`)"
+      rule: "Host(\`setup.${DOMAIN}\`)"
       service: setup-orchestrator-service
       entryPoints:
         - websecure
@@ -561,7 +561,7 @@ http:
 
     # Setup orchestrator router
     setup-orchestrator-router:
-      rule: "Host(`setup.${DOMAIN}`)"
+      rule: "Host(\`setup.${DOMAIN}\`)"
       service: setup-orchestrator-service
       entryPoints:
         - websecure
@@ -633,7 +633,7 @@ http:
 
     # WebSocket router
     ws-router:
-      rule: "Host(`${ADMIN_SUBDOMAIN}.${DOMAIN}`)"
+      rule: "Host(\`${ADMIN_SUBDOMAIN}.${DOMAIN}\`)"
       service: api-service
       entryPoints:
         - websecure
