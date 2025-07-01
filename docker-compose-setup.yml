@@ -384,29 +384,14 @@ services:
       EOF
         fi
 
-        # Part 5: Conditionally make docker use externa network if POSTGRES_HOST not the komodo postgres
-        if [ -n \"$KOMODO_HOST_IP\" ] || [ -z "$POSTGRES_HOST" ] || [ "$POSTGRES_HOST" != "komodo-postgres-1" ]; then
-          echo '🛡️ Adding Standalone Postgres database...'
-          cat >> /host-setup/compose.yaml << EOF
-
-        networks:
-          default:
-            driver: bridge
-            name: pangolin
-      EOF
-
-        else
         # Append network block (always)
-        cat >> /host-setup/compose.yaml << EOF
-
+        echo '📝 Append network block - need to externally create network using docker network create pangolin'
+        cat > /host-setup/compose.yaml << 'EOF'
         networks:
           default:
             external: true
             name: pangolin
-
       EOF
-
-        fi
 
          # Replace placeholders with actual variable syntax
         sed -i 's/REPLACE_WITH_CLIENT_ID/$$\{CLIENT_ID}/g' /host-setup/compose.yaml
