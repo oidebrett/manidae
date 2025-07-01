@@ -386,7 +386,7 @@ services:
 
         # Append network block (always)
         echo '📝 Append network block - need to externally create network using docker network create pangolin'
-        cat > /host-setup/compose.yaml << 'EOF'
+        cat >> /host-setup/compose.yaml << 'EOF'
         networks:
           default:
             external: true
