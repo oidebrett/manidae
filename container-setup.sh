@@ -167,7 +167,7 @@ http:
         - statiq
       service: statiq-service
       priority: 100
-      rule: "Host(`${STATIC_PAGE_DOMAIN}.${DOMAIN}`)"
+      rule: "Host(\`${STATIC_PAGE_DOMAIN}.${DOMAIN}\`)"
 
     # Add these lines for mcpauth
     # mcpauth http redirect router
