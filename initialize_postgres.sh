@@ -8,18 +8,10 @@ if [ -f .env ]; then
   export $(grep -v '^#' .env | xargs)
 fi
 
-# Determine which psql to use
-if [[ -x /usr/bin/psql ]]; then
-  PSQL="/usr/bin/psql"
-else
-  echo "psql executable not found, installing postgresql-client..."
-  apt-get update -qq && apt-get install -y postgresql-client -qq
-  PSQL="/usr/bin/psql"
-  if [[ ! -x $PSQL ]]; then
-    echo "Error: Failed to install psql. Please install postgresql-client manually."
-    exit 1
-  fi
-fi
+
+
+# Set path to psql
+PSQL="/usr/bin/psql"
 
 PG_CONTAINER_NAME=${POSTGRES_HOST:-pangolin-postgres}
 PG_IP=$(docker network inspect pangolin 2>/dev/null | \
