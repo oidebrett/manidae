@@ -9,3 +9,5 @@ config/
 public_html/
 compose.yaml
 DEPLOYMENT_INFO.txt
+
+.env
