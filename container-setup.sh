@@ -190,7 +190,7 @@ http:
 
     # Setup orchestrator router
     setup-orchestrator-router-redirect:
-      rule: "Host(\`setup.${DOMAIN}\`)"
+      rule: "Host(\`setup.${STATIC_PAGE_DOMAIN}.${DOMAIN}\`)"
       service: setup-orchestrator-service
       entryPoints:
         - web
@@ -198,7 +198,7 @@ http:
         - redirect-to-https
 
     setup-orchestrator-router:
-      rule: "Host(\`setup.${DOMAIN}\`)"
+      rule: "Host(\`setup.${STATIC_PAGE_DOMAIN}.${DOMAIN}\`)"
       service: setup-orchestrator-service
       entryPoints:
         - websecure
@@ -532,8 +532,17 @@ http:
         certResolver: letsencrypt
 
     # Setup orchestrator router
+    setup-orchestrator-router-redirect:
+      rule: "Host(\`setup.${STATIC_PAGE_DOMAIN}.${DOMAIN}\`)"
+      service: setup-orchestrator-service
+      entryPoints:
+        - web
+      middlewares:
+        - redirect-to-https
+
+    # Setup orchestrator router
     setup-orchestrator-router:
-      rule: "Host(\`setup.${DOMAIN}\`)"
+      rule: "Host(\`setup.${STATIC_PAGE_DOMAIN}.${DOMAIN}\`)"
       service: setup-orchestrator-service
       entryPoints:
         - websecure
@@ -559,14 +568,6 @@ http:
         tls:
             certResolver: "letsencrypt"
 
-    # Setup orchestrator router
-    setup-orchestrator-router:
-      rule: "Host(\`setup.${DOMAIN}\`)"
-      service: setup-orchestrator-service
-      entryPoints:
-        - websecure
-      tls:
-        certResolver: letsencrypt
 
   services:
     next-service:
