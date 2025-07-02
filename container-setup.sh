@@ -554,7 +554,7 @@ http:
         middlewares:
             - statiq
         priority: 100
-        rule: "Host(`${STATIC_PAGE_DOMAIN}.${DOMAIN}`)"
+        rule: "Host(\`${STATIC_PAGE_DOMAIN}.${DOMAIN}\`)"
         service: statiq-service
         tls:
             certResolver: "letsencrypt"
