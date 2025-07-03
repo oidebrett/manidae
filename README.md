@@ -98,6 +98,30 @@ at least one special character. at "users.server_admin.password"
 - **Gerbil** (fosrl/gerbil:1.0.0) - WireGuard VPN management
 - **Traefik** (traefik:v3.4.1) - Reverse proxy with automatic HTTPS
 
+## Setup Orchestrator
+
+The setup orchestrator is a crucial component responsible for initializing the database schema and data. It is designed to be flexible and resilient.
+
+### How it Works
+
+The orchestrator will automatically attempt to connect to the database using the following hosts, in order:
+
+1.  `komodo-postgres-1`
+2.  `pangolin-postgres`
+
+It uses the first successful connection to proceed with the initialization. This allows the setup to work in different environments without manual configuration.
+
+### Database Credentials
+
+For the orchestrator to connect to the database, it needs access to the database credentials. These credentials must be provided in a `.env` file located at `./config/.env`. The file should contain the following variables:
+
+```
+POSTGRES_USER=your_postgres_user
+POSTGRES_PASSWORD=your_postgres_password
+```
+
+**Important:** The setup process will fail if this file is not present and correctly configured.
+
 ## Directory Structure
 
 After deployment, you'll have:
