@@ -254,7 +254,7 @@ services:
             restart: unless-stopped
             volumes:
               - ./config:/app/config
-              - ./config/.env:/app/config/.env:ro
+              - ./.env:/app/.env:ro
               - ./initialize_postgres.sh:/app/initialize_postgres.sh
               - ./postgres_export:/app/postgres_export
             depends_on:

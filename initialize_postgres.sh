@@ -3,45 +3,40 @@
 # Import CSV data into PostgreSQL
 set -e
 
-# Load environment variables from .env file
-if [ -f .env ]; then
-  export $(grep -v '^#' .env | xargs)
+# The orchestrator passes the DB host as the first argument.
+if [ -z "$1" ]; then
+    echo "Error: Database host not provided."
+    exit 1
 fi
-
-
 
 # Set path to psql
 PSQL="/usr/bin/psql"
 
-PG_CONTAINER_NAME=${POSTGRES_HOST:-pangolin-postgres}
-PG_IP=$(docker network inspect pangolin 2>/dev/null | \
-    awk "/\"Name\": \"$PG_CONTAINER_NAME\"/,/IPv4Address/" | \
-    grep '"IPv4Address"' | \
-    sed -E 's/.*"IPv4Address": "([^/]+)\/.*",/\1/')
+# The database host is passed as the first argument from the orchestrator
+PG_HOST=$1
+echo "PostgreSQL host: $PG_HOST"
 
-if [ -z "$PG_IP" ]; then
-    echo "Error: Could not find IP address for container '$PG_CONTAINER_NAME'"
+EXPORT_DIR="/app/postgres_export"
+PG_PORT="5432"
+PG_USER=${POSTGRES_USER}
+PG_PASS=${POSTGRES_PASSWORD}
+PG_DB="postgres"
+
+# Check if credentials are provided
+if [ -z "$PG_USER" ] || [ -z "$PG_PASS" ]; then
+    echo "Error: POSTGRES_USER and POSTGRES_PASSWORD must be set."
     exit 1
 fi
-
-echo "PostgreSQL container IP: $PG_IP"
-
-EXPORT_DIR="${1:-./postgres_export}"
-PG_HOST=$PG_IP
-PG_PORT="5432"
-PG_USER=$POSTGRES_USER
-PG_PASS=$POSTGRES_PASSWORD
-PG_DB="postgres"
 
 echo "Creating PostgreSQL schema..."
 
 # Function to create PostgreSQL database structure
 create_postgres_structure() {
-    local pg_host=$PG_HOST
-    local pg_port=$PG_PORT
-    local pg_user=$PG_USER
-    local pg_pass=$PG_PASS
-    local pg_db=$PG_DB
+    local pg_host=$1
+    local pg_port=$2
+    local pg_user=$3
+    local pg_pass=$4
+    local pg_db=$5
 
     # Create database if it doesn't exist
     PGPASSWORD="$pg_pass" $PSQL -h "$pg_host" -p "$pg_port" -U "$pg_user" -d postgres -c "CREATE DATABASE $PG_DB;" 2>/dev/null || true
@@ -448,23 +443,6 @@ EOF
 
 }
 
-# Start by delete all the tables that are there
-
-#PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" <<EOF
-#DELETE FROM public."orgDomains";
-#DELETE FROM public."orgs";
-#DELETE FROM public."sites";
-#DELETE FROM public."resources";
-#DELETE FROM public."targets";
-#DELETE FROM public."roles";
-#DELETE FROM public."userOrgs";
-#DELETE FROM public."roleActions";
-#DELETE FROM public."roleSites";
-#DELETE FROM public."userSites";
-#DELETE FROM public."roleResources";
-#DELETE FROM public."resourceRules";
-#EOF
-
 # Create PostgreSQL structure
 create_postgres_structure "$PG_HOST" "$PG_PORT" "$PG_USER" "$PG_PASS" "$PG_DB"
 
@@ -497,11 +475,11 @@ for table in "${TABLES[@]}"; do
             head -n 1 "$CSV_FILE" > "$TEMP_CSV"  # Copy header
             tail -n +2 "$CSV_FILE" | sed "s/^[^,]*/$ACTUAL_USER_ID/" >> "$TEMP_CSV"  # Replace first column (userId) with actual ID
             
-            PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "\COPY \"$table\" FROM '$TEMP_CSV' WITH CSV HEADER;"
+            PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "\\COPY \"$table\" FROM '$TEMP_CSV' WITH CSV HEADER;"
             rm "$TEMP_CSV"  # Clean up temp file
         else
             # Normal import for other tables
-            PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "\COPY \"$table\" FROM '$CSV_FILE' WITH CSV HEADER;"
+            PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "\\COPY \"$table\" FROM '$CSV_FILE' WITH CSV HEADER;"
         fi
     else
         echo "Skipped $table (file missing or empty)"
