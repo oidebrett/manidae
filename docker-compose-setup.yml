@@ -10,8 +10,6 @@ services:
       # Required variables
       - DOMAIN=${DOMAIN:-}
       - EMAIL=${EMAIL:-}
-      - ADMIN_USERNAME=${ADMIN_USERNAME:-}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
       # Important variables with defaults that you might want to customize
       - ADMIN_SUBDOMAIN=${ADMIN_SUBDOMAIN:-pangolin}
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
