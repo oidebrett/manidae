@@ -3,127 +3,525 @@
 # Import CSV data into PostgreSQL
 set -e
 
-# The orchestrator passes the DB host as the first argument.
-if [ -z "$1" ]; then
-    echo "Error: Database host not provided." >&2
+# Load environment variables from .env file
+if [ -f .env ]; then
+  export $(grep -v '^#' .env | xargs)
+fi
+
+# Determine which psql to use
+if [[ -x /usr/bin/psql ]]; then
+  PSQL="/usr/bin/psql"
+else
+  echo "psql executable not found, installing postgresql-client..."
+  apt-get update -qq && apt-get install -y postgresql-client -qq
+  PSQL="/usr/bin/psql"
+  if [[ ! -x $PSQL ]]; then
+    echo "Error: Failed to install psql. Please install postgresql-client manually."
+    exit 1
+  fi
+fi
+
+PG_CONTAINER_NAME=${POSTGRES_HOST:-pangolin-postgres}
+PG_IP=$(docker network inspect pangolin 2>/dev/null | \
+    awk "/\"Name\": \"$PG_CONTAINER_NAME\"/,/IPv4Address/" | \
+    grep '"IPv4Address"' | \
+    sed -E 's/.*"IPv4Address": "([^/]+)\/.*",/\1/')
+
+if [ -z "$PG_IP" ]; then
+    echo "Error: Could not find IP address for container '$PG_CONTAINER_NAME'"
     exit 1
 fi
 
-# Set path to psql
-PSQL="/usr/bin/psql"
-PG_HOST=$1
+echo "PostgreSQL container IP: $PG_IP"
+
+EXPORT_DIR="${1:-./postgres_export}"
+PG_HOST=$PG_IP
 PG_PORT="5432"
-PG_USER=${POSTGRES_USER}
-PG_PASS=${POSTGRES_PASSWORD}
+PG_USER=$POSTGRES_USER
+PG_PASS=$POSTGRES_PASSWORD
 PG_DB="postgres"
-EXPORT_DIR="/app/postgres_export"
 
-# Check if credentials are provided
-if [ -z "$PG_USER" ] || [ -z "$PG_PASS" ]; then
-    echo "Error: POSTGRES_USER and POSTGRES_PASSWORD must be set." >&2
-    exit 1
-fi
+echo "Creating PostgreSQL schema..."
 
-echo "PostgreSQL host: $PG_HOST"
+# Function to create PostgreSQL database structure
+create_postgres_structure() {
+    local pg_host=$PG_HOST
+    local pg_port=$PG_PORT
+    local pg_user=$PG_USER
+    local pg_pass=$PG_PASS
+    local pg_db=$PG_DB
 
-# --- User Existence Check ---
-echo "Checking for existing user..."
-ACTUAL_USER_ID=$(PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -t -c "SELECT id FROM \"user\" LIMIT 1;" | xargs)
-if [ -z "$ACTUAL_USER_ID" ]; then
-    echo "ERROR: No user found in the database. A user must be created before data can be initialized." >&2
-    exit 1
-fi
-echo "User found with ID: $ACTUAL_USER_ID. Proceeding with initialization."
+    # Create database if it doesn't exist
+    PGPASSWORD="$pg_pass" $PSQL -h "$pg_host" -p "$pg_port" -U "$pg_user" -d postgres -c "CREATE DATABASE $PG_DB;" 2>/dev/null || true
 
-# --- Schema Creation ---
-# This section creates tables only if they don't exist.
-# The 'NOTICE' messages from this are normal and can be ignored.
-echo "Creating PostgreSQL schema if it doesn't exist..."
-PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" <<'EOF'
+    # Create Pangolin tables based on the actual schema
+    PGPASSWORD="$pg_pass" $PSQL -h "$pg_host" -p "$pg_port" -U "$pg_user" -d "$pg_db" <<'EOF'
+-- Enable extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE TABLE IF NOT EXISTS domains ( "domainId" TEXT PRIMARY KEY, "baseDomain" TEXT NOT NULL, "configManaged" BOOLEAN NOT NULL DEFAULT FALSE );
-CREATE TABLE IF NOT EXISTS orgs ( "orgId" TEXT PRIMARY KEY, name TEXT NOT NULL );
-CREATE TABLE IF NOT EXISTS "orgDomains" ( "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE, "domainId" TEXT NOT NULL REFERENCES domains("domainId") ON DELETE CASCADE );
-CREATE TABLE IF NOT EXISTS "exitNodes" ( "exitNodeId" SERIAL PRIMARY KEY, name TEXT NOT NULL, address TEXT NOT NULL, endpoint TEXT NOT NULL, "publicKey" TEXT NOT NULL, "listenPort" INTEGER NOT NULL, "reachableAt" TEXT );
-CREATE TABLE IF NOT EXISTS sites ( "siteId" SERIAL PRIMARY KEY, "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE, "niceId" TEXT NOT NULL, "exitNode" INTEGER REFERENCES "exitNodes"("exitNodeId") ON DELETE SET NULL, name TEXT NOT NULL, "pubKey" TEXT, subnet TEXT NOT NULL, "bytesIn" INTEGER, "bytesOut" INTEGER, "lastBandwidthUpdate" TEXT, type TEXT NOT NULL, online BOOLEAN NOT NULL DEFAULT FALSE, "dockerSocketEnabled" BOOLEAN NOT NULL DEFAULT TRUE );
-CREATE TABLE IF NOT EXISTS resources ( "resourceId" SERIAL PRIMARY KEY, "siteId" INTEGER NOT NULL REFERENCES sites("siteId") ON DELETE CASCADE, "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE, name TEXT NOT NULL, subdomain TEXT, "fullDomain" TEXT, "domainId" TEXT REFERENCES domains("domainId") ON DELETE SET NULL, ssl BOOLEAN NOT NULL DEFAULT FALSE, "blockAccess" BOOLEAN NOT NULL DEFAULT FALSE, sso BOOLEAN NOT NULL DEFAULT TRUE, http BOOLEAN NOT NULL DEFAULT TRUE, protocol TEXT NOT NULL, "proxyPort" INTEGER, "emailWhitelistEnabled" BOOLEAN NOT NULL DEFAULT FALSE, "isBaseDomain" BOOLEAN, "applyRules" BOOLEAN NOT NULL DEFAULT FALSE, enabled BOOLEAN NOT NULL DEFAULT TRUE, "stickySession" BOOLEAN NOT NULL DEFAULT FALSE, "tlsServerName" TEXT, "setHostHeader" TEXT );
-CREATE TABLE IF NOT EXISTS targets ( "targetId" SERIAL PRIMARY KEY, "resourceId" INTEGER NOT NULL REFERENCES resources("resourceId") ON DELETE CASCADE, ip TEXT NOT NULL, method TEXT, port INTEGER NOT NULL, "internalPort" INTEGER, enabled BOOLEAN NOT NULL DEFAULT TRUE );
-CREATE TABLE IF NOT EXISTS idp ( "idpId" SERIAL PRIMARY KEY, name TEXT NOT NULL, type TEXT NOT NULL, "defaultRoleMapping" TEXT, "defaultOrgMapping" TEXT, "autoProvision" BOOLEAN NOT NULL DEFAULT FALSE );
-CREATE TABLE IF NOT EXISTS "user" ( id TEXT PRIMARY KEY, email TEXT, username TEXT NOT NULL, name TEXT, type TEXT NOT NULL, "idpId" INTEGER REFERENCES idp("idpId") ON DELETE CASCADE, "passwordHash" TEXT, "twoFactorEnabled" BOOLEAN NOT NULL DEFAULT FALSE, "twoFactorSecret" TEXT, "emailVerified" BOOLEAN NOT NULL DEFAULT FALSE, "dateCreated" TEXT NOT NULL, "serverAdmin" BOOLEAN NOT NULL DEFAULT FALSE );
-CREATE TABLE IF NOT EXISTS newt ( id TEXT PRIMARY KEY, "secretHash" TEXT NOT NULL, "dateCreated" TEXT NOT NULL, "siteId" INTEGER REFERENCES sites("siteId") ON DELETE CASCADE );
-CREATE TABLE IF NOT EXISTS "twoFactorBackupCodes" ( id SERIAL PRIMARY KEY, "userId" TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE, "codeHash" TEXT NOT NULL );
-CREATE TABLE IF NOT EXISTS session ( id TEXT PRIMARY KEY, "userId" TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE, "expiresAt" BIGINT NOT NULL );
-CREATE TABLE IF NOT EXISTS "newtSession" ( id TEXT PRIMARY KEY, "newtId" TEXT NOT NULL REFERENCES newt(id) ON DELETE CASCADE, "expiresAt" BIGINT NOT NULL );
-CREATE TABLE IF NOT EXISTS roles ( "roleId" SERIAL PRIMARY KEY, "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE, "isAdmin" BOOLEAN, name TEXT NOT NULL, description TEXT );
-CREATE TABLE IF NOT EXISTS "userOrgs" ( "userId" TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE, "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE, "roleId" INTEGER NOT NULL REFERENCES roles("roleId") ON DELETE RESTRICT, "isOwner" BOOLEAN NOT NULL DEFAULT FALSE );
-CREATE TABLE IF NOT EXISTS "emailVerificationCodes" ( id SERIAL PRIMARY KEY, "userId" TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE, email TEXT NOT NULL, code TEXT NOT NULL, "expiresAt" BIGINT NOT NULL );
-CREATE TABLE IF NOT EXISTS "passwordResetTokens" ( id SERIAL PRIMARY KEY, "userId" TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE, email TEXT NOT NULL, "tokenHash" TEXT NOT NULL, "expiresAt" BIGINT NOT NULL );
-CREATE TABLE IF NOT EXISTS actions ( "actionId" TEXT PRIMARY KEY, name TEXT, description TEXT );
-CREATE TABLE IF NOT EXISTS "roleActions" ( "roleId" INTEGER NOT NULL REFERENCES roles("roleId") ON DELETE CASCADE, "actionId" TEXT NOT NULL REFERENCES actions("actionId") ON DELETE CASCADE, "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE );
-CREATE TABLE IF NOT EXISTS "userActions" ( "userId" TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE, "actionId" TEXT NOT NULL REFERENCES actions("actionId") ON DELETE CASCADE, "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE );
-CREATE TABLE IF NOT EXISTS "roleSites" ( "roleId" INTEGER NOT NULL REFERENCES roles("roleId") ON DELETE CASCADE, "siteId" INTEGER NOT NULL REFERENCES sites("siteId") ON DELETE CASCADE );
-CREATE TABLE IF NOT EXISTS "userSites" ( "userId" TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE, "siteId" INTEGER NOT NULL REFERENCES sites("siteId") ON DELETE CASCADE );
-CREATE TABLE IF NOT EXISTS "roleResources" ( "roleId" INTEGER NOT NULL REFERENCES roles("roleId") ON DELETE CASCADE, "resourceId" INTEGER NOT NULL REFERENCES resources("resourceId") ON DELETE CASCADE );
-CREATE TABLE IF NOT EXISTS "userResources" ( "userId" TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE, "resourceId" INTEGER NOT NULL REFERENCES resources("resourceId") ON DELETE CASCADE );
-CREATE TABLE IF NOT EXISTS limits ( "limitId" SERIAL PRIMARY KEY, "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE, name TEXT NOT NULL, value INTEGER NOT NULL, description TEXT );
-CREATE TABLE IF NOT EXISTS "userInvites" ( "inviteId" TEXT PRIMARY KEY, "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE, email TEXT NOT NULL, "expiresAt" BIGINT NOT NULL, token TEXT NOT NULL, "roleId" INTEGER NOT NULL REFERENCES roles("roleId") ON DELETE CASCADE );
--- Add other tables here...
+
+-- Domains table
+CREATE TABLE IF NOT EXISTS domains (
+    "domainId" TEXT PRIMARY KEY,
+    "baseDomain" TEXT NOT NULL,
+    "configManaged" BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+-- Organizations table
+CREATE TABLE IF NOT EXISTS orgs (
+    "orgId" TEXT PRIMARY KEY,
+    name TEXT NOT NULL
+);
+
+-- Organization domains table
+CREATE TABLE IF NOT EXISTS "orgDomains" (
+    "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE,
+    "domainId" TEXT NOT NULL REFERENCES domains("domainId") ON DELETE CASCADE
+);
+
+-- Exit nodes table
+CREATE TABLE IF NOT EXISTS "exitNodes" (
+    "exitNodeId" SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    address TEXT NOT NULL,
+    endpoint TEXT NOT NULL,
+    "publicKey" TEXT NOT NULL,
+    "listenPort" INTEGER NOT NULL,
+    "reachableAt" TEXT
+);
+
+-- Sites table
+CREATE TABLE IF NOT EXISTS sites (
+    "siteId" SERIAL PRIMARY KEY,
+    "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE,
+    "niceId" TEXT NOT NULL,
+    "exitNode" INTEGER REFERENCES "exitNodes"("exitNodeId") ON DELETE SET NULL,
+    name TEXT NOT NULL,
+    "pubKey" TEXT,
+    subnet TEXT NOT NULL,
+    "bytesIn" INTEGER,
+    "bytesOut" INTEGER,
+    "lastBandwidthUpdate" TEXT,
+    type TEXT NOT NULL,
+    online BOOLEAN NOT NULL DEFAULT FALSE,
+    "dockerSocketEnabled" BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+-- Resources table
+CREATE TABLE IF NOT EXISTS resources (
+    "resourceId" SERIAL PRIMARY KEY,
+    "siteId" INTEGER NOT NULL REFERENCES sites("siteId") ON DELETE CASCADE,
+    "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    subdomain TEXT,
+    "fullDomain" TEXT,
+    "domainId" TEXT REFERENCES domains("domainId") ON DELETE SET NULL,
+    ssl BOOLEAN NOT NULL DEFAULT FALSE,
+    "blockAccess" BOOLEAN NOT NULL DEFAULT FALSE,
+    sso BOOLEAN NOT NULL DEFAULT TRUE,
+    http BOOLEAN NOT NULL DEFAULT TRUE,
+    protocol TEXT NOT NULL,
+    "proxyPort" INTEGER,
+    "emailWhitelistEnabled" BOOLEAN NOT NULL DEFAULT FALSE,
+    "isBaseDomain" BOOLEAN,
+    "applyRules" BOOLEAN NOT NULL DEFAULT FALSE,
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    "stickySession" BOOLEAN NOT NULL DEFAULT FALSE,
+    "tlsServerName" TEXT,
+    "setHostHeader" TEXT
+);
+
+-- Targets table
+CREATE TABLE IF NOT EXISTS targets (
+    "targetId" SERIAL PRIMARY KEY,
+    "resourceId" INTEGER NOT NULL REFERENCES resources("resourceId") ON DELETE CASCADE,
+    ip TEXT NOT NULL,
+    method TEXT,
+    port INTEGER NOT NULL,
+    "internalPort" INTEGER,
+    enabled BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+-- Identity providers table
+CREATE TABLE IF NOT EXISTS idp (
+    "idpId" SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    "defaultRoleMapping" TEXT,
+    "defaultOrgMapping" TEXT,
+    "autoProvision" BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+-- Users table
+CREATE TABLE IF NOT EXISTS "user" (
+    id TEXT PRIMARY KEY,
+    email TEXT,
+    username TEXT NOT NULL,
+    name TEXT,
+    type TEXT NOT NULL,
+    "idpId" INTEGER REFERENCES idp("idpId") ON DELETE CASCADE,
+    "passwordHash" TEXT,
+    "twoFactorEnabled" BOOLEAN NOT NULL DEFAULT FALSE,
+    "twoFactorSecret" TEXT,
+    "emailVerified" BOOLEAN NOT NULL DEFAULT FALSE,
+    "dateCreated" TEXT NOT NULL,
+    "serverAdmin" BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+-- Newt table
+CREATE TABLE IF NOT EXISTS newt (
+    id TEXT PRIMARY KEY,
+    "secretHash" TEXT NOT NULL,
+    "dateCreated" TEXT NOT NULL,
+    "siteId" INTEGER REFERENCES sites("siteId") ON DELETE CASCADE
+);
+
+-- Two factor backup codes table
+CREATE TABLE IF NOT EXISTS "twoFactorBackupCodes" (
+    id SERIAL PRIMARY KEY,
+    "userId" TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    "codeHash" TEXT NOT NULL
+);
+
+-- Sessions table
+CREATE TABLE IF NOT EXISTS session (
+    id TEXT PRIMARY KEY,
+    "userId" TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    "expiresAt" BIGINT NOT NULL
+);
+
+-- Newt sessions table
+CREATE TABLE IF NOT EXISTS "newtSession" (
+    id TEXT PRIMARY KEY,
+    "newtId" TEXT NOT NULL REFERENCES newt(id) ON DELETE CASCADE,
+    "expiresAt" BIGINT NOT NULL
+);
+
+-- User organizations table
+CREATE TABLE IF NOT EXISTS "userOrgs" (
+    "userId" TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE,
+    "roleId" INTEGER NOT NULL,
+    "isOwner" BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+-- Email verification codes table
+CREATE TABLE IF NOT EXISTS "emailVerificationCodes" (
+    id SERIAL PRIMARY KEY,
+    "userId" TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    email TEXT NOT NULL,
+    code TEXT NOT NULL,
+    "expiresAt" BIGINT NOT NULL
+);
+
+-- Password reset tokens table
+CREATE TABLE IF NOT EXISTS "passwordResetTokens" (
+    id SERIAL PRIMARY KEY,
+    "userId" TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    email TEXT NOT NULL,
+    "tokenHash" TEXT NOT NULL,
+    "expiresAt" BIGINT NOT NULL
+);
+
+-- Actions table
+CREATE TABLE IF NOT EXISTS actions (
+    "actionId" TEXT PRIMARY KEY,
+    name TEXT,
+    description TEXT
+);
+
+-- Roles table
+CREATE TABLE IF NOT EXISTS roles (
+    "roleId" SERIAL PRIMARY KEY,
+    "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE,
+    "isAdmin" BOOLEAN,
+    name TEXT NOT NULL,
+    description TEXT
+);
+
+-- Add foreign key constraint to userOrgs after roles table is created
+ALTER TABLE "userOrgs" ADD CONSTRAINT "userOrgs_roleId_fkey" 
+    FOREIGN KEY ("roleId") REFERENCES roles("roleId") ON DELETE RESTRICT;
+
+-- Role actions table
+CREATE TABLE IF NOT EXISTS "roleActions" (
+    "roleId" INTEGER NOT NULL REFERENCES roles("roleId") ON DELETE CASCADE,
+    "actionId" TEXT NOT NULL REFERENCES actions("actionId") ON DELETE CASCADE,
+    "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE
+);
+
+-- User actions table
+CREATE TABLE IF NOT EXISTS "userActions" (
+    "userId" TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    "actionId" TEXT NOT NULL REFERENCES actions("actionId") ON DELETE CASCADE,
+    "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE
+);
+
+-- Role sites table
+CREATE TABLE IF NOT EXISTS "roleSites" (
+    "roleId" INTEGER NOT NULL REFERENCES roles("roleId") ON DELETE CASCADE,
+    "siteId" INTEGER NOT NULL REFERENCES sites("siteId") ON DELETE CASCADE
+);
+
+-- User sites table
+CREATE TABLE IF NOT EXISTS "userSites" (
+    "userId" TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    "siteId" INTEGER NOT NULL REFERENCES sites("siteId") ON DELETE CASCADE
+);
+
+-- Role resources table
+CREATE TABLE IF NOT EXISTS "roleResources" (
+    "roleId" INTEGER NOT NULL REFERENCES roles("roleId") ON DELETE CASCADE,
+    "resourceId" INTEGER NOT NULL REFERENCES resources("resourceId") ON DELETE CASCADE
+);
+
+-- User resources table
+CREATE TABLE IF NOT EXISTS "userResources" (
+    "userId" TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    "resourceId" INTEGER NOT NULL REFERENCES resources("resourceId") ON DELETE CASCADE
+);
+
+-- Limits table
+CREATE TABLE IF NOT EXISTS limits (
+    "limitId" SERIAL PRIMARY KEY,
+    "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    value INTEGER NOT NULL,
+    description TEXT
+);
+
+-- User invites table
+CREATE TABLE IF NOT EXISTS "userInvites" (
+    "inviteId" TEXT PRIMARY KEY,
+    "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE,
+    email TEXT NOT NULL,
+    "expiresAt" BIGINT NOT NULL,
+    token TEXT NOT NULL,
+    "roleId" INTEGER NOT NULL REFERENCES roles("roleId") ON DELETE CASCADE
+);
+
+-- Resource pincode table
+CREATE TABLE IF NOT EXISTS "resourcePincode" (
+    "pincodeId" SERIAL PRIMARY KEY,
+    "resourceId" INTEGER NOT NULL REFERENCES resources("resourceId") ON DELETE CASCADE,
+    "pincodeHash" TEXT NOT NULL,
+    "digitLength" INTEGER NOT NULL
+);
+
+-- Resource password table
+CREATE TABLE IF NOT EXISTS "resourcePassword" (
+    "passwordId" SERIAL PRIMARY KEY,
+    "resourceId" INTEGER NOT NULL REFERENCES resources("resourceId") ON DELETE CASCADE,
+    "passwordHash" TEXT NOT NULL
+);
+
+-- Resource access token table
+CREATE TABLE IF NOT EXISTS "resourceAccessToken" (
+    "accessTokenId" TEXT PRIMARY KEY,
+    "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE,
+    "resourceId" INTEGER NOT NULL REFERENCES resources("resourceId") ON DELETE CASCADE,
+    "tokenHash" TEXT NOT NULL,
+    "sessionLength" BIGINT NOT NULL,
+    "expiresAt" BIGINT,
+    title TEXT,
+    description TEXT,
+    "createdAt" BIGINT NOT NULL
+);
+
+-- Resource whitelist table
+CREATE TABLE IF NOT EXISTS "resourceWhitelist" (
+    id SERIAL PRIMARY KEY,
+    email TEXT NOT NULL,
+    "resourceId" INTEGER NOT NULL REFERENCES resources("resourceId") ON DELETE CASCADE
+);
+
+-- Resource sessions table
+CREATE TABLE IF NOT EXISTS "resourceSessions" (
+    id TEXT PRIMARY KEY,
+    "resourceId" INTEGER NOT NULL REFERENCES resources("resourceId") ON DELETE CASCADE,
+    "expiresAt" BIGINT NOT NULL,
+    "sessionLength" BIGINT NOT NULL,
+    "doNotExtend" BOOLEAN NOT NULL DEFAULT FALSE,
+    "isRequestToken" BOOLEAN,
+    "userSessionId" TEXT REFERENCES session(id) ON DELETE CASCADE,
+    "passwordId" INTEGER REFERENCES "resourcePassword"("passwordId") ON DELETE CASCADE,
+    "pincodeId" INTEGER REFERENCES "resourcePincode"("pincodeId") ON DELETE CASCADE,
+    "whitelistId" INTEGER REFERENCES "resourceWhitelist"(id) ON DELETE CASCADE,
+    "accessTokenId" TEXT REFERENCES "resourceAccessToken"("accessTokenId") ON DELETE CASCADE
+);
+
+-- Resource OTP table
+CREATE TABLE IF NOT EXISTS "resourceOtp" (
+    "otpId" SERIAL PRIMARY KEY,
+    "resourceId" INTEGER NOT NULL REFERENCES resources("resourceId") ON DELETE CASCADE,
+    email TEXT NOT NULL,
+    "otpHash" TEXT NOT NULL,
+    "expiresAt" BIGINT NOT NULL
+);
+
+-- Version migrations table
+CREATE TABLE IF NOT EXISTS "versionMigrations" (
+    version TEXT PRIMARY KEY,
+    "executedAt" BIGINT NOT NULL
+);
+
+-- Resource rules table
+CREATE TABLE IF NOT EXISTS "resourceRules" (
+    "ruleId" SERIAL PRIMARY KEY,
+    "resourceId" INTEGER NOT NULL REFERENCES resources("resourceId") ON DELETE CASCADE,
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    priority INTEGER NOT NULL,
+    action TEXT NOT NULL,
+    match TEXT NOT NULL,
+    value TEXT NOT NULL
+);
+
+-- Supporter key table
+CREATE TABLE IF NOT EXISTS "supporterKey" (
+    "keyId" SERIAL PRIMARY KEY,
+    key TEXT NOT NULL,
+    "githubUsername" TEXT NOT NULL,
+    phrase TEXT,
+    tier TEXT,
+    valid BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+-- IDP OIDC config table
+CREATE TABLE IF NOT EXISTS "idpOidcConfig" (
+    "idpOauthConfigId" SERIAL PRIMARY KEY,
+    "idpId" INTEGER NOT NULL REFERENCES idp("idpId") ON DELETE CASCADE,
+    "clientId" TEXT NOT NULL,
+    "clientSecret" TEXT NOT NULL,
+    "authUrl" TEXT NOT NULL,
+    "tokenUrl" TEXT NOT NULL,
+    "identifierPath" TEXT NOT NULL,
+    "emailPath" TEXT,
+    "namePath" TEXT,
+    scopes TEXT NOT NULL
+);
+
+-- License key table
+CREATE TABLE IF NOT EXISTS "licenseKey" (
+    "licenseKeyId" TEXT PRIMARY KEY NOT NULL,
+    "instanceId" TEXT NOT NULL,
+    token TEXT NOT NULL
+);
+
+-- Host meta table
+CREATE TABLE IF NOT EXISTS "hostMeta" (
+    "hostMetaId" TEXT PRIMARY KEY NOT NULL,
+    "createdAt" BIGINT NOT NULL
+);
+
+-- API keys table
+CREATE TABLE IF NOT EXISTS "apiKeys" (
+    "apiKeyId" TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    "apiKeyHash" TEXT NOT NULL,
+    "lastChars" TEXT NOT NULL,
+    "dateCreated" TEXT NOT NULL,
+    "isRoot" BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+-- API key actions table
+CREATE TABLE IF NOT EXISTS "apiKeyActions" (
+    "apiKeyId" TEXT NOT NULL REFERENCES "apiKeys"("apiKeyId") ON DELETE CASCADE,
+    "actionId" TEXT NOT NULL REFERENCES actions("actionId") ON DELETE CASCADE
+);
+
+-- API key org table
+CREATE TABLE IF NOT EXISTS "apiKeyOrg" (
+    "apiKeyId" TEXT NOT NULL REFERENCES "apiKeys"("apiKeyId") ON DELETE CASCADE,
+    "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE
+);
+
+-- IDP org table
+CREATE TABLE IF NOT EXISTS "idpOrg" (
+    "idpId" INTEGER NOT NULL REFERENCES idp("idpId") ON DELETE CASCADE,
+    "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE,
+    "roleMapping" TEXT,
+    "orgMapping" TEXT
+);
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_sites_org_id ON sites("orgId");
+CREATE INDEX IF NOT EXISTS idx_resources_site_id ON resources("siteId");
+CREATE INDEX IF NOT EXISTS idx_resources_org_id ON resources("orgId");
+CREATE INDEX IF NOT EXISTS idx_targets_resource_id ON targets("resourceId");
+CREATE INDEX IF NOT EXISTS idx_user_email ON "user"(email);
+CREATE INDEX IF NOT EXISTS idx_session_user_id ON session("userId");
+CREATE INDEX IF NOT EXISTS idx_newt_site_id ON newt("siteId");
+CREATE INDEX IF NOT EXISTS idx_user_orgs_user_id ON "userOrgs"("userId");
+CREATE INDEX IF NOT EXISTS idx_user_orgs_org_id ON "userOrgs"("orgId");
 EOF
 
-# --- Data Import ---
-echo "Importing CSV data non-destructively..."
+}
 
-# Function to import data for a table with a simple primary key
-import_with_pk() {
-    local table=$1
-    local pk_column=$2
-    local csv_file="$EXPORT_DIR/$table.csv"
-    if [[ -f "$csv_file" && $(wc -l < "$csv_file") -gt 1 ]]; then
-        echo "Importing data for $table..."
-        PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" <<-"EOF"
-            CREATE TEMP TABLE tmp_$table (LIKE "$table" INCLUDING DEFAULTS);
-            \copy tmp_$table FROM '$csv_file' WITH CSV HEADER;
-            INSERT INTO "$table" SELECT * FROM tmp_$table ON CONFLICT ("$pk_column") DO NOTHING;
-            DROP TABLE tmp_$table;
-EOF
+# Start by delete all the tables that are there
+
+#PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" <<EOF
+#DELETE FROM public."orgDomains";
+#DELETE FROM public."orgs";
+#DELETE FROM public."sites";
+#DELETE FROM public."resources";
+#DELETE FROM public."targets";
+#DELETE FROM public."roles";
+#DELETE FROM public."userOrgs";
+#DELETE FROM public."roleActions";
+#DELETE FROM public."roleSites";
+#DELETE FROM public."userSites";
+#DELETE FROM public."roleResources";
+#DELETE FROM public."resourceRules";
+#EOF
+
+# Create PostgreSQL structure
+create_postgres_structure "$PG_HOST" "$PG_PORT" "$PG_USER" "$PG_PASS" "$PG_DB"
+
+TABLES=(
+    "domains" "orgs" "orgDomains" "exitNodes" "sites" "resources" "targets"
+    "idp" "user" "newt" "twoFactorBackupCodes" "session" "newtSession"
+    "actions" "roles" "userOrgs" "emailVerificationCodes" "passwordResetTokens"
+    "roleActions" "userActions" "roleSites" "userSites" "roleResources"
+    "userResources" "limits" "userInvites" "resourcePincode" "resourcePassword"
+    "resourceAccessToken" "resourceWhitelist" "resourceSessions" "resourceOtp"
+    "versionMigrations" "resourceRules" "supporterKey" "idpOidcConfig"
+    "licenseKey" "hostMeta" "apiKeys" "apiKeyActions" "apiKeyOrg" "idpOrg"
+)
+
+echo "Importing CSV data into PostgreSQL database: $PG_DB"
+
+for table in "${TABLES[@]}"; do
+    CSV_FILE="$EXPORT_DIR/$table.csv"
+    if [[ -f "$CSV_FILE" && $(wc -l < "$CSV_FILE") -gt 1 ]]; then
+        echo "Importing $table from $CSV_FILE"
+        PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "TRUNCATE TABLE \"$table\" RESTART IDENTITY CASCADE;"
+        
+        if [[ "$table" == "userOrgs" ]]; then
+            # Special handling for userOrgs - get the actual user ID and update CSV on the fly
+            echo "Special handling for userOrgs table - updating userId with actual system user ID"
+            ACTUAL_USER_ID=$(PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -t -c "SELECT id FROM \"user\" LIMIT 1;" | xargs)
+            
+            # Create a temporary CSV with the correct userId
+            TEMP_CSV="/tmp/userOrgs_temp.csv"
+            head -n 1 "$CSV_FILE" > "$TEMP_CSV"  # Copy header
+            tail -n +2 "$CSV_FILE" | sed "s/^[^,]*/$ACTUAL_USER_ID/" >> "$TEMP_CSV"  # Replace first column (userId) with actual ID
+            
+            PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "\COPY \"$table\" FROM '$TEMP_CSV' WITH CSV HEADER;"
+            rm "$TEMP_CSV"  # Clean up temp file
+        else
+            # Normal import for other tables
+            PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "\COPY \"$table\" FROM '$CSV_FILE' WITH CSV HEADER;"
+        fi
     else
         echo "Skipped $table (file missing or empty)"
     fi
-}
+done
 
-# Import tables with simple primary keys
-import_with_pk "orgs" "orgId"
-import_with_pk "roles" "roleId"
-import_with_pk "resources" "resourceId"
-import_with_pk "sites" "siteId"
-import_with_pk "targets" "targetId"
+echo "Updating userOrg mapping."
 
-# Special handling for userOrgs
-USERORGS_CSV="$EXPORT_DIR/userOrgs.csv"
-if [[ -f "$USERORGS_CSV" && $(wc -l < "$USERORGS_CSV") -gt 1 ]]; then
-    echo "Importing data for userOrgs..."
-    TEMP_CSV="/tmp/userOrgs_temp.csv"
-    head -n 1 "$USERORGS_CSV" > "$TEMP_CSV"
-    tail -n +2 "$USERORGS_CSV" | sed "s/^[^,]*/$ACTUAL_USER_ID/" >> "$TEMP_CSV"
-    
-    PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" <<-"EOF"
-        CREATE TEMP TABLE tmp_userOrgs (LIKE "userOrgs" INCLUDING DEFAULTS);
-        \copy tmp_userOrgs FROM '$TEMP_CSV' WITH CSV HEADER;
-        INSERT INTO "userOrgs" ("userId", "orgId", "roleId", "isOwner")
-        SELECT "userId", "orgId", "roleId", "isOwner" FROM tmp_userOrgs
-        ON CONFLICT ("userId", "orgId") DO NOTHING;
-        DROP TABLE tmp_userOrgs;
-EOF
-    rm "$TEMP_CSV"
-else
-    echo "Skipped userOrgs (file missing or empty)"
-fi
-
-# Add unique constraint to userOrgs to support ON CONFLICT
-PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "ALTER TABLE \"userOrgs\" ADD CONSTRAINT userOrgs_userId_orgId_key UNIQUE (\"userId\", \"orgId\");" || true
+# Add this line to your script after the COPY commands:
+PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "UPDATE \"userOrgs\" SET \"userId\" = (SELECT id FROM \"user\" LIMIT 1);"
 
 #Reset Sequence After Import
-echo "Resetting sequences for serial columns..."
 PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "SELECT setval(pg_get_serial_sequence('resources', 'resourceId'), COALESCE((SELECT MAX(\"resourceId\") FROM resources), 1), true);"
 PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "SELECT setval(pg_get_serial_sequence('targets', 'targetId'), COALESCE((SELECT MAX(\"targetId\") FROM targets), 1), true);"
 

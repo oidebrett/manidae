@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-900 text-white font-sans h-screen overflow-hidden">
-    <div id="app-container" class="flex h-full" style="display: none;">
+    <div class="flex h-full">
         <!-- Sidebar -->
         <div id="sidebar" class="w-20 hover:w-80 bg-gray-800 shadow-xl flex flex-col transition-all duration-300 ease-in-out group z-10">
             <div class="p-3 border-b border-gray-700 overflow-hidden flex justify-center group-hover:justify-start">
@@ -111,6 +111,20 @@
             <div class="flex-1 relative">
                 <!-- Welcome Screen -->
                 <div id="welcome-screen" class="flex items-center justify-center h-full bg-gray-900">
+                    <div class="text-center max-w-2xl px-8">
+                        <h1 class="text-6xl font-bold mb-6 text-cyan-400 animate-pulse">Welcome to ContextWareAI</h1>
+                        <p class="text-xl text-gray-400 mb-8">Click on the menu on the left to access your applications</p>
+                        <div class="grid grid-cols-2 gap-4 text-sm text-gray-500">
+                            <div class="bg-gray-800 p-4 rounded-lg">
+                                <div class="font-semibold text-cyan-400 mb-2">Management Tools</div>
+                                <div>Pangolin • Komodo</div>
+                            </div>
+                            <div class="bg-gray-800 p-4 rounded-lg">
+                                <div class="font-semibold text-cyan-400 mb-2">Infrastructure</div>
+                                <div>Middleware • Traefik</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Iframe Container -->
@@ -118,95 +132,12 @@
             </div>
         </div>
     </div>
-    <div id="setup-wizard" class="flex items-center justify-center h-full bg-gray-900">
-    </div>
 
     <script>
-        const ORCHESTRATOR_URL = `https://setup.${window.location.hostname}/api`;
-
-        async function checkSetupStatus() {
-            try {
-                const response = await fetch(`${ORCHESTRATOR_URL}/status`);
-                const data = await response.json();
-                if (data.status === 'complete') {
-                    document.getElementById('setup-wizard').style.display = 'none';
-                    document.getElementById('app-container').style.display = 'flex';
-                    showWelcome();
-                } else {
-                    document.getElementById('app-container').style.display = 'none';
-                    document.getElementById('setup-wizard').style.display = 'flex';
-                    showSetupWizard();
-                }
-            } catch (error) {
-                console.error("Error checking setup status:", error);
-                document.getElementById('app-container').style.display = 'none';
-                document.getElementById('setup-wizard').style.display = 'flex';
-                showSetupWizard('Error connecting to the setup service. Please ensure the services are running correctly.');
-            }
-        }
-
-        function showSetupWizard(errorMessage = '') {
-            const wizardContainer = document.getElementById('setup-wizard');
-            const pangolinUrl = `https://subdomain.yourdomain.com`.replace('subdomain', 'pangolin');
-            
-            let errorHtml = '';
-            if (errorMessage) {
-                errorHtml = `<div class="bg-red-900 border border-red-600 rounded-lg p-4 mb-6 text-red-200">${errorMessage}</div>`;
-            }
-
-            wizardContainer.innerHTML = `
-                <div class="text-center max-w-2xl px-8">
-                    <h1 class="text-5xl font-bold mb-6 text-cyan-400">Finalize Installation</h1>
-                    <p class="text-xl text-gray-400 mb-8">A final step is required to complete the setup.</p>
-                    ${errorHtml}
-                    <div class="bg-gray-800 p-6 rounded-lg text-left space-y-6">
-                        <div>
-                            <h2 class="text-2xl font-semibold text-cyan-400 mb-2">Step 1: Create Admin User</h2>
-                            <p class="text-gray-300">
-                                Click the button below to open Pangolin in a new tab. Log in with the credentials you provided during setup. This will create the initial administrator account.
-                            </p>
-                            <button onclick="window.open('${pangolinUrl}', '_blank')" class="mt-4 bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200">
-                                Open Pangolin
-                            </button>
-                        </div>
-                        <div>
-                            <h2 class="text-2xl font-semibold text-cyan-400 mb-2">Step 2: Finalize</h2>
-                            <p class="text-gray-300">
-                                Once you have successfully logged into Pangolin, return to this tab and click the button below to finalize the installation.
-                            </p>
-                            <button id="finalize-btn" onclick="finalizeSetup()" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200">
-                                Finalize Installation
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        async function finalizeSetup() {
-            const finalizeBtn = document.getElementById('finalize-btn');
-            finalizeBtn.disabled = true;
-            finalizeBtn.innerHTML = '<div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white mx-auto"></div>';
-
-            try {
-                const response = await fetch(`${ORCHESTRATOR_URL}/initialize`, { method: 'POST' });
-                if (response.ok) {
-                    showSetupWizard('Setup complete! Reloading...');
-                    setTimeout(() => window.location.reload(), 2000);
-                } else {
-                    const errorData = await response.json();
-                    console.error("Finalization failed:", errorData);
-                    showSetupWizard(`Setup failed. Please ensure you have created the admin user in Pangolin and try again. Error: ${errorData.stderr || errorData.error}`);
-                }
-            } catch (error) {
-                console.error("Error finalizing setup:", error);
-                showSetupWizard('An error occurred while finalizing the setup. Please check the browser console for details and try again.');
-            }
-        }
-
         let currentActiveItem = document.querySelector('.sidebar-item');
         
         function showWelcome() {
+            // Hide iframe and show welcome screen
             document.getElementById('app-iframe').classList.add('hidden');
             const welcomeScreen = document.getElementById('welcome-screen');
             welcomeScreen.innerHTML = `
@@ -229,6 +160,7 @@
             document.getElementById('current-app-title').textContent = 'Welcome';
             document.getElementById('refresh-btn').classList.add('hidden');
             
+            // Update active item
             updateActiveItem(document.querySelector('.sidebar-item'));
         }
         
@@ -239,57 +171,77 @@
             const loadingIndicator = document.getElementById('loading-indicator');
             const refreshBtn = document.getElementById('refresh-btn');
             
+            // Show loading indicator
             loadingIndicator.classList.remove('hidden');
             titleElement.textContent = `Loading ${title}...`;
             
+            // Hide welcome screen and show iframe
             welcomeScreen.classList.add('hidden');
             iframe.classList.remove('hidden');
 
             if (url.includes('traefik') && url.includes('/dashboard/')) {
+              // For Traefik dashboard, use a different approach to avoid parameter issues
               iframe.src = url;
             }
             else {
+              // Force iframe refresh by adding timestamp to prevent caching issues
               const timestamp = new Date().getTime();
               const separator = url.includes('?') ? '&' : '?';
               const urlWithTimestamp = url+separator+'_t='+timestamp;
+
+              // Load the application
               iframe.src = urlWithTimestamp;
             }            
 
+            // Update active sidebar item
             updateActiveItem(element);
             
+            // Set up iframe blocking detection
             let iframeBlocked = false;
             let loadTimeout;
             
+            // Timeout to detect if iframe is blocked (most blocking happens immediately)
             loadTimeout = setTimeout(() => {
                 if (!iframeBlocked) {
+                    // Likely blocked by X-Frame-Options or CSP
                     handleIframeBlocked(url, title);
                 }
             }, 10000);
             
+            // Handle iframe load success
             iframe.onload = function() {
                 clearTimeout(loadTimeout);
                 
                 try {
+                    // Try to access iframe content to detect if it's blocked
                     const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
                     
+                    // If we can access it and it's not empty, it loaded successfully
                     if (iframeDoc && iframeDoc.body && iframeDoc.body.innerHTML.trim() !== '') {
                         loadingIndicator.classList.add('hidden');
                         titleElement.textContent = title;
                         refreshBtn.classList.remove('hidden');
                     } else {
+                        // Empty or blocked content
                         handleIframeBlocked(url, title);
                     }
                 } catch (e) {
+                    // Cross-origin access denied - try to detect if it's actually blocked
+                    // If we get here, the iframe loaded but we can't access content
+                    // This could be normal cross-origin or actual blocking
                     setTimeout(() => {
+                        // Check if iframe is displaying content by checking its location
                         try {
                             if (iframe.contentWindow.location.href === 'about:blank') {
                                 handleIframeBlocked(url, title);
                             } else {
+                                // Likely loaded successfully but cross-origin
                                 loadingIndicator.classList.add('hidden');
                                 titleElement.textContent = title;
                                 refreshBtn.classList.remove('hidden');
                             }
                         } catch (e2) {
+                            // Assume it loaded successfully if we can't check
                             loadingIndicator.classList.add('hidden');
                             titleElement.textContent = title;
                             refreshBtn.classList.remove('hidden');
@@ -298,6 +250,7 @@
                 }
             };
             
+            // Handle iframe load errors
             iframe.onerror = function() {
                 clearTimeout(loadTimeout);
                 handleIframeBlocked(url, title);
@@ -311,9 +264,11 @@
             const loadingIndicator = document.getElementById('loading-indicator');
             const refreshBtn = document.getElementById('refresh-btn');
             
+            // Hide loading indicator
             loadingIndicator.classList.add('hidden');
             refreshBtn.classList.add('hidden');
             
+            // Show blocking message
             iframe.classList.add('hidden');
             welcomeScreen.innerHTML = `
                 <div class="text-center max-w-2xl px-8">
@@ -347,11 +302,13 @@
         }
         
         function updateActiveItem(element) {
+            // Remove active state from all items
             document.querySelectorAll('.sidebar-item').forEach(item => {
                 item.classList.remove('border-l-4', 'border-cyan-400', 'bg-gray-600');
                 item.classList.add('bg-gray-700');
             });
             
+            // Add active state to clicked item
             element.classList.remove('bg-gray-700');
             element.classList.add('border-l-4', 'border-cyan-400', 'bg-gray-600');
             currentActiveItem = element;
@@ -363,12 +320,13 @@
             
             if (iframe.src !== 'about:blank') {
                 loadingIndicator.classList.remove('hidden');
-                iframe.src = iframe.src;
+                iframe.src = iframe.src; // Reload the iframe
             }
             
         }
         
-        document.addEventListener('DOMContentLoaded', checkSetupStatus);
+        // Initialize with welcome screen active
+        showWelcome();
     </script>
 </body>
 </html>

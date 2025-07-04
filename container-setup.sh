@@ -304,6 +304,11 @@ rate_limits:
         window_minutes: 1
         max_requests: 500
 
+users:
+    server_admin:
+        email: "${ADMIN_USERNAME}"
+        password: "${ADMIN_PASSWORD}"
+
 flags:
     require_email_verification: false
     disable_signup_without_invite: true
@@ -666,6 +671,8 @@ Deployment completed at: $(date)
 
 🌐 Access Information:
 - Dashboard URL: https://${ADMIN_SUBDOMAIN}.${DOMAIN}
+- Admin Login: ${ADMIN_USERNAME}
+- Admin Password: [Set during deployment]
 
 📁 Directory Structure Created:
 ./config/
