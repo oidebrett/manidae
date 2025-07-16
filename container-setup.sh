@@ -403,16 +403,30 @@ EOF
 echo "✅ traefik_config.yml created"
 
 # Function to create static page HTML
+create_nlweb_config() {
+    echo "📄 Creating NLWeb configuration..."
+ 
+    # Check if template exists in the templates nlweb_config directory
+    if [ -f "/host-setup/templates/nlweb_config/config_embedding.yaml" ]; then
+        mkdir -p /host-setup/config/nlweb
+        echo "Using configuration from templates directory"
+
+        # Copy template to config
+        cp -r "/host-setup/templates/nlweb_config/" "/host-setup/config/nlweb/"
+    fi
+}
+
+# Function to create static page HTML
 create_static_page_html() {
     echo "📄 Creating static page HTML..."
     mkdir -p /host-setup/public_html
     
-    # Check if template exists in the templates directory
-    if [ -f "/host-setup/templates/index.html" ]; then
+    # Check if template exists in the templates html directory
+    if [ -f "/host-setup/templates/html/index.html" ]; then
         echo "Using template from templates directory"
         
         # Copy template to a temporary file
-        cp "/host-setup/templates/index.html" "/tmp/index.html.template"
+        cp "/host-setup/templates/html/index.html" "/tmp/index.html.template"
         
         # If KOMODO_HOST_IP is not set, remove the Komodo section from the template
         if [ -z "$KOMODO_HOST_IP" ]; then
@@ -455,7 +469,6 @@ if [ -n "$STATIC_PAGE_DOMAIN" ]; then
     echo "🛡️ Static page detected - setting up ..."
     create_static_page_html
 fi
-
 
 # Check if CrowdSec should be enabled
 if [ -n "$CROWDSEC_ENROLLMENT_KEY" ]; then
@@ -656,6 +669,12 @@ EOF
 fi
 
 echo "✅ dynamic_config.yml created"
+
+# Check if NLWeb should be enabled
+if [ -n "$OPENAI_API_KEY" ]; then
+    echo "🛡️ OPENAI_API_KEY detected - setting up NLWeb..."
+    create_nlweb_config
+fi
 
 # Create a summary file for the user
 cat > /host-setup/DEPLOYMENT_INFO.txt << EOF

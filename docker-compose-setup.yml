@@ -25,6 +25,8 @@ services:
       - CLIENT_SECRET=${CLIENT_SECRET:-}
       # Komodo integration (if needed)
       - KOMODO_HOST_IP=${KOMODO_HOST_IP:-} # if set you must use komodo-postgres-1 as the POSTGRES_HOST
+      # OpenAI API Key for nlweb (if needed)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
     command: |
       sh -c "
         # This will be set to true to enable CrowdSec config setup only if you have provided a CROWDSEC_ENROLLMENT_KEY
@@ -153,6 +155,7 @@ services:
         if [ -n \"$CLIENT_ID\" ]; then
           echo '🛡️ Adding CrowdSec configuration...'
           cat >> /host-setup/compose.yaml << EOF
+
           # Auth management
           mcpauth:
             image: oideibrett/mcpauth:latest
@@ -284,7 +287,39 @@ services:
 
         fi
 
-        # Part 3: Conditionally append Komodo services if KOMODO_HOST_IP is set
+        # Part 3: Conditionally append NLWeb if OPENAI_API_KEY is set
+        if [ -n \"$OPENAI_API_KEY\" ]; then
+          echo '🛡️ Adding NLWeb configuration...'
+          cat >> /host-setup/compose.yaml << EOF
+
+          nlweb:
+            image:  oideibrett/nlweb:latest
+            container_name: nlweb
+            ports:
+              - "8000:8000"
+            env_file:
+              - .env
+            environment:
+              - PYTHONPATH=/app
+              - PORT=8000
+              - NLWEB_CONFIG_DIR=/app/config
+            volumes:
+              - ./data:/app/data
+              - ./config/nlweb/nlweb_config:/app/config:ro
+            healthcheck:
+              test: [\"CMD-SHELL\", \"python -c \\\"import urllib.request; urllib.request.urlopen(\'http://localhost:8000\')\\\"\"]
+              interval: 30s
+              timeout: 10s
+              retries: 3
+              start_period: 10s
+            restart: unless-stopped
+            user: nlweb
+
+      EOF
+
+        fi
+
+        # Part 4: Conditionally append Komodo services if KOMODO_HOST_IP is set
         if [ -n \"$KOMODO_HOST_IP\" ]; then
           echo '🦎 Adding Komodo services...'
           cat >> /host-setup/compose.yaml << EOF
@@ -367,7 +402,7 @@ services:
 
         fi
 
-        # Part 4: Add volumes section if Komodo services are enabled
+        # Part 5: Add volumes section if Komodo services are enabled
         if [ -n \"$KOMODO_HOST_IP\" ]; then
           echo '🦎 Adding Komodo volumes...'
           cat >> /host-setup/compose.yaml << EOF

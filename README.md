@@ -205,28 +205,33 @@ docker compose logs -f gerbil
 
 ### 1. Pangolin and Middleware Manager Install (postgres)
 ```
-DOMAIN=example.com EMAIL=admin@example.com ADMIN_SUBDOMAIN=pangolin POSTGRES_HOST=komodo-postgres-1 docker compose -f docker-compose-setup.yml up
+DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=pangolin ADMIN_SUBDOMAIN=pangolin POSTGRES_HOST=komodo-postgres-1 docker compose -f docker-compose-setup.yml up
 ```
 **you can set the POSTGRES_USER and POSTGRES_PASSWORD if you want to use something other than the defaults (postgres/postgres)**
 
 ### 2. Pangolin, Middleware Manager Install and Crowdsec
 ```
-DOMAIN=example.com EMAIL=admin@example.com ADMIN_SUBDOMAIN=pangolin POSTGRES_HOST=komodo-postgres-1 CROWDSEC_ENROLLMENT_KEY=your-key-here docker compose -f docker-compose-setup.yml up
+DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=pangolin ADMIN_SUBDOMAIN=pangolin POSTGRES_HOST=komodo-postgres-1 CROWDSEC_ENROLLMENT_KEY=your-key-here docker compose -f docker-compose-setup.yml up
 ```
 
 ### 3. Pangolin, Middleware Manager Install, Crowdsec, and a Static Page
 ```
-DOMAIN=example.com EMAIL=admin@example.com ADMIN_SUBDOMAIN=pangolin POSTGRES_HOST=komodo-postgres-1 CROWDSEC_ENROLLMENT_KEY=your-key-here STATIC_PAGE_DOMAIN=www docker compose -f docker-compose-setup.yml up
+DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=pangolin ADMIN_SUBDOMAIN=pangolin POSTGRES_HOST=komodo-postgres-1 CROWDSEC_ENROLLMENT_KEY=your-key-here STATIC_PAGE_DOMAIN=www docker compose -f docker-compose-setup.yml up
 ```
 
 ### 4. Pangolin, Middleware Manager Install, Crowdsec, a Static Page and Komodo
 ```
-DOMAIN=example.com EMAIL=admin@example.com ADMIN_SUBDOMAIN=pangolin POSTGRES_HOST=komodo-postgres-1 CROWDSEC_ENROLLMENT_KEY=your-key-here STATIC_PAGE_DOMAIN=www KOMODO_HOST_IP=127.0.0.1 docker compose -f docker-compose-setup.yml up
+DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=pangolin ADMIN_SUBDOMAIN=pangolin POSTGRES_HOST=komodo-postgres-1 CROWDSEC_ENROLLMENT_KEY=your-key-here STATIC_PAGE_DOMAIN=www KOMODO_HOST_IP=127.0.0.1 docker compose -f docker-compose-setup.yml up
 ```
 
 ### 5. Pangolin, Middleware Manager Install, Crowdsec, a Static Page, Komodo and MCPAuth
 ```
-DOMAIN=example.com EMAIL=admin@example.com ADMIN_SUBDOMAIN=pangolin POSTGRES_HOST=komodo-postgres-1 CROWDSEC_ENROLLMENT_KEY=your-key-here STATIC_PAGE_DOMAIN=www KOMODO_HOST_IP=127.0.0.1 CLIENT_ID=your-client-id CLIENT_SECRET=your-client-secret docker compose -f docker-compose-setup.yml up
+DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=pangolin ADMIN_SUBDOMAIN=pangolin POSTGRES_HOST=komodo-postgres-1 CROWDSEC_ENROLLMENT_KEY=your-key-here STATIC_PAGE_DOMAIN=www KOMODO_HOST_IP=127.0.0.1 CLIENT_ID=your-client-id CLIENT_SECRET=your-client-secret docker compose -f docker-compose-setup.yml up
+```
+
+### 6. Pangolin, Middleware Manager Install, Crowdsec, a Static Page, Komodo, MCPAuth and NLWeb
+```
+DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=pangolin ADMIN_SUBDOMAIN=pangolin POSTGRES_HOST=komodo-postgres-1 CROWDSEC_ENROLLMENT_KEY=your-key-here STATIC_PAGE_DOMAIN=www KOMODO_HOST_IP=127.0.0.1 CLIENT_ID=your-client-id CLIENT_SECRET=your-client-secret OPENAI_API_KEY=your-openai-api-key  docker compose -f docker-compose-setup.yml up
 ```
 
 Note: the periphery agent for komodo needs to be installed on the Komodo host ip
