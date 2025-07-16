@@ -188,23 +188,6 @@ http:
       tls:
         certResolver: letsencrypt
 
-    # Setup orchestrator router
-    setup-orchestrator-router-redirect:
-      rule: "Host(\`setup.${STATIC_PAGE_DOMAIN}.${DOMAIN}\`)"
-      service: setup-orchestrator-service
-      entryPoints:
-        - web
-      middlewares:
-        - redirect-to-https
-
-    setup-orchestrator-router:
-      rule: "Host(\`setup.${STATIC_PAGE_DOMAIN}.${DOMAIN}\`)"
-      service: setup-orchestrator-service
-      entryPoints:
-        - websecure
-      tls:
-        certResolver: letsencrypt
-
   services:
     next-service:
       loadBalancer:
@@ -230,11 +213,6 @@ http:
       loadBalancer:
         servers:
           - url: "https://oauth.${DOMAIN}"
-
-    setup-orchestrator-service:
-      loadBalancer:
-        servers:
-          - url: "http://setup-orchestrator:5000"
 
 EOF
 }
@@ -409,6 +387,7 @@ create_nlweb_config() {
     # Check if template exists in the templates nlweb_config directory
     if [ -f "/host-setup/templates/nlweb_config/config_embedding.yaml" ]; then
         mkdir -p /host-setup/config/nlweb
+        mkdir -p /host-setup/config/nlweb/data
         echo "Using configuration from templates directory"
 
         # Copy template to config
