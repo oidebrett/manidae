@@ -304,7 +304,7 @@ services:
               - PORT=8000
               - NLWEB_CONFIG_DIR=/app/config
             volumes:
-              - ./data:/app/data
+              - ./config/nlweb/data:/app/data
               - ./config/nlweb/nlweb_config:/app/config:ro
             healthcheck:
               test: [\"CMD-SHELL\", \"python -c \\\"import urllib.request; urllib.request.urlopen(\'http://localhost:8000\')\\\"\"]
