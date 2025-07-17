@@ -390,9 +390,7 @@ create_nlweb_config() {
         mkdir -p /host-setup/config/nlweb/data
         mkdir -p /host-setup/config/nlweb/data/json
         mkdir -p /host-setup/config/nlweb/data/json_with_embeddings
-        sudo groupadd -r nlweb
-        sudo useradd -r -g nlweb -d /host-setup/config/nlweb -s /bin/bash nlweb
-        sudo chown -R nlweb:nlweb /host-setup/config/nlweb
+        chown -R nlweb:nlweb /host-setup/config/nlweb
         echo "Using configuration from templates directory"
 
         # Copy template to config
