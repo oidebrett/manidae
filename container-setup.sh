@@ -390,6 +390,7 @@ create_nlweb_config() {
         mkdir -p /host-setup/config/nlweb/data
         mkdir -p /host-setup/config/nlweb/data/json
         mkdir -p /host-setup/config/nlweb/data/json_with_embeddings
+        useradd --system --no-create-home --shell /usr/sbin/nologin nlweb
         chown -R nlweb:nlweb /host-setup/config/nlweb
         echo "Using configuration from templates directory"
 
