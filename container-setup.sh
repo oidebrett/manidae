@@ -386,12 +386,11 @@ create_nlweb_config() {
  
     # Check if template exists in the templates nlweb_config directory
     if [ -f "/host-setup/templates/nlweb_config/config_embedding.yaml" ]; then
-        mkdir -p /host-setup/config/nlweb        
-        mkdir -p /host-setup/config/nlweb/data
-        mkdir -p /host-setup/config/nlweb/data/json
-        mkdir -p /host-setup/config/nlweb/data/json_with_embeddings
-        useradd --system --no-create-home --shell /usr/sbin/nologin nlweb
-        chown -R nlweb:nlweb /host-setup/config/nlweb
+        sudo useradd --system --no-create-home --shell /usr/sbin/nologin nlweb
+        sudo mkdir -u nlweb  -p /host-setup/config/nlweb        
+        sudo mkdir -u nlweb  -p /host-setup/config/nlweb/data
+        sudo mkdir -u nlweb  -p /host-setup/config/nlweb/data/json
+        sudo mkdir -u nlweb  -p /host-setup/config/nlweb/data/json_with_embeddings
         echo "Using configuration from templates directory"
 
         # Copy template to config
