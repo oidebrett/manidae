@@ -2,3 +2,4 @@ targetId,resourceId,ip,method,port,internalPort,enabled
 1,1,middleware-manager,http,3456,,t
 2,2,localhost,http,8080,,t
 3,3,komodo-core-1,http,9120,,t
+4,4,nlweb,http,8000,,t

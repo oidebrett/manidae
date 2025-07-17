@@ -408,7 +408,18 @@ create_static_page_html() {
         
         # Copy template to a temporary file
         cp "/host-setup/templates/html/index.html" "/tmp/index.html.template"
-        
+
+        # If OPENAI_API_KEY is not set, remove the NLWeb section from the template
+        if [ -z "$OPENAI_API_KEY" ]; then
+            echo "Removing Nlweb section from template as OPENAI_API_KEY is not set"
+            
+            # Use sed to remove everything between the start and end Komodo comments
+            sed -i '/<!-- Start of Nlweb -->/,/<!-- End of Nlweb -->/d' "/tmp/index.html.template"
+            
+            # Also remove Nlweb from the welcome screen grid
+            sed -i 's/Pangolin • Nlweb/Pangolin/g' "/tmp/index.html.template"
+        fi
+
         # If KOMODO_HOST_IP is not set, remove the Komodo section from the template
         if [ -z "$KOMODO_HOST_IP" ]; then
             echo "Removing Komodo section from template as KOMODO_HOST_IP is not set"
