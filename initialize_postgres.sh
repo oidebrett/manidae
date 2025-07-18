@@ -524,5 +524,7 @@ PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB
 #Reset Sequence After Import
 PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "SELECT setval(pg_get_serial_sequence('resources', 'resourceId'), COALESCE((SELECT MAX(\"resourceId\") FROM resources), 1), true);"
 PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "SELECT setval(pg_get_serial_sequence('targets', 'targetId'), COALESCE((SELECT MAX(\"targetId\") FROM targets), 1), true);"
+PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "SELECT setval(pg_get_serial_sequence('sites', 'siteId'), COALESCE((SELECT MAX(\"siteId\") FROM sites), 1), true);"
+PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "SELECT setval(pg_get_serial_sequence('roles', 'roleId'), COALESCE((SELECT MAX(\"roleId\") FROM roles), 1), true);"
 
 echo "Import complete."
