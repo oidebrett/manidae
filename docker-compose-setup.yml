@@ -101,7 +101,7 @@ services:
         services:
           # Main Pangolin application
           pangolin:
-            image:  fosrl/pangolin:postgresql-latest
+            image:  fosrl/pangolin:postgresql-1.6.2
             container_name: pangolin
             restart: unless-stopped
             volumes:
@@ -201,7 +201,7 @@ services:
 
           # Traefik reverse proxy
           traefik:
-            image: traefik:v3.4.1
+            image: traefik:v3.4.4
             container_name: traefik
             restart: unless-stopped
             network_mode: service:gerbil # Ports appear on the gerbil service
