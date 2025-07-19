@@ -250,9 +250,19 @@ CREATE TABLE IF NOT EXISTS roles (
     description TEXT
 );
 
--- Add foreign key constraint to userOrgs after roles table is created
-ALTER TABLE "userOrgs" ADD CONSTRAINT "userOrgs_roleId_fkey" 
-    FOREIGN KEY ("roleId") REFERENCES roles("roleId") ON DELETE RESTRICT;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'userOrgs_roleId_fkey'
+    ) THEN
+        ALTER TABLE "userOrgs"
+        ADD CONSTRAINT "userOrgs_roleId_fkey"
+        FOREIGN KEY ("roleId") REFERENCES "roles"("roleId");
+    END IF;
+END
+$$;
 
 -- Role actions table
 CREATE TABLE IF NOT EXISTS "roleActions" (
@@ -454,13 +464,13 @@ CREATE TABLE IF NOT EXISTS "idpOrg" (
     "orgMapping" TEXT
 );
 
-CREATE TABLE "clientSites" (
+CREATE TABLE IF NOT EXISTS "clientSites" (
     "clientId" integer NOT NULL,
     "siteId" integer NOT NULL,
     "isRelayed" boolean DEFAULT false NOT NULL
 );
 
-CREATE TABLE "clients" (
+CREATE TABLE IF NOT EXISTS "clients" (
     "id" serial PRIMARY KEY NOT NULL,
     "orgId" varchar NOT NULL,
     "exitNode" integer,
@@ -478,25 +488,25 @@ CREATE TABLE "clients" (
     "maxConnections" integer
 );
 
-CREATE TABLE "clientSession" (
+CREATE TABLE IF NOT EXISTS "clientSession" (
     "id" varchar PRIMARY KEY NOT NULL,
     "olmId" varchar NOT NULL,
     "expiresAt" integer NOT NULL
 );
 
-CREATE TABLE "olms" (
+CREATE TABLE IF NOT EXISTS "olms" (
     "id" varchar PRIMARY KEY NOT NULL,
     "secretHash" varchar NOT NULL,
     "dateCreated" varchar NOT NULL,
     "clientId" integer
 );
 
-CREATE TABLE "roleClients" (
+CREATE TABLE IF NOT EXISTS "roleClients" (
     "roleId" integer NOT NULL,
     "clientId" integer NOT NULL
 );
 
-CREATE TABLE "webauthnCredentials" (
+CREATE TABLE IF NOT EXISTS "webauthnCredentials" (
     "credentialId" varchar PRIMARY KEY NOT NULL,
     "userId" varchar NOT NULL,
     "publicKey" varchar NOT NULL,
@@ -508,32 +518,18 @@ CREATE TABLE "webauthnCredentials" (
     "securityKeyName" varchar
 );
 
-CREATE TABLE "userClients" (
+CREATE TABLE IF NOT EXISTS "userClients" (
     "userId" varchar NOT NULL,
     "clientId" integer NOT NULL
 );
 
-CREATE TABLE "webauthnChallenge" (
+CREATE TABLE IF NOT EXISTS "webauthnChallenge" (
     "sessionId" varchar PRIMARY KEY NOT NULL,
     "challenge" varchar NOT NULL,
     "securityKeyName" varchar,
     "userId" varchar,
     "expiresAt" bigint NOT NULL
 );
-
-ALTER TABLE "clientSites" ADD CONSTRAINT "clientSites_clientId_clients_id_fk" FOREIGN KEY ("clientId") REFERENCES "public"."clients"("id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "clientSites" ADD CONSTRAINT "clientSites_siteId_sites_siteId_fk" FOREIGN KEY ("siteId") REFERENCES "public"."sites"("siteId") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "clients" ADD CONSTRAINT "clients_orgId_orgs_orgId_fk" FOREIGN KEY ("orgId") REFERENCES "public"."orgs"("orgId") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "clients" ADD CONSTRAINT "clients_exitNode_exitNodes_exitNodeId_fk" FOREIGN KEY ("exitNode") REFERENCES "public"."exitNodes"("exitNodeId") ON DELETE set null ON UPDATE no action;
-ALTER TABLE "clientSession" ADD CONSTRAINT "clientSession_olmId_olms_id_fk" FOREIGN KEY ("olmId") REFERENCES "public"."olms"("id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "olms" ADD CONSTRAINT "olms_clientId_clients_id_fk" FOREIGN KEY ("clientId") REFERENCES "public"."clients"("id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "roleClients" ADD CONSTRAINT "roleClients_roleId_roles_roleId_fk" FOREIGN KEY ("roleId") REFERENCES "public"."roles"("roleId") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "roleClients" ADD CONSTRAINT "roleClients_clientId_clients_id_fk" FOREIGN KEY ("clientId") REFERENCES "public"."clients"("id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "webauthnCredentials" ADD CONSTRAINT "webauthnCredentials_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "userClients" ADD CONSTRAINT "userClients_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "userClients" ADD CONSTRAINT "userClients_clientId_clients_id_fk" FOREIGN KEY ("clientId") REFERENCES "public"."clients"("id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "webauthnChallenge" ADD CONSTRAINT "webauthnChallenge_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;
-
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_sites_org_id ON sites("orgId");
