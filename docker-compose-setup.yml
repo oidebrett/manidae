@@ -101,7 +101,7 @@ services:
         services:
           # Main Pangolin application
           pangolin:
-            image:  fosrl/pangolin:postgresql-1.7.2
+            image:  fosrl/pangolin:postgresql-1.7.3
             container_name: pangolin
             restart: unless-stopped
             volumes:
