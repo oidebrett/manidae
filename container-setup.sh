@@ -271,7 +271,7 @@ traefik:
 
 gerbil:
     start_port: 51820
-    base_endpoint: "${DOMAIN}"
+    base_endpoint: "${ADMIN_SUBDOMAIN}.${DOMAIN}"
     use_subdomain: false
     block_size: 24
     site_block_size: 30

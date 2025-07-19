@@ -63,13 +63,18 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS domains (
     "domainId" TEXT PRIMARY KEY,
     "baseDomain" TEXT NOT NULL,
-    "configManaged" BOOLEAN NOT NULL DEFAULT FALSE
+    "configManaged" BOOLEAN NOT NULL DEFAULT FALSE,
+    "type" TEXT,
+    "verified" BOOLEAN DEFAULT false NOT NULL,
+    "failed" BOOLEAN DEFAULT false NOT NULL,
+    "tries" INTEGER DEFAULT 0 NOT NULL    
 );
 
 -- Organizations table
 CREATE TABLE IF NOT EXISTS orgs (
     "orgId" TEXT PRIMARY KEY,
-    name TEXT NOT NULL
+    name TEXT NOT NULL,
+    subnet TEXT
 );
 
 -- Organization domains table
@@ -86,7 +91,8 @@ CREATE TABLE IF NOT EXISTS "exitNodes" (
     endpoint TEXT NOT NULL,
     "publicKey" TEXT NOT NULL,
     "listenPort" INTEGER NOT NULL,
-    "reachableAt" TEXT
+    "reachableAt" TEXT,
+    "maxConnections" INTEGER
 );
 
 -- Sites table
@@ -98,11 +104,16 @@ CREATE TABLE IF NOT EXISTS sites (
     name TEXT NOT NULL,
     "pubKey" TEXT,
     subnet TEXT NOT NULL,
-    "bytesIn" INTEGER,
-    "bytesOut" INTEGER,
+    "bytesIn" INTEGER DEFAULT 0,
+    "bytesOut" INTEGER DEFAULT 0,
     "lastBandwidthUpdate" TEXT,
     type TEXT NOT NULL,
     online BOOLEAN NOT NULL DEFAULT FALSE,
+    "address" TEXT,
+    "endpoint" TEXT,
+    "publicKey" TEXT,
+    "lastHolePunch" BIGINT,
+    "listenPort" INTEGER,
     "dockerSocketEnabled" BOOLEAN NOT NULL DEFAULT TRUE
 );
 
@@ -122,7 +133,6 @@ CREATE TABLE IF NOT EXISTS resources (
     protocol TEXT NOT NULL,
     "proxyPort" INTEGER,
     "emailWhitelistEnabled" BOOLEAN NOT NULL DEFAULT FALSE,
-    "isBaseDomain" BOOLEAN,
     "applyRules" BOOLEAN NOT NULL DEFAULT FALSE,
     enabled BOOLEAN NOT NULL DEFAULT TRUE,
     "stickySession" BOOLEAN NOT NULL DEFAULT FALSE,
@@ -164,7 +174,8 @@ CREATE TABLE IF NOT EXISTS "user" (
     "twoFactorSecret" TEXT,
     "emailVerified" BOOLEAN NOT NULL DEFAULT FALSE,
     "dateCreated" TEXT NOT NULL,
-    "serverAdmin" BOOLEAN NOT NULL DEFAULT FALSE
+    "serverAdmin" BOOLEAN NOT NULL DEFAULT FALSE,
+    "twoFactorSetupRequested" BOOLEAN DEFAULT false
 );
 
 -- Newt table
@@ -172,7 +183,8 @@ CREATE TABLE IF NOT EXISTS newt (
     id TEXT PRIMARY KEY,
     "secretHash" TEXT NOT NULL,
     "dateCreated" TEXT NOT NULL,
-    "siteId" INTEGER REFERENCES sites("siteId") ON DELETE CASCADE
+    "siteId" INTEGER REFERENCES sites("siteId") ON DELETE CASCADE,
+    "version" TEXT
 );
 
 -- Two factor backup codes table
@@ -442,6 +454,87 @@ CREATE TABLE IF NOT EXISTS "idpOrg" (
     "orgMapping" TEXT
 );
 
+CREATE TABLE "clientSites" (
+    "clientId" integer NOT NULL,
+    "siteId" integer NOT NULL,
+    "isRelayed" boolean DEFAULT false NOT NULL
+);
+
+CREATE TABLE "clients" (
+    "id" serial PRIMARY KEY NOT NULL,
+    "orgId" varchar NOT NULL,
+    "exitNode" integer,
+    "name" varchar NOT NULL,
+    "pubKey" varchar,
+    "subnet" varchar NOT NULL,
+    "bytesIn" integer,
+    "bytesOut" integer,
+    "lastBandwidthUpdate" varchar,
+    "lastPing" varchar,
+    "type" varchar NOT NULL,
+    "online" boolean DEFAULT false NOT NULL,
+    "endpoint" varchar,
+    "lastHolePunch" integer,
+    "maxConnections" integer
+);
+
+CREATE TABLE "clientSession" (
+    "id" varchar PRIMARY KEY NOT NULL,
+    "olmId" varchar NOT NULL,
+    "expiresAt" integer NOT NULL
+);
+
+CREATE TABLE "olms" (
+    "id" varchar PRIMARY KEY NOT NULL,
+    "secretHash" varchar NOT NULL,
+    "dateCreated" varchar NOT NULL,
+    "clientId" integer
+);
+
+CREATE TABLE "roleClients" (
+    "roleId" integer NOT NULL,
+    "clientId" integer NOT NULL
+);
+
+CREATE TABLE "webauthnCredentials" (
+    "credentialId" varchar PRIMARY KEY NOT NULL,
+    "userId" varchar NOT NULL,
+    "publicKey" varchar NOT NULL,
+    "signCount" integer NOT NULL,
+    "transports" varchar,
+    "name" varchar,
+    "lastUsed" varchar NOT NULL,
+    "dateCreated" varchar NOT NULL,
+    "securityKeyName" varchar
+);
+
+CREATE TABLE "userClients" (
+    "userId" varchar NOT NULL,
+    "clientId" integer NOT NULL
+);
+
+CREATE TABLE "webauthnChallenge" (
+    "sessionId" varchar PRIMARY KEY NOT NULL,
+    "challenge" varchar NOT NULL,
+    "securityKeyName" varchar,
+    "userId" varchar,
+    "expiresAt" bigint NOT NULL
+);
+
+ALTER TABLE "clientSites" ADD CONSTRAINT "clientSites_clientId_clients_id_fk" FOREIGN KEY ("clientId") REFERENCES "public"."clients"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "clientSites" ADD CONSTRAINT "clientSites_siteId_sites_siteId_fk" FOREIGN KEY ("siteId") REFERENCES "public"."sites"("siteId") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "clients" ADD CONSTRAINT "clients_orgId_orgs_orgId_fk" FOREIGN KEY ("orgId") REFERENCES "public"."orgs"("orgId") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "clients" ADD CONSTRAINT "clients_exitNode_exitNodes_exitNodeId_fk" FOREIGN KEY ("exitNode") REFERENCES "public"."exitNodes"("exitNodeId") ON DELETE set null ON UPDATE no action;
+ALTER TABLE "clientSession" ADD CONSTRAINT "clientSession_olmId_olms_id_fk" FOREIGN KEY ("olmId") REFERENCES "public"."olms"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "olms" ADD CONSTRAINT "olms_clientId_clients_id_fk" FOREIGN KEY ("clientId") REFERENCES "public"."clients"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "roleClients" ADD CONSTRAINT "roleClients_roleId_roles_roleId_fk" FOREIGN KEY ("roleId") REFERENCES "public"."roles"("roleId") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "roleClients" ADD CONSTRAINT "roleClients_clientId_clients_id_fk" FOREIGN KEY ("clientId") REFERENCES "public"."clients"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "webauthnCredentials" ADD CONSTRAINT "webauthnCredentials_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "userClients" ADD CONSTRAINT "userClients_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "userClients" ADD CONSTRAINT "userClients_clientId_clients_id_fk" FOREIGN KEY ("clientId") REFERENCES "public"."clients"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "webauthnChallenge" ADD CONSTRAINT "webauthnChallenge_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;
+
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_sites_org_id ON sites("orgId");
 CREATE INDEX IF NOT EXISTS idx_resources_site_id ON resources("siteId");
@@ -459,18 +552,55 @@ EOF
 # Start by delete all the tables that are there
 
 #PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" <<EOF
-#DELETE FROM public."orgDomains";
-#DELETE FROM public."orgs";
-#DELETE FROM public."sites";
-#DELETE FROM public."resources";
-#DELETE FROM public."targets";
-#DELETE FROM public."roles";
-#DELETE FROM public."userOrgs";
-#DELETE FROM public."roleActions";
-#DELETE FROM public."roleSites";
-#DELETE FROM public."userSites";
-#DELETE FROM public."roleResources";
-#DELETE FROM public."resourceRules";
+#DROP TABLE public."actions" CASCADE;
+#DROP TABLE public."apiKeyActions" CASCADE;
+#DROP TABLE public."apiKeyOrg" CASCADE;
+#DROP TABLE public."apiKeys" CASCADE;
+#DROP TABLE public."clientSession" CASCADE;
+#DROP TABLE public."clientSites" CASCADE;
+#DROP TABLE public."clients" CASCADE;
+#DROP TABLE public."domains" CASCADE;
+#DROP TABLE public."emailVerificationCodes" CASCADE;
+#DROP TABLE public."exitNodes" CASCADE;
+#DROP TABLE public."hostMeta" CASCADE;
+#DROP TABLE public."idp" CASCADE;
+#DROP TABLE public."idpOidcConfig" CASCADE;
+#DROP TABLE public."idpOrg" CASCADE;
+#DROP TABLE public."licenseKey" CASCADE;
+#DROP TABLE public."limits" CASCADE;
+#DROP TABLE public."newt" CASCADE;
+#DROP TABLE public."newtSession" CASCADE;
+#DROP TABLE public."olms" CASCADE;
+#DROP TABLE public."orgDomains" CASCADE;
+#DROP TABLE public."orgs" CASCADE;
+#DROP TABLE public."passwordResetTokens" CASCADE;
+#DROP TABLE public."resourceAccessToken" CASCADE;
+#DROP TABLE public."resourceOtp" CASCADE;
+#DROP TABLE public."resourcePassword" CASCADE;
+#DROP TABLE public."resourcePincode" CASCADE;
+#DROP TABLE public."resourceRules" CASCADE;
+#DROP TABLE public."resourceSessions" CASCADE;
+#DROP TABLE public."resourceWhitelist" CASCADE;
+#DROP TABLE public."resources" CASCADE;
+#DROP TABLE public."roleActions" CASCADE;
+#DROP TABLE public."roleClients" CASCADE;
+#DROP TABLE public."roleResources" CASCADE;
+#DROP TABLE public."roleSites" CASCADE;
+#DROP TABLE public."roles" CASCADE;
+#DROP TABLE public."session" CASCADE;
+#DROP TABLE public."sites" CASCADE;
+#DROP TABLE public."supporterKey" CASCADE;
+#DROP TABLE public."targets" CASCADE;
+#DROP TABLE public."twoFactorBackupCodes" CASCADE;
+#DROP TABLE public."user" CASCADE;
+#DROP TABLE public."userActions" CASCADE;
+#DROP TABLE public."userClients" CASCADE;
+#DROP TABLE public."userInvites" CASCADE;
+#DROP TABLE public."userOrgs" CASCADE;
+#DROP TABLE public."userResources" CASCADE;
+#DROP TABLE public."userSites" CASCADE;
+#DROP TABLE public."webauthnChallenge" CASCADE;
+#DROP TABLE public."webauthnCredentials" CASCADE;
 #EOF
 
 # Create PostgreSQL structure
@@ -485,6 +615,8 @@ TABLES=(
     "resourceAccessToken" "resourceWhitelist" "resourceSessions" "resourceOtp"
     "versionMigrations" "resourceRules" "supporterKey" "idpOidcConfig"
     "licenseKey" "hostMeta" "apiKeys" "apiKeyActions" "apiKeyOrg" "idpOrg"
+    "clientSession" "clientSites" "clients" "olms" "roleClients" "userClients"
+    "webauthnChallenge" "webauthnCredentials"
 )
 
 echo "Importing CSV data into PostgreSQL database: $PG_DB"
