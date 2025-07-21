@@ -69,6 +69,9 @@ roleId,actionId,orgId
 1,listApiKeyActions,admin
 1,listApiKeys,admin
 1,getApiKey,admin
+1,createOrgDomain,admin
+1,deleteOrgDomain,admin
+1,restartOrgDomain,admin
 2,getOrg,admin
 2,getResource,admin
 2,listResources,admin
