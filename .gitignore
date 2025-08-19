@@ -7,8 +7,8 @@
 
 config/
 public_html/
-compose.yaml
-DEPLOYMENT_INFO.txt
+/compose.yaml
+/DEPLOYMENT_INFO.txt
 
 .env
 

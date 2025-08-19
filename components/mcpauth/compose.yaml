@@ -1,0 +1,12 @@
+  # Auth management
+  mcpauth:
+    image: oideibrett/mcpauth:latest
+    container_name: mcpauth
+    environment:
+      - PORT=11000
+      - CLIENT_ID=${CLIENT_ID}
+      - CLIENT_SECRET=${CLIENT_SECRET}
+      - OAUTH_DOMAIN=${OAUTH_DOMAIN:-oauth.${DOMAIN}}
+    restart: unless-stopped
+    ports:
+      - "11000:11000"
