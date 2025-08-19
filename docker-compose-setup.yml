@@ -19,7 +19,7 @@ services:
       - POSTGRES_HOST=${POSTGRES_HOST:-pangolin-postgres}
       # Optional features
       - CROWDSEC_ENROLLMENT_KEY=${CROWDSEC_ENROLLMENT_KEY:-}
-      - STATIC_PAGE_DOMAIN=${STATIC_PAGE_DOMAIN:-}
+      - STATIC_PAGE_SUBDOMAIN=${STATIC_PAGE_SUBDOMAIN:-}
       # OAuth configuration (if needed)
       - CLIENT_ID=${CLIENT_ID:-}
       - CLIENT_SECRET=${CLIENT_SECRET:-}
@@ -135,6 +135,10 @@ services:
             if [ -n \"$$KOMODO_HOST_IP\" ]; then
               echo \"[orchestrator] Adding komodo (KOMODO_HOST_IP is set)\"
               COMPONENTS=\"$$COMPONENTS,komodo\"
+            fi
+            if [ -n \"$$STATIC_PAGE_SUBDOMAIN\" ]; then
+              echo \"[orchestrator] Adding static-page (STATIC_PAGE_SUBDOMAIN is set)\"
+              COMPONENTS=\"$$COMPONENTS,static-page\"
             fi
             export COMPONENTS
             echo \"[orchestrator] Auto-derived COMPONENTS: $$COMPONENTS\"

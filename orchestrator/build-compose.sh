@@ -38,6 +38,7 @@ compose_out="$OUTPUT_DIR/compose.yaml"
   sed -n '1,9999p' "$ROOT_DIR/components/core-shared/core-services.yaml"
   # Optional components
   if has_component middleware-manager; then sed -n '1,9999p' "$ROOT_DIR/components/middleware-manager/compose.yaml"; fi
+  if has_component static-page; then sed -n '1,9999p' "$ROOT_DIR/components/static-page/compose.yaml"; fi
   if has_component mcpauth; then sed -n '1,9999p' "$ROOT_DIR/components/mcpauth/compose.yaml"; fi
   if has_component crowdsec; then sed -n '1,9999p' "$ROOT_DIR/components/crowdsec/compose.yaml"; fi
   if has_component nlweb; then sed -n '1,9999p' "$ROOT_DIR/components/nlweb/compose.yaml"; fi

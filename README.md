@@ -47,6 +47,7 @@ If you do not set `COMPONENTS`, the setup derives it automatically:
 - Adds `mcpauth` if both `CLIENT_ID` and `CLIENT_SECRET` are set
 - Adds `komodo` if `KOMODO_HOST_IP` is set
 - Adds `nlweb` if any of `OPENAI_API_KEY`, `AZURE_OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `GEMINI_API_KEY` are set
+- Adds `static-page` if `STATIC_PAGE_SUBDOMAIN` is set
 
 You can override:
 ```bash
@@ -116,6 +117,41 @@ COMPONENTS="pangolin,middleware-manager,crowdsec" DOMAIN=example.com EMAIL=admin
 
 **Accessing Middleware Manager:**
 Once deployed, the Middleware Manager integrates with Pangolin and is accessible through the Pangolin dashboard. It runs as a backend service and doesn't expose a separate web interface - all management is done through Pangolin's interface.
+
+### Static Page
+
+The Static Page component creates a custom landing page for your deployment and configures Traefik to serve it. This component doesn't add new Docker services but modifies existing configuration files.
+
+**What it does:**
+- Creates a static HTML landing page in the `public_html/` directory
+- Modifies Traefik's dynamic configuration to add security headers and static file serving
+- Supports conditional content based on available components (removes sections for unavailable services)
+- Uses templates from `templates/html/index.html` if available, otherwise creates a basic fallback
+
+**Configuration:**
+- Triggered by setting `STATIC_PAGE_SUBDOMAIN` environment variable
+- Creates files in `public_html/` directory
+- Modifies `config/traefik/rules/dynamic_config.yml` to add middleware and routing
+- **Requires middleware-manager component** to function properly
+
+**Usage scenarios:**
+
+Enable static page:
+```bash
+# Static page with custom subdomain
+STATIC_PAGE_SUBDOMAIN=www DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme docker compose -f docker-compose-setup.yml up
+```
+
+Combined with other components:
+```bash
+# Static page + CrowdSec + other components
+STATIC_PAGE_SUBDOMAIN=www DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme CROWDSEC_ENROLLMENT_KEY=your-key docker compose -f docker-compose-setup.yml up
+```
+
+**Important Notes:**
+- The static-page component requires the middleware-manager component to be included
+- The component will automatically remove sections for unavailable services (e.g., removes Komodo section if `KOMODO_HOST_IP` is not set)
+- Uses the Statiq plugin for Traefik to serve static files
 
 ## Where outputs go
 

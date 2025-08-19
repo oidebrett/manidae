@@ -1,0 +1,2 @@
+# Static page component - no additional services required
+# This component modifies existing Traefik configuration and creates static HTML files
