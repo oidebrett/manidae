@@ -31,9 +31,9 @@ compose_out="$OUTPUT_DIR/compose.yaml"
   # Pangolin service
   sed -n '1,9999p' "$ROOT_DIR/components/pangolin/compose.yaml"
   # Standalone postgres unless komodo selected
-  if ! has_component komodo; then
-    sed -n '1,9999p' "$ROOT_DIR/components/pangolin/postgres.yaml"
-  fi
+  #if ! has_component komodo; then
+  #  sed -n '1,9999p' "$ROOT_DIR/components/pangolin/postgres.yaml"
+  #fi
   # Core shared services after pangolin/postgres
   sed -n '1,9999p' "$ROOT_DIR/components/core-shared/core-services.yaml"
   # Optional components
@@ -47,6 +47,7 @@ compose_out="$OUTPUT_DIR/compose.yaml"
   cat <<'EOF'
 networks:
   default:
+    #driver: bridge
     external: true
     name: pangolin
     enable_ipv6: true
