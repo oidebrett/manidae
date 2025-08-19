@@ -111,6 +111,48 @@ modify_dynamic_config() {
         print "          spaMode: false"
         next
     }
+    /^  routers:/ {
+        print $0
+        # Add static page routers after the routers section starts
+        getline; print  # Print the next line (likely a router definition)
+        while (getline && !/^  services:/) {
+            print
+        }
+        # Now add static page routers before services
+        print ""
+        print "    statiq-router-redirect:"
+        print "      rule: \"Host(\\`" ENVIRON["STATIC_PAGE_SUBDOMAIN"] "." ENVIRON["DOMAIN"] "\\`)\""
+        print "      service: statiq-service"
+        print "      entryPoints:"
+        print "        - web"
+        print "      middlewares:"
+        print "        - redirect-to-https"
+        print ""
+        print "    statiq-router:"
+        print "      entryPoints:"
+        print "        - websecure"
+        print "      middlewares:"
+        print "        - statiq"
+        print "      service: statiq-service"
+        print "      priority: 100"
+        print "      rule: \"Host(\\`" ENVIRON["STATIC_PAGE_SUBDOMAIN"] "." ENVIRON["DOMAIN"] "\\`)\""
+        print ""
+        print $0  # Print the services line
+        next
+    }
+    /^    api-service:/ {
+        # We found the api-service, add statiq service after the existing ones
+        print $0
+        getline; print  # loadBalancer line
+        getline; print  # servers line
+        getline; print  # url line
+        print ""
+        print "    statiq-service:"
+        print "      loadBalancer:"
+        print "        servers:"
+        print "          - url: \"noop@internal\""
+        next
+    }
     { print }
     ' "$config_file" > "$temp_file"
     
