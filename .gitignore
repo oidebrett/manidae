@@ -9,6 +9,7 @@ config/
 public_html/
 /compose.yaml
 /DEPLOYMENT_INFO.txt
+/container-setup.sh
 
 .env
 
