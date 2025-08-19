@@ -63,16 +63,16 @@ services:
         apk add --no-cache bash gettext curl docker-cli openssl
 
         # Validate required environment variables
-        if [ -z \"$$DOMAIN\" ] || [ -z \"$$EMAIL\" ] || [ -z \"$$ADMIN_USERNAME\" ] || [ -z \"$$ADMIN_PASSWORD\" ]; then
+        if [ -z \"$$DOMAIN\" ] || [ -z \"$$EMAIL\" ] ; then
           echo '❌ Error: Required environment variables not set!'
           echo 'Usage: DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=mypassword docker compose -f docker-compose-setup.yml up'
           echo 'Required variables:'
           echo '  DOMAIN - Your domain name (e.g., example.com)'
           echo '  EMAIL - Email for Lets Encrypt certificates'
-          echo '  ADMIN_USERNAME - Admin username for Pangolin (usually email)'
-          echo '  ADMIN_PASSWORD - Admin password for Pangolin (min 8 chars)'
           echo 'Optional variables:'
           echo '  ADMIN_SUBDOMAIN - Subdomain for admin portal (default: pangolin)'
+          echo '  ADMIN_USERNAME - Admin username for Pangolin (usually email)'
+          echo '  ADMIN_PASSWORD - Admin password for Pangolin (min 8 chars)'
           exit 1
         fi
 
@@ -96,14 +96,14 @@ services:
           exit 1
         fi
 
-        # Validate username as email format
-        if ! echo \"$$ADMIN_USERNAME\" | grep -E '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$$' > /dev/null; then
+        # Validate [optional] username as email format
+        if [ ! -z \"$$ADMIN_USERNAME\" ] && ! echo \"$$ADMIN_USERNAME\" | grep -E '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$$' > /dev/null; then
           echo '❌ Error: Invalid admin username email format'
           exit 1
         fi
 
-        # Validate password length
-        if [ $${#ADMIN_PASSWORD} -lt 8 ]; then
+        # Validate [optional] password length
+        if [ ! -z \"$$ADMIN_PASSWORD\" ] &&  [ $${#ADMIN_PASSWORD} -lt 8 ]; then
           echo '❌ Error: Password must be at least 8 characters long'
           exit 1
         fi
@@ -117,17 +117,33 @@ services:
           apk add --no-cache bash gettext curl docker-cli openssl || true
 
           # Derive COMPONENTS if not provided
-          if [ -z "${COMPONENTS}" ]; then
-            COMPONENTS="pangolin"
-            if [ -n "${CROWDSEC_ENROLLMENT_KEY}" ]; then COMPONENTS="${COMPONENTS},crowdsec"; fi
-            if [ -n "${CLIENT_ID}" ] && [ -n "${CLIENT_SECRET}" ]; then COMPONENTS="${COMPONENTS},mcpauth"; fi
-            if [ -n "${OPENAI_API_KEY}" ]; then COMPONENTS="${COMPONENTS},nlweb"; fi
-            if [ -n "${KOMODO_HOST_IP}" ]; then COMPONENTS="${COMPONENTS},komodo"; fi
+          if [ -z \"$$COMPONENTS\" ]; then
+            echo \"[orchestrator] Auto-deriving COMPONENTS...\"
+            COMPONENTS=\"pangolin,middleware-manager\"
+            if [ -n \"$$CROWDSEC_ENROLLMENT_KEY\" ]; then
+              echo \"[orchestrator] Adding crowdsec (CROWDSEC_ENROLLMENT_KEY is set)\"
+              COMPONENTS=\"$$COMPONENTS,crowdsec\"
+            fi
+            if [ -n \"$$CLIENT_ID\" ] && [ -n \"$$CLIENT_SECRET\" ]; then
+              echo \"[orchestrator] Adding mcpauth (CLIENT_ID and CLIENT_SECRET are set)\"
+              COMPONENTS=\"$$COMPONENTS,mcpauth\"
+            fi
+            if [ -n \"$$OPENAI_API_KEY\" ] || [ -n \"$$AZURE_OPENAI_API_KEY\" ] || [ -n \"$$ANTHROPIC_API_KEY\" ] || [ -n \"$$GEMINI_API_KEY\" ]; then
+              echo \"[orchestrator] Adding nlweb (AI_API_KEY is set)\"
+              COMPONENTS=\"$$COMPONENTS,nlweb\"
+            fi
+            if [ -n \"$$KOMODO_HOST_IP\" ]; then
+              echo \"[orchestrator] Adding komodo (KOMODO_HOST_IP is set)\"
+              COMPONENTS=\"$$COMPONENTS,komodo\"
+            fi
             export COMPONENTS
+            echo \"[orchestrator] Auto-derived COMPONENTS: $$COMPONENTS\"
+          else
+            echo \"[orchestrator] Using provided COMPONENTS: $$COMPONENTS\"
           fi
 
           chmod +x /host-setup/orchestrator/build-compose.sh
-          OUTPUT_DIR="/host-setup" /bin/bash /host-setup/orchestrator/build-compose.sh || exit 1
+          OUTPUT_DIR="/host-setup" COMPONENTS="$$COMPONENTS" /bin/bash /host-setup/orchestrator/build-compose.sh || exit 1
           echo '✅ Orchestrator finished.'
           # Exit to avoid running legacy monolithic generation
           exit 0
@@ -135,23 +151,6 @@ services:
 
 
 
-
-
-         # Replace placeholders with actual variable syntax
-        sed -i 's/REPLACE_WITH_CLIENT_ID/$$\{CLIENT_ID}/g' /host-setup/compose.yaml
-        sed -i 's/REPLACE_WITH_CLIENT_SECRET/$$\{CLIENT_SECRET}/g' /host-setup/compose.yaml
-        sed -i 's/REPLACE_WITH_POSTGRES_USER/$$\{POSTGRES_USER}/g' /host-setup/compose.yaml
-        sed -i 's/REPLACE_WITH_POSTGRES_PASSWORD/$$\{POSTGRES_PASSWORD}/g' /host-setup/compose.yaml
-        sed -i 's/REPLACE_WITH_CROWDSEC_ENROLLMENT_KEY/$$\{CROWDSEC_ENROLLMENT_KEY}/g' /host-setup/compose.yaml
-        sed -i 's/REPLACE_WITH_KOMODO_PASSKEY/$$\{KOMODO_PASSKEY}/g' /host-setup/compose.yaml
-
-        echo '✅ Setup completed! The stack is ready to start.'
-        echo '📊 Start your services with: docker compose up -d'
-        echo '🌐 Access at: https://'"$$ADMIN_SUBDOMAIN"'.'"$$DOMAIN"
-        echo '👤 Admin login: '"$$ADMIN_USERNAME"
-
-        # Keep container running briefly to show completion message
-        sleep 5
 
       "
     restart: "no"

@@ -40,21 +40,4 @@
       - ./config/traefik/logs:/var/log/traefik
       - ./public_html:/var/www/html:ro
 
-  # Middleware Manager for Traefik / Pangolin
-  middleware-manager:
-    image: hhftechnology/middleware-manager:v3.0.1
-    container_name: middleware-manager
-    restart: unless-stopped
-    volumes:
-      - ./data:/data
-      - ./config/traefik/rules:/conf
-      - ./config/middleware-manager:/app/config
-      - ./config/traefik:/etc/traefik
-    environment:
-      - PANGOLIN_API_URL=http://pangolin:3001/api/v1
-      - TRAEFIK_CONF_DIR=/conf
-      - DB_PATH=/data/middleware.db
-      - PORT=3456
-      - ACTIVE_DATA_SOURCE=pangolin
-      - TRAEFIK_STATIC_CONFIG_PATH=/etc/traefik/traefik_config.yml
-      - PLUGINS_JSON_URL=https://raw.githubusercontent.com/hhftechnology/middleware-manager/traefik-int/plugin/plugins.json
+

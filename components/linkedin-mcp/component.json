@@ -1,5 +1,0 @@
-{
-  "name": "linkedin-mcp",
-  "required_env": ["LINKEDIN_USERNAME", "LINKEDIN_PASSWORD"],
-  "optional_env": ["LINKEDIN_MCP_PORT"]
-}
