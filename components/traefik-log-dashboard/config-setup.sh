@@ -42,7 +42,7 @@ tracing:
     #   insecure: true
   
   # Sampling rate (adjust for your needs)
-  sampleRate: 1.0  # 100% for development, 0.1 (10%) for production
+  sampleRate: 0.1  # 100% for development, 0.1 (10%) for production
   
   # Global attributes added to all traces
   globalAttributes:
