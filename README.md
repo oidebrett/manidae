@@ -48,6 +48,7 @@ If you do not set `COMPONENTS`, the setup derives it automatically:
 - Adds `komodo` if `KOMODO_HOST_IP` is set
 - Adds `nlweb` if any of `OPENAI_API_KEY`, `AZURE_OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `GEMINI_API_KEY` are set
 - Adds `static-page` if `STATIC_PAGE_SUBDOMAIN` is set
+- Adds `traefik-log-dashboard` if `MAXMIND_LICENSE_KEY` is set
 
 You can override:
 ```bash
@@ -153,6 +154,76 @@ STATIC_PAGE_SUBDOMAIN=www DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERN
 - The component will automatically remove sections for unavailable services (e.g., removes Komodo section if `KOMODO_HOST_IP` is not set)
 - Uses the Statiq plugin for Traefik to serve static files
 
+### Traefik Log Dashboard
+
+The Traefik Log Dashboard component provides enhanced logging, monitoring, and analytics for your Traefik deployment with OpenTelemetry (OTLP) support and GeoIP capabilities.
+
+**What it does:**
+- Real-time log analysis and visualization of Traefik access logs
+- OpenTelemetry tracing integration with OTLP endpoints (GRPC and HTTP)
+- GeoIP location tracking using MaxMind databases
+- Performance metrics and request analytics
+- Automatic MaxMind database updates
+
+**Configuration:**
+- Triggered by setting `MAXMIND_LICENSE_KEY` environment variable
+- Creates `config/maxmind/` directory for GeoIP databases
+- Adds OTLP tracing configuration to `traefik_config.yml`
+- Exposes OTLP endpoints on ports 4317 (GRPC) and 4318 (HTTP)
+- Frontend accessible on port 3000, backend on port 3001
+
+**Getting a MaxMind License Key:**
+1. Get a free MaxMind account: Sign up at https://www.maxmind.com/en/geolite2/signup
+2. Generate a license key in your account dashboard
+3. Use the license key in your deployment
+
+**Usage scenarios:**
+
+Enable log dashboard:
+```bash
+# Basic setup with log dashboard
+MAXMIND_LICENSE_KEY=your-license-key DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme docker compose -f docker-compose-setup.yml up
+```
+
+Combined with other components:
+```bash
+# Full stack with log dashboard
+MAXMIND_LICENSE_KEY=your-license-key CROWDSEC_ENROLLMENT_KEY=your-crowdsec-key DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme docker compose -f docker-compose-setup.yml up
+```
+
+**Performance Optimization (Optional):**
+
+For high-traffic environments, consider these optimizations:
+
+*Reduce OTLP Sampling:*
+```yaml
+# In traefik_config.yml
+tracing:
+  sampleRate: 0.1  # 10% sampling for production
+```
+
+*Use GRPC for Better Performance:*
+```yaml
+# In traefik_config.yml
+tracing:
+  otlp:
+    grpc:
+      endpoint: "log-dashboard-backend:4317"
+      insecure: true
+```
+
+*Optimize Resource Usage:*
+```yaml
+# In docker-compose.yml
+environment:
+  - GOGC=20  # More aggressive garbage collection
+  - GOMEMLIMIT=1GiB
+```
+
+**Documentation:**
+- Full documentation: https://github.com/hhftechnology/traefik-log-dashboard
+- Middleware Manager: https://github.com/hhftechnology/middleware-manager
+
 ## Where outputs go
 
 - compose.yaml
@@ -162,6 +233,7 @@ STATIC_PAGE_SUBDOMAIN=www DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERN
   - config.yml (Pangolin configuration)
   - traefik/ (Traefik configuration and rules)
   - middleware-manager/ (Middleware Manager configuration, if included)
+  - maxmind/ (GeoIP databases, if traefik-log-dashboard is included)
   - letsencrypt/ (SSL certificates)
 
 All at the repository root (mounted as `/host-setup` in the setup container).

@@ -97,6 +97,19 @@
                     </div>                    
                 </div>
                 <!-- End of Traefik -->
+
+                <!-- Start of Logs -->
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://logs.yourdomain.com', 'Logs Dashboard', this)">
+                    <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
+                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/graylog.webp" alt="Logs Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">L</div>
+                    </div>
+                    <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div class="text-lg font-semibold text-cyan-400 truncate">Logs</div>
+                    </div>                    
+                </div>
+                <!-- End of Logs -->
+
             </nav>
         </div>
 
@@ -124,16 +137,16 @@
                 <!-- Welcome Screen -->
                 <div id="welcome-screen" class="flex items-center justify-center h-full bg-gray-900">
                     <div class="text-center max-w-2xl px-8">
-                        <h1 class="text-6xl font-bold mb-6 text-cyan-400 animate-pulse">Welcome to ContextWareAI</h1>
+                        <h1 class="text-6xl font-bold mb-6 text-cyan-400 animate-pulse">Welcome to Manidae</h1>
                         <p class="text-xl text-gray-400 mb-8">Click on the menu on the left to access your applications</p>
-                        <div class="grid grid-cols-2 gap-4 text-sm text-gray-500">
+                        <div class="grid grid-cols-3 gap-4 text-sm text-gray-500">
                             <div class="bg-gray-800 p-4 rounded-lg">
-                                <div class="font-semibold text-cyan-400 mb-2">Management Tools</div>
-                                <div>Pangolin • Komodo</div>
+                                <div class="font-semibold text-cyan-400 mb-2">Networking Tools</div>
+                                <div>Pangolin • Logs</div>
                             </div>
                             <div class="bg-gray-800 p-4 rounded-lg">
                                 <div class="font-semibold text-cyan-400 mb-2">Infrastructure</div>
-                                <div>Middleware • Traefik</div>
+                                <div>Middleware • Komodo</div>
                             </div>
                         </div>
                     </div>

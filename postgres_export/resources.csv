@@ -3,3 +3,4 @@ resourceId,siteId,orgId,name,subdomain,fullDomain,domainId,ssl,blockAccess,sso,h
 2,1,admin,traefik,traefik,traefik.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,
 3,1,admin,komodo,komodo,komodo.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,
 4,1,admin,nlweb,nlweb,nlweb.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,
+5,1,admin,logs,logs,logs.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,

@@ -115,6 +115,7 @@ experimental:
 
 log:
     level: "INFO"
+    filePath: "/var/log/traefik/traefik.log"
     format: "json"
     maxSize: 100
     maxAge: 3
