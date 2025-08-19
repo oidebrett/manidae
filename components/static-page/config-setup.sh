@@ -121,7 +121,7 @@ modify_dynamic_config() {
         # Now add static page routers before services
         print ""
         print "    statiq-router-redirect:"
-        print "      rule: \"Host(\\`" ENVIRON["STATIC_PAGE_SUBDOMAIN"] "." ENVIRON["DOMAIN"] "\\`)\""
+        print "      rule: \"Host(\`" ENVIRON["STATIC_PAGE_SUBDOMAIN"] "." ENVIRON["DOMAIN"] "\`)\""
         print "      service: statiq-service"
         print "      entryPoints:"
         print "        - web"
@@ -135,7 +135,7 @@ modify_dynamic_config() {
         print "        - statiq"
         print "      service: statiq-service"
         print "      priority: 100"
-        print "      rule: \"Host(\\`" ENVIRON["STATIC_PAGE_SUBDOMAIN"] "." ENVIRON["DOMAIN"] "\\`)\""
+        print "      rule: \"Host(\`" ENVIRON["STATIC_PAGE_SUBDOMAIN"] "." ENVIRON["DOMAIN"] "\`)\""
         print ""
         print $0  # Print the services line
         next
