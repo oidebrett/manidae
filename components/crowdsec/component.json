@@ -1,0 +1,5 @@
+{
+  "name": "crowdsec",
+  "required_env": ["CROWDSEC_ENROLLMENT_KEY"],
+  "optional_env": []
+}

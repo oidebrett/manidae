@@ -1,0 +1,5 @@
+{
+  "name": "nlweb",
+  "required_env": ["OPENAI_API_KEY"],
+  "optional_env": []
+}

@@ -1,0 +1,5 @@
+{
+  "name": "pangolin",
+  "required_env": ["DOMAIN", "EMAIL", "ADMIN_USERNAME", "ADMIN_PASSWORD"],
+  "optional_env": ["ADMIN_SUBDOMAIN", "POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_HOST"]
+}
