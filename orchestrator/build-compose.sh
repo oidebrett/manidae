@@ -17,7 +17,16 @@ IFS="," read -r -a COMPONENTS_ARR <<< "$COMPONENTS_RAW"
 
 # Helpers
 has_component() {
-  local c="$1"; for x in "${COMPONENTS_ARR[@]}"; do [[ "$x" == "$c" ]] && return 0; done; return 1
+  local c="$1"
+  for x in "${COMPONENTS_ARR[@]}"; do
+    # Handle pangolin+ as alias for pangolin
+    if [[ "$c" == "pangolin" && ("$x" == "pangolin" || "$x" == "pangolin+") ]]; then
+      return 0
+    elif [[ "$x" == "$c" ]]; then
+      return 0
+    fi
+  done
+  return 1
 }
 
 echo "[orchestrator] Using components: ${COMPONENTS_RAW}"
@@ -89,8 +98,13 @@ run_component_hooks() {
   old_ifs="$IFS"; IFS=','; set -- $comps_csv; IFS="$old_ifs"
   for c in "$@"; do
     [ -z "$c" ] && continue
-    if [ -f "${ROOT_HOST_DIR}/components/${c}/config-setup.sh" ]; then
-      /bin/sh "${ROOT_HOST_DIR}/components/${c}/config-setup.sh" || true
+    # Handle pangolin+ as alias for pangolin
+    component_dir="$c"
+    if [ "$c" = "pangolin+" ]; then
+      component_dir="pangolin"
+    fi
+    if [ -f "${ROOT_HOST_DIR}/components/${component_dir}/config-setup.sh" ]; then
+      /bin/sh "${ROOT_HOST_DIR}/components/${component_dir}/config-setup.sh" || true
     fi
   done
 }
