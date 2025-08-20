@@ -98,13 +98,13 @@ services:
         fi
 
         # Validate [optional] username as email format
-        if [ ! -z \"$$ADMIN_USERNAME\" ] && ! echo \"$$ADMIN_USERNAME\" | grep -E '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$$' > /dev/null; then
+        if [ ! -z \"$$ADMIN_USERNAME\" ] && [ \"$$ADMIN_USERNAME\" != \"None\" ] && ! echo \"$$ADMIN_USERNAME\" | grep -E '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$$' > /dev/null; then
           echo '❌ Error: Invalid admin username email format'
           exit 1
         fi
 
         # Validate [optional] password length
-        if [ ! -z \"$$ADMIN_PASSWORD\" ] &&  [ $${#ADMIN_PASSWORD} -lt 8 ]; then
+        if [ ! -z \"$$ADMIN_PASSWORD\" ] && [ \"$$ADMIN_PASSWORD\" != \"None\" ] &&  [ $${#ADMIN_PASSWORD} -lt 8 ]; then
           echo '❌ Error: Password must be at least 8 characters long'
           exit 1
         fi
