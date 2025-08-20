@@ -1,5 +1,5 @@
 {
   "name": "nlweb",
-  "required_env": ["OPENAI_API_KEY", "AZURE_OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY"],
-  "optional_env": []
+  "required_env": ["OPENAI_API_KEY"],
+  "optional_env": ["AZURE_OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY"]
 }
