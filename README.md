@@ -1,258 +1,245 @@
-# Manidae - Pangolin + Middleware-Manager + CrowdSec + Traefik Stack
+# Manidae - Modular Orchestrator Setup
 
-A pre-packaged, pre-integrated, containerized deployment of Pangolin, Middleware-Manager with CrowdSec security and Traefik reverse proxy. Everything runs in Docker containers and automatically creates the required host folder structure.
+A pre-packaged, modular, containerized deployment of Pangolin with Middleware-Manager, CrowdSec, Traefik, and optional components. The setup container now delegates all file/folder creation and compose.yaml generation to a modular orchestrator.
 
-## Features
+**Core Components:**
+- **Pangolin** - Main application platform
+- **Middleware-Manager** - Dynamic Traefik middleware management (included by default)
+- **Traefik** - Reverse proxy and load balancer
+- **Gerbil** - WireGuard VPN management
 
-- 🚀 **One-command deployment** - Deploy everything with a single Docker Compose command
-- 🐳 **Fully containerized** - Setup process runs in containers, no local scripts needed
-- 🔒 **Automatic HTTPS** - Let's Encrypt certificates managed by Traefik
-- 🛡️ **Security** - CrowdSec integration for threat protection
-- 📁 **Auto-configuration** - Container creates all required files and folder structure on host
-- 🔐 **Secure secrets** - Auto-generates secure random keys
-- 📥 **GitHub integration** - Downloads setup scripts directly from GitHub
+**Optional Components:**
+- **CrowdSec** - Collaborative security engine
+- **MCPAuth** - OAuth authentication
+- **Komodo** - Infrastructure management
+- **NLWeb** - Natural language web interface
 
-## Quick Start
+## Refactored Setup Flow
 
-### Prerequisites
+- Run the setup container once with your environment variables
+- The setup container validates envs and runs `orchestrator/build-compose.sh`
+- The orchestrator generates:
+  - compose.yaml
+  - container-setup.sh (from components)
+  - DEPLOYMENT_INFO.txt
+  - config/… files and folders as needed
+- Then you start the stack with `docker compose up -d`
 
-- Linux server with Docker and Docker Compose installed
-- Domain name pointing to your server's IP address
-- Ports 80, 443, and 51820 available
-
-### One-Command Deployment
+### Quick Start
 
 ```bash
-# Download the docker-compose-setup.yml file
-curl -sSL https://raw.githubusercontent.com/oidebrett/manidae/main/docker-compose-setup.yml -o docker-compose-setup.yml
-
-# Run the setup first (only needed once)
-DOMAIN=example.com EMAIL=admin@example.com ADMIN_SUBDOMAIN=pangolin docker compose -f docker-compose-setup.yml up
-
-# Or run this setup (only if you need CROWDSEC)
-
+# From this repository root
 DOMAIN=example.com \
 EMAIL=admin@example.com \
-ADMIN_SUBDOMAIN=pangolin \
-CROWDSEC_ENROLLMENT_KEY=your-key-here \
+ADMIN_USERNAME=admin@example.com \
+ADMIN_PASSWORD=changeme \
 docker compose -f docker-compose-setup.yml up
-
-# Or run this setup (only if you need CROWDSEC and want a landing page)
-DOMAIN="example.com" EMAIL="admin@example.com" ADMIN_SUBDOMAIN="pangolin" STATIC_PAGE_DOMAIN="www" CROWDSEC_ENROLLMENT_KEY="your-key-here"  docker compose -f docker-compose-setup.yml up
-
-# After setup completes, start the services
-docker compose up -d
-```
-
-### What happens during deployment:
-
-1. **Setup Container** - Alpine container starts and validates environment variables
-2. **Folder Creation** - Container creates config folder structure on host
-3. **Configuration** - Container generates all config files with your settings
-4. **Docker Compose Generation** - Container creates a docker-compose.yml file for the services
-5. **Stack Deployment** - Main services (Pangolin, Gerbil, Traefik) start automatically
-
-## Alternative: Manual Download
-
-If you prefer to review files before running:
-
-```bash
-# Clone or download the repository
-git clone https://github.com/oidebrett/manidae.git
-cd manidae
-
-# Run the setup first (only needed once)
-DOMAIN=example.com EMAIL=admin@example.com ADMIN_SUBDOMAIN=pangolin docker compose -f docker-compose-setup.yml up
-
-# After setup completes, start the services
-docker compose up -d
-```
-
-## Environment Variables
-
-The deployment requires three environment variables:
-
-- **DOMAIN** - Your domain name (e.g., `example.com`)
-- **EMAIL** - Email address for Let's Encrypt certificates
-- **ADMIN_SUBDOMAIN** - Subdomain for the admin portal (default: `pangolin`)
-- **ADMIN_SUBDOMAIN** - Subdomain for the admin portal (default: `pangolin`)
-- **CROWDSEC_ENROLLMENT_KEY** - CrowdSec enrollment key (optional)
-- **POSTGRES_USER** - Postgres username (default: `postgres`)
-- **POSTGRES_PASSWORD** - Postgres password (default: `postgres`)
-
-You may see an error: Invalid configuration file: Validation error: Your password must meet the following conditions:
-at least one uppercase English letter,
-at least one lowercase English letter,
-at least one digit,
-at least one special character. at "users.server_admin.password"
-
-
-## Stack Components
-
-- **Setup Container** (alpine:latest) - Creates folder structure and config files (runs once)
-- **Pangolin** (fosrl/pangolin:1.5.0) - Main application
-- **Gerbil** (fosrl/gerbil:1.0.0) - WireGuard VPN management
-- **Traefik** (traefik:v3.4.1) - Reverse proxy with automatic HTTPS
-
-## Setup Orchestrator
-
-The setup orchestrator is a crucial component responsible for initializing the database schema and data. It is designed to be flexible and resilient.
-
-### How it Works
-
-The orchestrator will automatically attempt to connect to the database using the following hosts, in order:
-
-1.  `komodo-postgres-1`
-2.  `pangolin-postgres`
-
-It uses the first successful connection to proceed with the initialization. This allows the setup to work in different environments without manual configuration.
-
-### Database Credentials
-
-For the orchestrator to connect to the database, it needs access to the database credentials. These credentials must be provided in a `.env` file located at `./config/.env`. The file should contain the following variables:
-
-```
-POSTGRES_USER=your_postgres_user
-POSTGRES_PASSWORD=your_postgres_password
-```
-
-**Important:** The setup process will fail if this file is not present and correctly configured.
-
-## Directory Structure
-
-After deployment, you'll have:
-
-```
-./
-├── docker-compose.yml           # Generated by setup container
-├── docker-compose-setup.yml     # Used only for initial setup
-├── DEPLOYMENT_INFO.txt          # Deployment summary and info
-└── config/
-    ├── config.yml
-    ├── crowdsec/                # Optional CrowdSec config
-    ├── letsencrypt/             # Let's Encrypt certificates
-    └── traefik/
-        ├── traefik_config.yml
-        └── rules/
-            └── dynamic_config.yml
-```
-
-## Management Commands
-
-```bash
-# View logs
-docker compose logs -f
-
-# Restart services
-docker compose restart
-
-# Stop services
-docker compose down
 
 # Start services
 docker compose up -d
-
-# Update images
-docker compose pull
-docker compose up -d
 ```
 
-## Configuration
+### Auto-derived COMPONENTS
 
-All configuration is automatically generated during setup. Key files:
+If you do not set `COMPONENTS`, the setup derives it automatically:
+- Always includes `pangolin` and `middleware-manager`
+- Adds `crowdsec` if `CROWDSEC_ENROLLMENT_KEY` is set
+- Adds `mcpauth` if both `CLIENT_ID` and `CLIENT_SECRET` are set
+- Adds `komodo` if `KOMODO_HOST_IP` is set
+- Adds `nlweb` if any of `OPENAI_API_KEY`, `AZURE_OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `GEMINI_API_KEY` are set
+- Adds `static-page` if `STATIC_PAGE_SUBDOMAIN` is set
+- Adds `traefik-log-dashboard` if `MAXMIND_LICENSE_KEY` is set
 
-- `config/config.yml` - Main Pangolin configuration
-- `config/traefik/traefik_config.yml` - Traefik main config
-- `config/traefik/rules/dynamic_config.yml` - Traefik routing rules
-
-## Accessing Your Installation
-
-After successful deployment:
-
-- **Dashboard**: `https://yourdomain.com`
-- **Admin Login**: `admin@yourdomain.com`
-- **Password**: The password you set during installation
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Domain not resolving**
-   - Ensure your domain's DNS A record points to your server's IP
-   - Wait for DNS propagation (can take up to 24 hours)
-
-2. **Certificate issues**
-   - Let's Encrypt certificates can take a few minutes to issue
-   - Check logs: `docker compose logs traefik`
-
-3. **Permission errors**
-   - Ensure your user is in the docker group: `sudo usermod -aG docker $USER`
-   - Log out and back in after adding to docker group
-
-### Viewing Logs
-
+You can override:
 ```bash
-# All services
-docker compose logs -f
-
-# Specific service
-docker compose logs -f pangolin
-docker compose logs -f traefik
-docker compose logs -f gerbil
+COMPONENTS="pangolin,middleware-manager,crowdsec,mcpauth,komodo" docker compose -f docker-compose-setup.yml up
 ```
 
-## Standard Combinations
+## Common Scenarios
 
-### 1. Pangolin and Middleware Manager Install (postgres)
-```
-DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=pangolin ADMIN_SUBDOMAIN=pangolin POSTGRES_HOST=komodo-postgres-1 docker compose -f docker-compose-setup.yml up
-```
-**you can set the POSTGRES_USER and POSTGRES_PASSWORD if you want to use something other than the defaults (postgres/postgres)**
-
-### 2. Pangolin, Middleware Manager Install and Crowdsec
-```
-DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=pangolin ADMIN_SUBDOMAIN=pangolin POSTGRES_HOST=komodo-postgres-1 CROWDSEC_ENROLLMENT_KEY=your-key-here docker compose -f docker-compose-setup.yml up
+- Pangolin with Middleware Manager (default):
+```bash
+DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme docker compose -f docker-compose-setup.yml up
 ```
 
-### 3. Pangolin, Middleware Manager Install, Crowdsec, and a Static Page
-```
-DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=pangolin ADMIN_SUBDOMAIN=pangolin POSTGRES_HOST=komodo-postgres-1 CROWDSEC_ENROLLMENT_KEY=your-key-here STATIC_PAGE_DOMAIN=www docker compose -f docker-compose-setup.yml up
-```
-
-### 4. Pangolin, Middleware Manager Install, Crowdsec, a Static Page and Komodo
-```
-DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=pangolin ADMIN_SUBDOMAIN=pangolin POSTGRES_HOST=komodo-postgres-1 CROWDSEC_ENROLLMENT_KEY=your-key-here STATIC_PAGE_DOMAIN=www KOMODO_HOST_IP=127.0.0.1 docker compose -f docker-compose-setup.yml up
+- Pangolin with Middleware Manager + CrowdSec:
+```bash
+DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme \
+CROWDSEC_ENROLLMENT_KEY=your-key \
+docker compose -f docker-compose-setup.yml up
 ```
 
-### 5. Pangolin, Middleware Manager Install, Crowdsec, a Static Page, Komodo and MCPAuth
+- Full stack:
+```bash
+DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme \
+CROWDSEC_ENROLLMENT_KEY=your-key CLIENT_ID=your-client-id CLIENT_SECRET=your-client-secret \
+OPENAI_API_KEY=your-key \
+KOMODO_HOST_IP=127.0.0.1 \
+docker compose -f docker-compose-setup.yml up
 ```
-DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=pangolin ADMIN_SUBDOMAIN=pangolin POSTGRES_HOST=komodo-postgres-1 CROWDSEC_ENROLLMENT_KEY=your-key-here STATIC_PAGE_DOMAIN=www KOMODO_HOST_IP=127.0.0.1 CLIENT_ID=your-client-id CLIENT_SECRET=your-client-secret docker compose -f docker-compose-setup.yml up
+
+## Components
+
+### Middleware Manager
+
+The Middleware Manager is a standalone component that provides dynamic middleware management for Traefik and integrates with Pangolin. It's included by default but can be excluded if not needed.
+
+**What it does:**
+- Manages Traefik middleware configurations dynamically
+- Integrates with Pangolin's API for configuration management
+- Provides a web interface for middleware management
+- Supports plugin management for Traefik
+
+**Configuration:**
+- Automatically creates `config/middleware-manager/` directory
+- Connects to Pangolin API at `http://pangolin:3001/api/v1`
+- Uses SQLite database at `./data/middleware.db`
+- Runs on port 3456 (internal to Docker network)
+
+**Usage scenarios:**
+
+Include by default (auto-derivation):
+```bash
+# Middleware Manager included automatically
+DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme docker compose -f docker-compose-setup.yml up
 ```
 
-### 6. Pangolin, Middleware Manager Install, Crowdsec, a Static Page, Komodo, MCPAuth and NLWeb
+Exclude middleware-manager:
+```bash
+# Only Pangolin, no middleware manager
+COMPONENTS="pangolin" DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme docker compose -f docker-compose-setup.yml up
 ```
-DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=pangolin ADMIN_SUBDOMAIN=pangolin POSTGRES_HOST=komodo-postgres-1 CROWDSEC_ENROLLMENT_KEY=your-key-here STATIC_PAGE_DOMAIN=www KOMODO_HOST_IP=127.0.0.1 CLIENT_ID=your-client-id CLIENT_SECRET=your-client-secret OPENAI_API_KEY=your-openai-api-key  docker compose -f docker-compose-setup.yml up
+
+Explicitly include with other components:
+```bash
+# Pangolin + Middleware Manager + CrowdSec
+COMPONENTS="pangolin,middleware-manager,crowdsec" DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme CROWDSEC_ENROLLMENT_KEY=your-key docker compose -f docker-compose-setup.yml up
 ```
 
-Note: the periphery agent for komodo needs to be installed on the Komodo host ip
+**Accessing Middleware Manager:**
+Once deployed, the Middleware Manager integrates with Pangolin and is accessible through the Pangolin dashboard. It runs as a backend service and doesn't expose a separate web interface - all management is done through Pangolin's interface.
 
-## Security Notes
+### Static Page
 
-- The setup generates secure random secrets automatically
-- Admin password is set during installation
-- All traffic is automatically redirected to HTTPS
-- CrowdSec provides additional security monitoring
+The Static Page component creates a custom landing page for your deployment and configures Traefik to serve it. This component doesn't add new Docker services but modifies existing configuration files.
 
-## Support
+**What it does:**
+- Creates a static HTML landing page in the `public_html/` directory
+- Modifies Traefik's dynamic configuration to add security headers and static file serving
+- Supports conditional content based on available components (removes sections for unavailable services)
+- Uses templates from `templates/html/index.html` if available, otherwise creates a basic fallback
 
-For issues and questions:
-- Check the logs first: `docker compose logs -f`
-- Ensure your domain DNS is properly configured
-- Verify all ports (80, 443, 51820) are accessible
+**Configuration:**
+- Triggered by setting `STATIC_PAGE_SUBDOMAIN` environment variable
+- Creates files in `public_html/` directory
+- Modifies `config/traefik/rules/dynamic_config.yml` to add middleware and routing
+- **Requires middleware-manager component** to function properly
 
-## License
+**Usage scenarios:**
 
-This deployment stack is provided as-is. Please refer to individual component licenses:
-- Pangolin: Check fosrl/pangolin repository
-- Gerbil: Check fosrl/gerbil repository  
-- Traefik: Apache 2.0 License
+Enable static page:
+```bash
+# Static page with custom subdomain
+STATIC_PAGE_SUBDOMAIN=www DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme docker compose -f docker-compose-setup.yml up
+```
+
+Combined with other components:
+```bash
+# Static page + CrowdSec + other components
+STATIC_PAGE_SUBDOMAIN=www DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme CROWDSEC_ENROLLMENT_KEY=your-key docker compose -f docker-compose-setup.yml up
+```
+
+**Important Notes:**
+- The static-page component requires the middleware-manager component to be included
+- The component will automatically remove sections for unavailable services (e.g., removes Komodo section if `KOMODO_HOST_IP` is not set)
+- Uses the Statiq plugin for Traefik to serve static files
+
+### Traefik Log Dashboard
+
+The Traefik Log Dashboard component provides enhanced logging, monitoring, and analytics for your Traefik deployment with OpenTelemetry (OTLP) support and GeoIP capabilities.
+
+**What it does:**
+- Real-time log analysis and visualization of Traefik access logs
+- OpenTelemetry tracing integration with OTLP endpoints (GRPC and HTTP)
+- GeoIP location tracking using MaxMind databases
+- Performance metrics and request analytics
+- Automatic MaxMind database updates
+
+**Configuration:**
+- Triggered by setting `MAXMIND_LICENSE_KEY` environment variable
+- Creates `config/maxmind/` directory for GeoIP databases
+- Adds OTLP tracing configuration to `traefik_config.yml`
+- Exposes OTLP endpoints on ports 4317 (GRPC) and 4318 (HTTP)
+- Frontend accessible on port 3000, backend on port 3001
+
+**Getting a MaxMind License Key:**
+1. Get a free MaxMind account: Sign up at https://www.maxmind.com/en/geolite2/signup
+2. Generate a license key in your account dashboard
+3. Use the license key in your deployment
+
+**Usage scenarios:**
+
+Enable log dashboard:
+```bash
+# Basic setup with log dashboard
+MAXMIND_LICENSE_KEY=your-license-key DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme docker compose -f docker-compose-setup.yml up
+```
+
+Combined with other components:
+```bash
+# Full stack with log dashboard
+MAXMIND_LICENSE_KEY=your-license-key CROWDSEC_ENROLLMENT_KEY=your-crowdsec-key DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme docker compose -f docker-compose-setup.yml up
+```
+
+**Performance Optimization (Optional):**
+
+For high-traffic environments, consider these optimizations:
+
+*Reduce OTLP Sampling:*
+```yaml
+# In traefik_config.yml
+tracing:
+  sampleRate: 0.1  # 10% sampling for production
+```
+
+*Use GRPC for Better Performance:*
+```yaml
+# In traefik_config.yml
+tracing:
+  otlp:
+    grpc:
+      endpoint: "log-dashboard-backend:4317"
+      insecure: true
+```
+
+*Optimize Resource Usage:*
+```yaml
+# In docker-compose.yml
+environment:
+  - GOGC=20  # More aggressive garbage collection
+  - GOMEMLIMIT=1GiB
+```
+
+**Documentation:**
+- Full documentation: https://github.com/hhftechnology/traefik-log-dashboard
+- Middleware Manager: https://github.com/hhftechnology/middleware-manager
+
+## Where outputs go
+
+- compose.yaml
+- container-setup.sh
+- DEPLOYMENT_INFO.txt
+- config/
+  - config.yml (Pangolin configuration)
+  - traefik/ (Traefik configuration and rules)
+  - middleware-manager/ (Middleware Manager configuration, if included)
+  - maxmind/ (GeoIP databases, if traefik-log-dashboard is included)
+  - letsencrypt/ (SSL certificates)
+
+All at the repository root (mounted as `/host-setup` in the setup container).
+
+## Notes
+
+- The old monolithic `container-setup.sh` and inline heredoc compose generation were removed. The setup compose now only drives the orchestrator.
+- Keep ports 80/443/51820 open.
+- Ensure your domain DNS points to the host.

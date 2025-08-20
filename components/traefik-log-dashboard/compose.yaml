@@ -1,0 +1,85 @@
+  # --- Enhanced Traefik Log Dashboard with OTLP Support ---
+
+  # Enhanced backend with multiple log sources and OTLP support
+  backend:
+    image: hhftechnology/traefik-log-dashboard-backend:latest
+    container_name: log-dashboard-backend
+    restart: unless-stopped
+    volumes:
+      - ./config/traefik/logs:/logs:ro # Mount the Traefik logs directory
+      - ./config/maxmind:/maxmind # Mount the Traefik logs directory
+    
+    ports:
+      - "3001:3001"    # API port
+      - "4317:4317"    # OTLP GRPC port
+      - "4318:4318"    # OTLP HTTP port
+    
+    environment:
+      # === MULTIPLE LOG FILES CONFIGURATION ===
+      
+      # Option 1: Comma-separated specific files
+      - TRAEFIK_LOG_FILE=/logs/access.log,/logs/archived/access-2025.log
+
+      # Option 2: Directory-based monitoring (alternative to specific files)
+      # - TRAEFIK_LOG_PATH=/logs,/logs/archived,/logs/external
+      
+      # === OTLP CONFIGURATION ===
+      - OTLP_ENABLED=true
+      - OTLP_GRPC_PORT=4317
+      - OTLP_HTTP_PORT=4318
+      - OTLP_DEBUG=true
+      - OTLP_FALLBACK_ENABLED=true
+      
+      # === GEOLOCATION ===
+      - USE_MAXMIND=true
+      - MAXMIND_DB_PATH=/maxmind/GeoLite2-City.mmdb
+      - MAXMIND_FALLBACK_ONLINE=true
+      
+      # === PERFORMANCE TUNING ===
+      - GOGC=50
+      - GOMEMLIMIT=500MiB
+      
+  frontend:
+    image: hhftechnology/traefik-log-dashboard-frontend:latest
+    container_name: log-dashboard-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    environment:
+      - NODE_ENV=production
+      - BACKEND_SERVICE=backend
+      - BACKEND_PORT=3001
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+  # Optional: MaxMind GeoIP Database Updater
+  maxmind-updater:
+    image: alpine:latest
+    container_name: maxmind-db-updater
+    restart: "no"
+    volumes:
+      - ./config/maxmind:/data
+    environment:
+      - MAXMIND_LICENSE_KEY=${MAXMIND_LICENSE_KEY:-your-license-key-here}
+    command: >
+      sh -c "
+        apk add --no-cache wget tar &&
+        cd /data &&
+        if [ ! -f GeoLite2-City.mmdb ] || [ $$(find . -name 'GeoLite2-City.mmdb' -mtime +7) ]; then
+          echo 'Downloading/updating MaxMind database...' &&
+          wget -O GeoLite2-City.tar.gz 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=$MAXMIND_LICENSE_KEY&suffix=tar.gz' &&
+          tar --wildcards -xzf GeoLite2-City.tar.gz --strip-components=1 '*/GeoLite2-City.mmdb' &&
+          rm -f GeoLite2-City.tar.gz &&
+          echo 'MaxMind database updated successfully'
+        else
+          echo 'MaxMind database is up to date'
+        fi
+      "

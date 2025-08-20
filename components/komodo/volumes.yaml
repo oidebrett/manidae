@@ -1,0 +1,8 @@
+volumes:
+  # Komodo volumes
+  postgres-data:
+    driver: local
+  ferretdb-state:
+    driver: local
+  repo-cache:
+    driver: local

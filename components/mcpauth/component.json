@@ -1,0 +1,5 @@
+{
+  "name": "mcpauth",
+  "required_env": ["CLIENT_ID", "CLIENT_SECRET"],
+  "optional_env": []
+}

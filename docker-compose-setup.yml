@@ -19,7 +19,8 @@ services:
       - POSTGRES_HOST=${POSTGRES_HOST:-pangolin-postgres}
       # Optional features
       - CROWDSEC_ENROLLMENT_KEY=${CROWDSEC_ENROLLMENT_KEY:-}
-      - STATIC_PAGE_DOMAIN=${STATIC_PAGE_DOMAIN:-}
+      - STATIC_PAGE_SUBDOMAIN=${STATIC_PAGE_SUBDOMAIN:-}
+      - MAXMIND_LICENSE_KEY=${MAXMIND_LICENSE_KEY:-}
       # OAuth configuration (if needed)
       - CLIENT_ID=${CLIENT_ID:-}
       - CLIENT_SECRET=${CLIENT_SECRET:-}
@@ -27,30 +28,52 @@ services:
       - KOMODO_HOST_IP=${KOMODO_HOST_IP:-} # if set you must use komodo-postgres-1 as the POSTGRES_HOST
       # OpenAI API Key for nlweb (if needed)
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      # Orchestrator selection (optional). If unset, it will be auto-derived from provided env vars.
+      - COMPONENTS=${COMPONENTS:-}
+      # Additional optional variables used by components
+      - OAUTH_DOMAIN=${OAUTH_DOMAIN:-oauth.${DOMAIN}}
+      - COMPOSE_KOMODO_IMAGE_TAG=${COMPOSE_KOMODO_IMAGE_TAG:-latest}
+      - TZ=${TZ:-Etc/UTC}
+      - KOMODO_PASSKEY=${KOMODO_PASSKEY:-}
+      - KOMODO_TITLE=${KOMODO_TITLE:-}
+      - KOMODO_FIRST_SERVER=${KOMODO_FIRST_SERVER:-}
+      - KOMODO_DISABLE_CONFIRM_DIALOG=${KOMODO_DISABLE_CONFIRM_DIALOG:-}
+      - KOMODO_MONITORING_INTERVAL=${KOMODO_MONITORING_INTERVAL:-}
+      - KOMODO_RESOURCE_POLL_INTERVAL=${KOMODO_RESOURCE_POLL_INTERVAL:-}
+      - KOMODO_WEBHOOK_SECRET=${KOMODO_WEBHOOK_SECRET:-}
+      - KOMODO_JWT_SECRET=${KOMODO_JWT_SECRET:-}
+      - KOMODO_JWT_TTL=${KOMODO_JWT_TTL:-}
+      - KOMODO_LOCAL_AUTH=${KOMODO_LOCAL_AUTH:-}
+      - KOMODO_DISABLE_USER_REGISTRATION=${KOMODO_DISABLE_USER_REGISTRATION:-}
+      - KOMODO_ENABLE_NEW_USERS=${KOMODO_ENABLE_NEW_USERS:-}
+      - KOMODO_DISABLE_NON_ADMIN_CREATE=${KOMODO_DISABLE_NON_ADMIN_CREATE:-}
+      - KOMODO_TRANSPARENT_MODE=${KOMODO_TRANSPARENT_MODE:-}
+      - KOMODO_LOGGING_PRETTY=${KOMODO_LOGGING_PRETTY:-}
+      - KOMODO_PRETTY_STARTUP_CONFIG=${KOMODO_PRETTY_STARTUP_CONFIG:-}
+      - KOMODO_OIDC_ENABLED=${KOMODO_OIDC_ENABLED:-}
+      - KOMODO_GITHUB_OAUTH_ENABLED=${KOMODO_GITHUB_OAUTH_ENABLED:-}
+      - KOMODO_GOOGLE_OAUTH_ENABLED=${KOMODO_GOOGLE_OAUTH_ENABLED:-}
+      - KOMODO_AWS_ACCESS_KEY_ID=${KOMODO_AWS_ACCESS_KEY_ID:-}
+      - KOMODO_AWS_SECRET_ACCESS_KEY=${KOMODO_AWS_SECRET_ACCESS_KEY:-}
+
     command: |
       sh -c "
-        # This will be set to true to enable CrowdSec config setup only if you have provided a CROWDSEC_ENROLLMENT_KEY
-        ENABLE_CROWDSEC=false
-        if [ -n \"$CROWDSEC_ENROLLMENT_KEY\" ]; then
-          echo 'Crowdsec Selected for setup ...'
-          ENABLE_CROWDSEC=true
-        fi        
-        echo '🚀 Starting Pangolin setup container...'
+        echo '🚀 Starting Pangolin setup container (modular orchestrator only)...'
 
         # Install required tools
-        apk add --no-cache curl docker-cli openssl
-        
+        apk add --no-cache bash gettext curl docker-cli openssl
+
         # Validate required environment variables
-        if [ -z \"$$DOMAIN\" ] || [ -z \"$$EMAIL\" ] || [ -z \"$$ADMIN_USERNAME\" ] || [ -z \"$$ADMIN_PASSWORD\" ]; then
+        if [ -z \"$$DOMAIN\" ] || [ -z \"$$EMAIL\" ] ; then
           echo '❌ Error: Required environment variables not set!'
           echo 'Usage: DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=mypassword docker compose -f docker-compose-setup.yml up'
           echo 'Required variables:'
           echo '  DOMAIN - Your domain name (e.g., example.com)'
           echo '  EMAIL - Email for Lets Encrypt certificates'
-          echo '  ADMIN_USERNAME - Admin username for Pangolin (usually email)'
-          echo '  ADMIN_PASSWORD - Admin password for Pangolin (min 8 chars)'
           echo 'Optional variables:'
           echo '  ADMIN_SUBDOMAIN - Subdomain for admin portal (default: pangolin)'
+          echo '  ADMIN_USERNAME - Admin username for Pangolin (usually email)'
+          echo '  ADMIN_PASSWORD - Admin password for Pangolin (min 8 chars)'
           exit 1
         fi
 
@@ -74,375 +97,69 @@ services:
           exit 1
         fi
 
-        # Validate username as email format
-        if ! echo \"$$ADMIN_USERNAME\" | grep -E '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$$' > /dev/null; then
+        # Validate [optional] username as email format
+        if [ ! -z \"$$ADMIN_USERNAME\" ] && ! echo \"$$ADMIN_USERNAME\" | grep -E '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$$' > /dev/null; then
           echo '❌ Error: Invalid admin username email format'
           exit 1
         fi
 
-        # Validate password length
-        if [ $${#ADMIN_PASSWORD} -lt 8 ]; then
+        # Validate [optional] password length
+        if [ ! -z \"$$ADMIN_PASSWORD\" ] &&  [ $${#ADMIN_PASSWORD} -lt 8 ]; then
           echo '❌ Error: Password must be at least 8 characters long'
           exit 1
         fi
 
         echo '✅ Environment variables validated'
 
-        chmod +x /host-setup/container-setup.sh
-        echo '✅ Container Setup script permissions set'
+        # Run modular orchestrator (refactored system)
+        if [ -f "/host-setup/orchestrator/build-compose.sh" ]; then
+          echo '🔧 Running modular orchestrator...'
+          # Ensure required tools for orchestrator and generated scripts
+          apk add --no-cache bash gettext curl docker-cli openssl || true
 
-        # Run the setup script
-        echo '🔧 Running setup script...'
-        /host-setup/container-setup.sh
+          # Derive COMPONENTS if not provided
+          if [ -z \"$$COMPONENTS\" ]; then
+            echo \"[orchestrator] Auto-deriving COMPONENTS...\"
+            COMPONENTS=\"pangolin,middleware-manager\"
+            if [ -n \"$$CROWDSEC_ENROLLMENT_KEY\" ]; then
+              echo \"[orchestrator] Adding crowdsec (CROWDSEC_ENROLLMENT_KEY is set)\"
+              COMPONENTS=\"$$COMPONENTS,crowdsec\"
+            fi
+            if [ -n \"$$CLIENT_ID\" ] && [ -n \"$$CLIENT_SECRET\" ]; then
+              echo \"[orchestrator] Adding mcpauth (CLIENT_ID and CLIENT_SECRET are set)\"
+              COMPONENTS=\"$$COMPONENTS,mcpauth\"
+            fi
+            if [ -n \"$$OPENAI_API_KEY\" ] || [ -n \"$$AZURE_OPENAI_API_KEY\" ] || [ -n \"$$ANTHROPIC_API_KEY\" ] || [ -n \"$$GEMINI_API_KEY\" ]; then
+              echo \"[orchestrator] Adding nlweb (AI_API_KEY is set)\"
+              COMPONENTS=\"$$COMPONENTS,nlweb\"
+            fi
+            if [ -n \"$$KOMODO_HOST_IP\" ]; then
+              echo \"[orchestrator] Adding komodo (KOMODO_HOST_IP is set)\"
+              COMPONENTS=\"$$COMPONENTS,komodo\"
+            fi
+            if [ -n \"$$STATIC_PAGE_SUBDOMAIN\" ]; then
+              echo \"[orchestrator] Adding static-page (STATIC_PAGE_SUBDOMAIN is set)\"
+              COMPONENTS=\"$$COMPONENTS,static-page\"
+            fi
+            if [ -n \"$$MAXMIND_LICENSE_KEY\" ]; then
+              echo \"[orchestrator] Adding traefik-log-dashboard (MAXMIND_LICENSE_KEY is set)\"
+              COMPONENTS=\"$$COMPONENTS,traefik-log-dashboard\"
+            fi
+            export COMPONENTS
+            echo \"[orchestrator] Auto-derived COMPONENTS: $$COMPONENTS\"
+          else
+            echo \"[orchestrator] Using provided COMPONENTS: $$COMPONENTS\"
+          fi
 
-        # Create compose.yaml for services
-        echo '📝 Creating compose.yaml for services...'
-        cat > /host-setup/compose.yaml << 'EOF'
-        services:
-          # Main Pangolin application
-          pangolin:
-            image:  fosrl/pangolin:postgresql-1.7.3
-            container_name: pangolin
-            restart: unless-stopped
-            volumes:
-              - ./config:/app/config
-            healthcheck:
-              test: ["CMD", "curl", "-f", "http://localhost:3001/api/v1/"]
-              interval: "10s"
-              timeout: "10s"
-              retries: 15
-      EOF
-
-        # Part 1: Conditionally append standalone postgres if POSTGRES_HOST not the komodo postgres
-        if [ -n \"$KOMODO_HOST_IP\" ] || [ -z "$POSTGRES_HOST" ] || [ "$POSTGRES_HOST" != "komodo-postgres-1" ]; then
-          echo '🛡️ Adding Standalone Postgres database...'
-          cat >> /host-setup/compose.yaml << EOF
-
-            depends_on:
-              postgres:
-                condition: service_healthy
-      EOF
-
+          chmod +x /host-setup/orchestrator/build-compose.sh
+          OUTPUT_DIR="/host-setup" COMPONENTS="$$COMPONENTS" /bin/bash /host-setup/orchestrator/build-compose.sh || exit 1
+          echo '✅ Orchestrator finished.'
+          # Exit to avoid running legacy monolithic generation
+          exit 0
         fi
 
-        # Part 1.1: Conditionally append standalone postgres if POSTGRES_HOST not the komodo postgres
-        if [ -z "$POSTGRES_HOST" ] || [ "$POSTGRES_HOST" != "komodo-postgres-1" ]; then
-          echo '🛡️ Adding Standalone Postgres database...'
-          cat >> /host-setup/compose.yaml << EOF
-
-          # postgres for pangoln
-          postgres:
-            image: postgres:17
-            container_name: pangolin-postgres
-            restart: unless-stopped
-            environment:
-              POSTGRES_USER: REPLACE_WITH_POSTGRES_USER
-              POSTGRES_PASSWORD: REPLACE_WITH_POSTGRES_PASSWORD
-              POSTGRES_DB: postgres
-            volumes:
-              - ./config/postgres:/var/lib/postgresql/data
-            healthcheck:
-              test: [\"CMD-SHELL\", \"pg_isready -U REPLACE_WITH_POSTGRES_USER\"]
-              interval: 10s
-              timeout: 5s
-              retries: 5
-
-      EOF
-
-        fi
-
-        # Part 2: Conditionally append MCPAuth if CLIENT_ID is set
-        if [ -n \"$CLIENT_ID\" ]; then
-          echo '🛡️ Adding CrowdSec configuration...'
-          cat >> /host-setup/compose.yaml << EOF
-
-          # Auth management
-          mcpauth:
-            image: oideibrett/mcpauth:latest
-            container_name: mcpauth
-            environment:
-              - PORT=11000
-              - CLIENT_ID=REPLACE_WITH_CLIENT_ID
-              - CLIENT_SECRET=REPLACE_WITH_CLIENT_SECRET
-              - OAUTH_DOMAIN=${OAUTH_DOMAIN:-oauth.${DOMAIN}}
-            restart: unless-stopped
-            ports:
-              - "11000:11000"
-
-      EOF
-
-        fi
-
-        # Append gerbil block (always)
-        cat >> /host-setup/compose.yaml << EOF
-
-          # Gerbil WireGuard management
-          gerbil:
-            image: fosrl/gerbil:1.0.0
-            container_name: gerbil
-            restart: unless-stopped
-            depends_on:
-              pangolin:
-                condition: service_healthy
-            command:
-              - --reachableAt=http://gerbil:3003
-              - --generateAndSaveKeyTo=/var/config/key
-              - --remoteConfig=http://pangolin:3001/api/v1/gerbil/get-config
-              - --reportBandwidthTo=http://pangolin:3001/api/v1/gerbil/receive-bandwidth
-            volumes:
-              - ./config/:/var/config
-            cap_add:
-              - NET_ADMIN
-              - SYS_MODULE
-            ports:
-              - 51820:51820/udp
-              - 443:443 # Port for traefik because of the network_mode
-              - 80:80 # Port for traefik because of the network_mode
-
-          # Traefik reverse proxy
-          traefik:
-            image: traefik:v3.4.4
-            container_name: traefik
-            restart: unless-stopped
-            network_mode: service:gerbil # Ports appear on the gerbil service
-            depends_on:
-              pangolin:
-                condition: service_healthy
-            command:
-              - --configFile=/etc/traefik/traefik_config.yml
-            volumes:
-              - ./config/traefik:/etc/traefik:ro # Volume to store the Traefik configuration
-              - ./config/letsencrypt:/letsencrypt # Volume to store the Lets Encrypt certificates
-              - ./config/traefik/rules:/rules
-              - ./config/traefik/logs:/var/log/traefik
-              - ./public_html:/var/www/html:ro
-              
-          # Middleware Manager for Traefik / Pangolin
-          middleware-manager:
-            image: hhftechnology/middleware-manager:v3.0.1
-            container_name: middleware-manager
-            restart: unless-stopped
-            volumes:
-              - ./data:/data
-              - ./config/traefik/rules:/conf
-              - ./config/middleware-manager:/app/config
-              - ./config/traefik:/etc/traefik
-            environment:
-              - PANGOLIN_API_URL=http://pangolin:3001/api/v1
-              - TRAEFIK_CONF_DIR=/conf
-              - DB_PATH=/data/middleware.db
-              - PORT=3456
-              - ACTIVE_DATA_SOURCE=pangolin
-              - TRAEFIK_STATIC_CONFIG_PATH=/etc/traefik/traefik_config.yml
-              - PLUGINS_JSON_URL=https://raw.githubusercontent.com/hhftechnology/middleware-manager/traefik-int/plugin/plugins.json
-      #      ports:
-      #        - "3456:3456"
-
-          # Test http server - can be removed
-          python-http:
-            image: python:3.11-slim
-            container_name: python-http
-            working_dir: /app
-            command: python -m http.server 15000
-            ports:
-              - "15000:15000"
-            restart: unless-stopped
-
-      EOF
-
-        # Part 2: Conditionally append CrowdSec if CROWDSEC_ENROLLMENT_KEY is set
-        if [ -n \"$CROWDSEC_ENROLLMENT_KEY\" ]; then
-          echo '🛡️ Adding CrowdSec configuration...'
-          cat >> /host-setup/compose.yaml << EOF
-
-          crowdsec:
-            image: crowdsecurity/crowdsec:latest
-            container_name: crowdsec
-            environment:
-              GID: "1000"
-              COLLECTIONS: crowdsecurity/traefik crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules crowdsecurity/linux
-              ENROLL_INSTANCE_NAME: "pangolin-crowdsec"
-              PARSERS: crowdsecurity/whitelists
-              ENROLL_TAGS: docker
-              ENROLL_KEY: REPLACE_WITH_CROWDSEC_ENROLLMENT_KEY
-            healthcheck:
-              interval: 10s
-              retries: 15
-              timeout: 10s
-              test: ["CMD", "cscli", "capi", "status"]
-            labels:
-              - "traefik.enable=false" # Disable traefik for crowdsec
-            volumes:
-              # crowdsec container data
-              - ./config/crowdsec:/etc/crowdsec # crowdsec config
-              - ./config/crowdsec/db:/var/lib/crowdsec/data # crowdsec db
-              # log bind mounts into crowdsec
-              - ./config/traefik/logs:/var/log/traefik # traefik logs
-            ports:
-              - 6060:6060 # metrics endpoint for prometheus
-            restart: unless-stopped
-            command: -t # Add test config flag to verify configuration
-
-      EOF
-
-        fi
-
-        # Part 3: Conditionally append NLWeb if OPENAI_API_KEY is set
-        if [ -n \"$OPENAI_API_KEY\" ]; then
-          echo '🛡️ Adding NLWeb configuration...'
-          cat >> /host-setup/compose.yaml << EOF
-
-          nlweb:
-            image:  oideibrett/nlweb:latest
-            container_name: nlweb
-            ports:
-              - "8000:8000"
-            env_file:
-              - .env
-            environment:
-              - PYTHONPATH=/app
-              - PORT=8000
-              - NLWEB_CONFIG_DIR=/app/config
-            volumes:
-              - ./config/nlweb/data:/app/data
-              - ./config/nlweb/nlweb_config:/app/config:ro
-            healthcheck:
-              test: [\"CMD-SHELL\", \"python -c \\\"import urllib.request; urllib.request.urlopen(\'http://localhost:8000\')\\\"\"]
-              interval: 30s
-              timeout: 10s
-              retries: 3
-              start_period: 10s
-            restart: unless-stopped
-            user: root
-
-      EOF
-
-        fi
-
-        # Part 4: Conditionally append Komodo services if KOMODO_HOST_IP is set
-        if [ -n \"$KOMODO_HOST_IP\" ]; then
-          echo '🦎 Adding Komodo services...'
-          cat >> /host-setup/compose.yaml << EOF
-
-          # Komodo Database Services
-          postgres:
-            image: ghcr.io/ferretdb/postgres-documentdb
-            container_name: komodo-postgres-1
-            labels:
-              komodo.skip: # Prevent Komodo from stopping with StopAllContainers
-            restart: unless-stopped
-            volumes:
-              - postgres-data:/var/lib/postgresql/data
-            environment:
-              POSTGRES_USER: REPLACE_WITH_POSTGRES_USER
-              POSTGRES_PASSWORD: REPLACE_WITH_POSTGRES_PASSWORD
-              POSTGRES_DB: postgres
-            healthcheck:
-              test: [\"CMD-SHELL\", \"pg_isready -U REPLACE_WITH_POSTGRES_USER\"]
-              interval: 10s
-              timeout: 5s
-              retries: 5
-
-          ferretdb:
-            image: ghcr.io/ferretdb/ferretdb
-            container_name: komodo-ferretdb-1
-            labels:
-              komodo.skip: # Prevent Komodo from stopping with StopAllContainers
-            restart: unless-stopped
-            depends_on:
-              - postgres
-            volumes:
-              - ferretdb-state:/state
-            environment:
-              FERRETDB_POSTGRESQL_URL: postgres://REPLACE_WITH_POSTGRES_USER:REPLACE_WITH_POSTGRES_PASSWORD@postgres:5432/postgres
-
-          # Komodo Core
-          komodo-core:
-            image: ghcr.io/moghtech/komodo-core:\$\{COMPOSE_KOMODO_IMAGE_TAG:-latest}
-            container_name: komodo-core-1
-            labels:
-              komodo.skip: # Prevent Komodo from stopping with StopAllContainers
-            restart: unless-stopped
-            depends_on:
-              - ferretdb
-            ports:
-              - 9120:9120
-            environment:
-              KOMODO_DATABASE_ADDRESS: ferretdb:27017
-              KOMODO_DATABASE_USERNAME: REPLACE_WITH_POSTGRES_USER
-              KOMODO_DATABASE_PASSWORD: REPLACE_WITH_POSTGRES_PASSWORD
-              KOMODO_PASSKEY: REPLACE_WITH_KOMODO_PASSKEY
-              TZ: ${TZ:-Etc/UTC}
-              KOMODO_HOST: https://komodo.\$\{DOMAIN}
-              KOMODO_TITLE: \$\{KOMODO_TITLE:-Komodo}
-              KOMODO_FIRST_SERVER: \$\{KOMODO_FIRST_SERVER}
-              KOMODO_DISABLE_CONFIRM_DIALOG: \$\{KOMODO_DISABLE_CONFIRM_DIALOG:-false}
-              KOMODO_MONITORING_INTERVAL: \$\{KOMODO_MONITORING_INTERVAL:-15-sec}
-              KOMODO_RESOURCE_POLL_INTERVAL: \$\{KOMODO_RESOURCE_POLL_INTERVAL:-1-hr}
-              KOMODO_WEBHOOK_SECRET: \$\{KOMODO_WEBHOOK_SECRET}
-              KOMODO_JWT_SECRET: \$\{KOMODO_JWT_SECRET}
-              KOMODO_JWT_TTL: \$\{KOMODO_JWT_TTL:-1-day}
-              KOMODO_LOCAL_AUTH: \$\{KOMODO_LOCAL_AUTH:-true}
-              KOMODO_DISABLE_USER_REGISTRATION: \$\{KOMODO_DISABLE_USER_REGISTRATION:-false}
-              KOMODO_ENABLE_NEW_USERS: \$\{KOMODO_ENABLE_NEW_USERS:-false}
-              KOMODO_DISABLE_NON_ADMIN_CREATE: \$\{KOMODO_DISABLE_NON_ADMIN_CREATE:-false}
-              KOMODO_TRANSPARENT_MODE: \$\{KOMODO_TRANSPARENT_MODE:-false}
-              KOMODO_LOGGING_PRETTY: \$\{KOMODO_LOGGING_PRETTY:-false}
-              KOMODO_PRETTY_STARTUP_CONFIG: \$\{KOMODO_PRETTY_STARTUP_CONFIG:-false}
-              KOMODO_OIDC_ENABLED: \$\{KOMODO_OIDC_ENABLED:-false}
-              KOMODO_GITHUB_OAUTH_ENABLED: \$\{KOMODO_GITHUB_OAUTH_ENABLED:-false}
-              KOMODO_GOOGLE_OAUTH_ENABLED: \$\{KOMODO_GOOGLE_OAUTH_ENABLED:-false}
-              KOMODO_AWS_ACCESS_KEY_ID: \$\{KOMODO_AWS_ACCESS_KEY_ID}
-              KOMODO_AWS_SECRET_ACCESS_KEY: \$\{KOMODO_AWS_SECRET_ACCESS_KEY}
-            volumes:
-              - repo-cache:/repo-cache
 
 
-      EOF
-
-        fi
-
-        # Part 5: Add volumes section if Komodo services are enabled
-        if [ -n \"$KOMODO_HOST_IP\" ]; then
-          echo '🦎 Adding Komodo volumes...'
-          cat >> /host-setup/compose.yaml << EOF
-
-        volumes:
-          # Komodo volumes
-          postgres-data:
-            driver: local
-          ferretdb-state:
-            driver: local
-          repo-cache:
-            driver: local
-
-      EOF
-        fi
-
-        # Append network block (always)
-        echo '📝 Append network block - need to externally create network using docker network create pangolin'
-        cat >> /host-setup/compose.yaml << 'EOF'
-        networks:
-          default:
-            external: true
-            name: pangolin
-      EOF
-
-         # Replace placeholders with actual variable syntax
-        sed -i 's/REPLACE_WITH_CLIENT_ID/$$\{CLIENT_ID}/g' /host-setup/compose.yaml
-        sed -i 's/REPLACE_WITH_CLIENT_SECRET/$$\{CLIENT_SECRET}/g' /host-setup/compose.yaml
-        sed -i 's/REPLACE_WITH_POSTGRES_USER/$$\{POSTGRES_USER}/g' /host-setup/compose.yaml
-        sed -i 's/REPLACE_WITH_POSTGRES_PASSWORD/$$\{POSTGRES_PASSWORD}/g' /host-setup/compose.yaml
-        sed -i 's/REPLACE_WITH_CROWDSEC_ENROLLMENT_KEY/$$\{CROWDSEC_ENROLLMENT_KEY}/g' /host-setup/compose.yaml
-        sed -i 's/REPLACE_WITH_KOMODO_PASSKEY/$$\{KOMODO_PASSKEY}/g' /host-setup/compose.yaml
-
-        echo '✅ Setup completed! The stack is ready to start.'
-        echo '📊 Start your services with: docker compose up -d'
-        echo '🌐 Access at: https://'"$$ADMIN_SUBDOMAIN"'.'"$$DOMAIN"
-        echo '👤 Admin login: '"$$ADMIN_USERNAME"
-
-        # Keep container running briefly to show completion message
-        sleep 5
 
       "
     restart: "no"
