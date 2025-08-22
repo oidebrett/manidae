@@ -2,7 +2,7 @@ services:
   # Setup container that creates folder structure and config files
   setup:
     image: alpine:latest
-    container_name: pangolin-setup
+    #container_name: pangolin-setup
     volumes:
       - ./:/host-setup
       - /var/run/docker.sock:/var/run/docker.sock
