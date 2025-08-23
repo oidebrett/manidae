@@ -110,6 +110,18 @@
                 </div>
                 <!-- End of Logs -->
 
+                <!-- Start of Crowdsec -->
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://app.crowdsec.net/alerts', 'Crowdsec Console', this)">
+                    <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
+                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/crowdsec.webp" alt="Logs Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">L</div>
+                    </div>
+                    <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div class="text-lg font-semibold text-cyan-400 truncate">Crowdsec</div>
+                    </div>                    
+                </div>
+                <!-- End of Crowdsec -->
+
             </nav>
         </div>
 
@@ -137,18 +149,38 @@
                 <!-- Welcome Screen -->
                 <div id="welcome-screen" class="flex items-center justify-center h-full bg-gray-900">
                     <div class="text-center max-w-2xl px-8">
-                        <h1 class="text-6xl font-bold mb-6 text-cyan-400 animate-pulse">Welcome to Manidae</h1>
-                        <p class="text-xl text-gray-400 mb-8">Click on the menu on the left to access your applications</p>
-                        <div class="grid grid-cols-3 gap-4 text-sm text-gray-500">
-                            <div class="bg-gray-800 p-4 rounded-lg">
-                                <div class="font-semibold text-cyan-400 mb-2">Networking Tools</div>
-                                <div>Pangolin • Logs</div>
+                        <!-- Main Title: Welcomes the user to the MCP Gateway -->
+                        <h1 class="text-6xl font-bold mb-6 text-cyan-400 animate-pulse">
+                            Security Gateway
+                        </h1>                        
+                        <h2 class="text-3xl font-semibold mb-4 text-cyan-500">
+                            Hosted Reverse Proxy / MCP Gateway
+                        </h2>
+                        <!-- Subtitle: Directs the user to the left-hand navigation -->
+                        <p class="text-xl text-gray-400 mb-8">
+                            The unified entry point for all your infrastructure and network services.
+                        </p>
+                        <!-- Informational Cards: Provides high-level overview of the gateway's functions -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm text-gray-500">
+                            <!-- Card 1: Focuses on traffic management and routing -->
+                            <div class="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-cyan-400/50 transition-shadow duration-300">
+                                <div class="font-semibold text-cyan-400 mb-2">Service Orchestration</div>
+                                <div>Routing & Proxying • Load Balancing</div>
                             </div>
-                            <div class="bg-gray-800 p-4 rounded-lg">
-                                <div class="font-semibold text-cyan-400 mb-2">Infrastructure</div>
-                                <div>Middleware • Komodo</div>
+                            <!-- Card 2: Highlights security and access control -->
+                            <div class="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-cyan-400/50 transition-shadow duration-300">
+                                <div class="font-semibold text-cyan-400 mb-2">Centralized Governance</div>
+                                <div>Authentication • Policy Enforcement</div>
+                            </div>
+                            <!-- Card 3: Covers observability and metrics -->
+                            <div class="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-cyan-400/50 transition-shadow duration-300">
+                                <div class="font-semibold text-cyan-400 mb-2">Platform Visibility</div>
+                                <div>Metrics • Logging & Tracing</div>
                             </div>
                         </div>
+                        <p class="text-md text-gray-500 mt-8">
+                            Select an application from the navigation panel to get started.
+                        </p>
                     </div>
                 </div>
 
@@ -166,20 +198,40 @@
             document.getElementById('app-iframe').classList.add('hidden');
             const welcomeScreen = document.getElementById('welcome-screen');
             welcomeScreen.innerHTML = `
-                <div class="text-center max-w-2xl px-8">
-                    <h1 class="text-6xl font-bold mb-6 text-cyan-400 animate-pulse">Welcome to ContextWareAI</h1>
-                    <p class="text-xl text-gray-400 mb-8">Click on the menu on the left to access your applications</p>
-                    <div class="grid grid-cols-2 gap-4 text-sm text-gray-500">
-                        <div class="bg-gray-800 p-4 rounded-lg">
-                            <div class="font-semibold text-cyan-400 mb-2">Management Tools</div>
-                            <div>Pangolin • Komodo</div>
+                    <div class="text-center max-w-2xl px-8">
+                        <!-- Main Title: Welcomes the user to the MCP Gateway -->
+                        <h1 class="text-6xl font-bold mb-6 text-cyan-400 animate-pulse">
+                            Security Gateway
+                        </h1>                        
+                        <h2 class="text-3xl font-semibold mb-4 text-cyan-500">
+                            Hosted Reverse Proxy / MCP Gateway
+                        </h2>
+                        <!-- Subtitle: Directs the user to the left-hand navigation -->
+                        <p class="text-xl text-gray-400 mb-8">
+                            The unified entry point for all your infrastructure and network services.
+                        </p>
+                        <!-- Informational Cards: Provides high-level overview of the gateway's functions -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm text-gray-500">
+                            <!-- Card 1: Focuses on traffic management and routing -->
+                            <div class="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-cyan-400/50 transition-shadow duration-300">
+                                <div class="font-semibold text-cyan-400 mb-2">Service Orchestration</div>
+                                <div>Routing & Proxying • Load Balancing</div>
+                            </div>
+                            <!-- Card 2: Highlights security and access control -->
+                            <div class="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-cyan-400/50 transition-shadow duration-300">
+                                <div class="font-semibold text-cyan-400 mb-2">Centralized Governance</div>
+                                <div>Authentication • Policy Enforcement</div>
+                            </div>
+                            <!-- Card 3: Covers observability and metrics -->
+                            <div class="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-cyan-400/50 transition-shadow duration-300">
+                                <div class="font-semibold text-cyan-400 mb-2">Platform Visibility</div>
+                                <div>Metrics • Logging & Tracing</div>
+                            </div>
                         </div>
-                        <div class="bg-gray-800 p-4 rounded-lg">
-                            <div class="font-semibold text-cyan-400 mb-2">Infrastructure</div>
-                            <div>Middleware • Traefik</div>
-                        </div>
+                        <p class="text-md text-gray-500 mt-8">
+                            Select an application from the navigation panel to get started.
+                        </p>
                     </div>
-                </div>
             `;
             welcomeScreen.classList.remove('hidden');
             document.getElementById('current-app-title').textContent = 'Welcome';
