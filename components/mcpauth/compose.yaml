@@ -1,7 +1,7 @@
   # Auth management
   mcpauth:
     image: oideibrett/mcpauth:latest
-    container_name: mcpauth
+    #container_name: mcpauth
     environment:
       - PORT=11000
       - CLIENT_ID=${CLIENT_ID}

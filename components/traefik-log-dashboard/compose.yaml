@@ -3,7 +3,7 @@
   # Enhanced backend with multiple log sources and OTLP support
   backend:
     image: hhftechnology/traefik-log-dashboard-backend:latest
-    container_name: log-dashboard-backend
+    #container_name: log-dashboard-backend
     restart: unless-stopped
     volumes:
       - ./config/traefik/logs:/logs:ro # Mount the Traefik logs directory
@@ -41,7 +41,7 @@
       
   frontend:
     image: hhftechnology/traefik-log-dashboard-frontend:latest
-    container_name: log-dashboard-frontend
+    #container_name: log-dashboard-frontend
     restart: unless-stopped
     ports:
       - "3000:80"
@@ -63,7 +63,7 @@
   # Optional: MaxMind GeoIP Database Updater
   maxmind-updater:
     image: alpine:latest
-    container_name: maxmind-db-updater
+    #container_name: maxmind-db-updater
     restart: "no"
     volumes:
       - ./config/maxmind:/data

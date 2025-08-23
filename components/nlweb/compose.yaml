@@ -1,6 +1,6 @@
   nlweb:
     image:  oideibrett/nlweb:latest
-    container_name: nlweb
+    #container_name: nlweb
     ports:
       - "8000:8000"
     env_file:

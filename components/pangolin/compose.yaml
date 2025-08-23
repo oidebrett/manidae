@@ -1,7 +1,7 @@
   # Main Pangolin application
   pangolin:
     image:  docker.io/fosrl/pangolin:1.8.0
-    container_name: pangolin
+    #container_name: pangolin
     restart: unless-stopped
     volumes:
       - ./config:/app/config

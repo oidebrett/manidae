@@ -1,6 +1,6 @@
   crowdsec:
     image: crowdsecurity/crowdsec:latest
-    container_name: crowdsec
+    #container_name: crowdsec
     environment:
       GID: "1000"
       COLLECTIONS: crowdsecurity/traefik crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules crowdsecurity/linux

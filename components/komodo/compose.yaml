@@ -1,7 +1,7 @@
   # Komodo Database Services
   postgres:
     image: ghcr.io/ferretdb/postgres-documentdb
-    container_name: komodo-postgres-1
+    #container_name: komodo-postgres-1
     labels:
       komodo.skip: # Prevent Komodo from stopping with StopAllContainers
     restart: unless-stopped
@@ -19,7 +19,7 @@
 
   ferretdb:
     image: ghcr.io/ferretdb/ferretdb
-    container_name: komodo-ferretdb-1
+    #container_name: komodo-ferretdb-1
     labels:
       komodo.skip: # Prevent Komodo from stopping with StopAllContainers
     restart: unless-stopped
@@ -33,7 +33,7 @@
   # Komodo Core
   komodo-core:
     image: ghcr.io/moghtech/komodo-core:${COMPOSE_KOMODO_IMAGE_TAG:-latest}
-    container_name: komodo-core-1
+    #container_name: komodo-core-1
     labels:
       komodo.skip: # Prevent Komodo from stopping with StopAllContainers
     restart: unless-stopped
