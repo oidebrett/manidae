@@ -59,8 +59,8 @@ compose_out="$OUTPUT_DIR/compose.yaml"
   cat <<'EOF'
 networks:
   default:
-    #driver: bridge
-    external: true
+    driver: bridge
+    #external: true
     name: pangolin
     enable_ipv6: true
 EOF
