@@ -29,6 +29,15 @@ add_mcpauth_routing() {
         }
         # Now add MCPAuth routers before services
         print ""
+        print "    mcpauth-protected-resource:"
+        print "      rule: \"PathPrefix(\`/.well-known/oauth-protected-resource\`)\""
+        print "      service: mcpauth-service"
+        print "      entryPoints:"
+        print "        - websecure"
+        print "      tls:"
+        print "        certResolver: letsencrypt"
+        print "      priority: 199"
+        print ""
         print "    # MCPAuth http redirect router"
         print "    mcpauth-router-redirect:"
         print "      rule: \"Host(\`oauth." ENVIRON["DOMAIN"] "\`)\""
