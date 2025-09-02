@@ -1,0 +1,164 @@
+services:
+  # Main Pangolin application
+  pangolin:
+    image:  docker.io/fosrl/pangolin:1.8.0
+    #container_name: pangolin
+    restart: unless-stopped
+    volumes:
+      - ./config:/app/config
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/v1/"]
+      interval: "10s"
+      timeout: "10s"
+      retries: 15
+  # Gerbil WireGuard management
+  gerbil:
+    image: fosrl/gerbil:1.0.0
+    #container_name: gerbil
+    restart: unless-stopped
+    depends_on:
+      pangolin:
+        condition: service_healthy
+    command:
+      - --reachableAt=http://gerbil:3003
+      - --generateAndSaveKeyTo=/var/config/key
+      - --remoteConfig=http://pangolin:3001/api/v1/gerbil/get-config
+      - --reportBandwidthTo=http://pangolin:3001/api/v1/gerbil/receive-bandwidth
+    volumes:
+      - ./config/:/var/config
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    ports:
+      - 51820:51820/udp
+      - 21820:21820/udp
+      - 443:443 # Port for traefik because of the network_mode
+      - 80:80 # Port for traefik because of the network_mode
+
+  # Traefik reverse proxy
+  traefik:
+    image: traefik:v3.4.1
+    #container_name: traefik
+    restart: unless-stopped
+    network_mode: service:gerbil # Ports appear on the gerbil service
+    depends_on:
+      pangolin:
+        condition: service_healthy
+    command:
+      - --configFile=/etc/traefik/traefik_config.yml
+    volumes:
+      - ./config/traefik:/etc/traefik:ro # Volume to store the Traefik configuration
+      - ./config/letsencrypt:/letsencrypt # Volume to store the Lets Encrypt certificates
+      - ./config/traefik/rules:/rules
+      - ./config/traefik/logs:/var/log/traefik
+      - ./public_html:/var/www/html:ro
+  # Middleware Manager for Traefik / Pangolin
+  middleware-manager:
+    image: oideibrett/middleware-manager:v3.0.2-dev
+    #container_name: middleware-manager
+    restart: unless-stopped
+    volumes:
+      - ./data:/data
+      - ./config/traefik/rules:/conf
+      - ./config/middleware-manager:/app/config
+      - ./config/traefik:/etc/traefik
+    environment:
+      - PANGOLIN_API_URL=http://pangolin:3001/api/v1
+      - TRAEFIK_CONF_DIR=/conf
+      - DB_PATH=/data/middleware.db
+      - PORT=3456
+      - ACTIVE_DATA_SOURCE=pangolin
+      - TRAEFIK_STATIC_CONFIG_PATH=/etc/traefik/traefik_config.yml
+      - PLUGINS_JSON_URL=https://raw.githubusercontent.com/hhftechnology/middleware-manager/traefik-int/plugin/plugins.json
+# Static page component - no additional services required
+# This component modifies existing Traefik configuration and creates static HTML files
+  # --- Enhanced Traefik Log Dashboard with OTLP Support ---
+
+  # Enhanced backend with multiple log sources and OTLP support
+  backend:
+    image: hhftechnology/traefik-log-dashboard-backend:latest
+    #container_name: log-dashboard-backend
+    restart: unless-stopped
+    volumes:
+      - ./config/traefik/logs:/logs:ro # Mount the Traefik logs directory
+      - ./config/maxmind:/maxmind # Mount the Traefik logs directory
+    
+    ports:
+      - "3001:3001"    # API port
+      - "4317:4317"    # OTLP GRPC port
+      - "4318:4318"    # OTLP HTTP port
+    
+    environment:
+      # === MULTIPLE LOG FILES CONFIGURATION ===
+      
+      # Option 1: Comma-separated specific files
+      - TRAEFIK_LOG_FILE=/logs/access.log,/logs/archived/access-2025.log
+
+      # Option 2: Directory-based monitoring (alternative to specific files)
+      # - TRAEFIK_LOG_PATH=/logs,/logs/archived,/logs/external
+      
+      # === OTLP CONFIGURATION ===
+      - OTLP_ENABLED=true
+      - OTLP_GRPC_PORT=4317
+      - OTLP_HTTP_PORT=4318
+      - OTLP_DEBUG=true
+      - OTLP_FALLBACK_ENABLED=true
+      
+      # === GEOLOCATION ===
+      - USE_MAXMIND=true
+      - MAXMIND_DB_PATH=/maxmind/GeoLite2-City.mmdb
+      - MAXMIND_FALLBACK_ONLINE=true
+      
+      # === PERFORMANCE TUNING ===
+      - GOGC=50
+      - GOMEMLIMIT=500MiB
+      
+  frontend:
+    image: hhftechnology/traefik-log-dashboard-frontend:latest
+    #container_name: log-dashboard-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    environment:
+      - NODE_ENV=production
+      - BACKEND_SERVICE=backend
+      - BACKEND_PORT=3001
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+  # Optional: MaxMind GeoIP Database Updater
+  maxmind-updater:
+    image: alpine:latest
+    #container_name: maxmind-db-updater
+    restart: "no"
+    volumes:
+      - ./config/maxmind:/data
+    environment:
+      - MAXMIND_LICENSE_KEY=${MAXMIND_LICENSE_KEY:-your-license-key-here}
+    command: >
+      sh -c "
+        apk add --no-cache wget tar &&
+        cd /data &&
+        if [ ! -f GeoLite2-City.mmdb ] || [ $$(find . -name 'GeoLite2-City.mmdb' -mtime +7) ]; then
+          echo 'Downloading/updating MaxMind database...' &&
+          wget -O GeoLite2-City.tar.gz 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=$MAXMIND_LICENSE_KEY&suffix=tar.gz' &&
+          tar --wildcards -xzf GeoLite2-City.tar.gz --strip-components=1 '*/GeoLite2-City.mmdb' &&
+          rm -f GeoLite2-City.tar.gz &&
+          echo 'MaxMind database updated successfully'
+        else
+          echo 'MaxMind database is up to date'
+        fi
+      "networks:
+  default:
+    driver: bridge
+    #external: true
+    name: pangolin
+    enable_ipv6: true
