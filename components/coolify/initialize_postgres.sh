@@ -25,7 +25,7 @@ else
 fi
 
 PG_CONTAINER_NAME=${PG_CONTAINER_NAME:-coolify-db}
-PG_IP=$(docker network inspect coolify 2>/dev/null | \
+PG_IP=$(docker network inspect manidae 2>/dev/null | \
     awk "/\"Name\": \"$PG_CONTAINER_NAME\"/,/IPv4Address/" | \
     grep '"IPv4Address"' | \
     sed -E 's/.*"IPv4Address": "([^/]+)\/.*",/\1/')

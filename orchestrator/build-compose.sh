@@ -138,21 +138,21 @@ compose_out="$OUTPUT_DIR/compose.yaml"
   if [[ "$BASE_PLATFORM" == "coolify" ]]; then sed -n '1,9999p' "$ROOT_DIR/components/coolify/volumes.yaml"; fi
   if has_component komodo; then sed -n '1,9999p' "$ROOT_DIR/components/komodo/volumes.yaml"; fi
 
-  # Networks (platform-specific)
+  # Networks (generic for all platforms)
   if [[ "$BASE_PLATFORM" == "pangolin" ]]; then
     cat <<'EOF'
 networks:
   default:
     driver: bridge
     #external: true
-    name: pangolin
+    name: manidae
     enable_ipv6: true
 EOF
   elif [[ "$BASE_PLATFORM" == "coolify" ]]; then
     cat <<'EOF'
 networks:
-  coolify:
-    name: coolify
+  manidae:
+    name: manidae
     driver: bridge
     external: true
 EOF

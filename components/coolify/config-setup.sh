@@ -73,11 +73,11 @@ EOF
 echo "✅ Created Coolify .env configuration"
 
 # Create docker network if it doesn't exist
-if ! docker network ls | grep -q "coolify"; then
-    echo "🌐 Creating coolify docker network..."
-    docker network create coolify || echo "⚠️ Network coolify may already exist"
+if ! docker network ls | grep -q "manidae"; then
+    echo "🌐 Creating manidae docker network..."
+    docker network create manidae || echo "⚠️ Network manidae may already exist"
 else
-    echo "✅ Coolify docker network already exists"
+    echo "✅ Manidae docker network already exists"
 fi
 
 echo "✅ Coolify platform setup complete"
