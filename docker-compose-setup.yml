@@ -7,16 +7,37 @@ services:
       - ./:/host-setup
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      # Required variables
+      # Pangolin platform variables
       - DOMAIN=${DOMAIN:-}
       - EMAIL=${EMAIL:-}
       - ADMIN_USERNAME=${ADMIN_USERNAME:-}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
-      # Important variables with defaults that you might want to customize
       - ADMIN_SUBDOMAIN=${ADMIN_SUBDOMAIN:-pangolin}
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - POSTGRES_HOST=${POSTGRES_HOST:-pangolin-postgres}
+      # Optional custom subdomains for pangolin+ components
+      - MIDDLEWARE_MANAGER_SUBDOMAIN=${MIDDLEWARE_MANAGER_SUBDOMAIN:-}
+      - TRAEFIK_SUBDOMAIN=${TRAEFIK_SUBDOMAIN:-}
+      - KOMODO_SUBDOMAIN=${KOMODO_SUBDOMAIN:-}
+      - NLWEB_SUBDOMAIN=${NLWEB_SUBDOMAIN:-}
+      - LOGS_SUBDOMAIN=${LOGS_SUBDOMAIN:-}
+      # Coolify platform variables
+      - DB_USERNAME=${DB_USERNAME:-}
+      - DB_PASSWORD=${DB_PASSWORD:-}
+      - DB_DATABASE=${DB_DATABASE:-}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - PUSHER_APP_ID=${PUSHER_APP_ID:-}
+      - PUSHER_APP_KEY=${PUSHER_APP_KEY:-}
+      - PUSHER_APP_SECRET=${PUSHER_APP_SECRET:-}
+      - REGISTRY_URL=${REGISTRY_URL:-}
+      - LATEST_IMAGE=${LATEST_IMAGE:-}
+      - APP_ENV=${APP_ENV:-}
+      - PHP_MEMORY_LIMIT=${PHP_MEMORY_LIMIT:-}
+      - APP_PORT=${APP_PORT:-}
+      - SOKETI_PORT=${SOKETI_PORT:-}
+      - APP_NAME=${APP_NAME:-}
+      - SOKETI_DEBUG=${SOKETI_DEBUG:-}
       # Optional features
       - CROWDSEC_ENROLLMENT_KEY=${CROWDSEC_ENROLLMENT_KEY:-}
       - STATIC_PAGE_SUBDOMAIN=${STATIC_PAGE_SUBDOMAIN:-}
@@ -63,17 +84,30 @@ services:
         # Install required tools
         apk add --no-cache bash gettext curl docker-cli openssl
 
-        # Validate required environment variables
-        if [ -z \"$$DOMAIN\" ] || [ -z \"$$EMAIL\" ] ; then
-          echo '❌ Error: Required environment variables not set!'
-          echo 'Usage: DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=mypassword docker compose -f docker-compose-setup.yml up'
-          echo 'Required variables:'
-          echo '  DOMAIN - Your domain name (e.g., example.com)'
-          echo '  EMAIL - Email for Lets Encrypt certificates'
-          echo 'Optional variables:'
-          echo '  ADMIN_SUBDOMAIN - Subdomain for admin portal (default: pangolin)'
-          echo '  ADMIN_USERNAME - Admin username for Pangolin (usually email)'
-          echo '  ADMIN_PASSWORD - Admin password for Pangolin (min 8 chars)'
+        # Validate required environment variables based on platform
+        PANGOLIN_VARS_SET=false
+        COOLIFY_VARS_SET=false
+
+        if [ -n \"$$DOMAIN\" ] && [ -n \"$$EMAIL\" ]; then
+          PANGOLIN_VARS_SET=true
+        fi
+
+        if [ -n \"$$DB_USERNAME\" ] && [ -n \"$$DB_PASSWORD\" ] && [ -n \"$$REDIS_PASSWORD\" ] && [ -n \"$$PUSHER_APP_ID\" ] && [ -n \"$$PUSHER_APP_KEY\" ] && [ -n \"$$PUSHER_APP_SECRET\" ]; then
+          COOLIFY_VARS_SET=true
+        fi
+
+        if [ \"$$PANGOLIN_VARS_SET\" = false ] && [ \"$$COOLIFY_VARS_SET\" = false ]; then
+          echo '❌ Error: Required environment variables not set for any platform!'
+          echo ''
+          echo '🐧 For Pangolin platform:'
+          echo 'DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=mypassword docker compose -f docker-compose-setup.yml up'
+          echo 'Required: DOMAIN, EMAIL'
+          echo 'Optional: ADMIN_SUBDOMAIN, ADMIN_USERNAME, ADMIN_PASSWORD'
+          echo ''
+          echo '🚀 For Coolify platform:'
+          echo 'DB_USERNAME=coolify DB_PASSWORD=secure-password REDIS_PASSWORD=redis-password PUSHER_APP_ID=app-id PUSHER_APP_KEY=app-key PUSHER_APP_SECRET=app-secret docker compose -f docker-compose-setup.yml up'
+          echo 'Required: DB_USERNAME, DB_PASSWORD, REDIS_PASSWORD, PUSHER_APP_ID, PUSHER_APP_KEY, PUSHER_APP_SECRET'
+          echo 'Optional: DB_DATABASE, REGISTRY_URL, LATEST_IMAGE, APP_ENV, APP_PORT, etc.'
           exit 1
         fi
 
@@ -120,7 +154,22 @@ services:
           # Derive COMPONENTS if not provided
           if [ -z \"$$COMPONENTS\" ]; then
             echo \"[orchestrator] Auto-deriving COMPONENTS...\"
-            COMPONENTS=\"pangolin,middleware-manager\"
+
+            # Detect base platform
+            if [ -n \"$$DB_USERNAME\" ] && [ -n \"$$REDIS_PASSWORD\" ] && [ -n \"$$PUSHER_APP_ID\" ]; then
+              echo \"[orchestrator] Detected Coolify platform (DB_USERNAME, REDIS_PASSWORD, PUSHER_APP_ID are set)\"
+              COMPONENTS=\"coolify\"
+            elif [ -n \"$$DOMAIN\" ] && [ -n \"$$EMAIL\" ]; then
+              echo \"[orchestrator] Detected Pangolin platform (DOMAIN and EMAIL are set)\"
+              COMPONENTS=\"pangolin,middleware-manager\"
+            else
+              echo \"[orchestrator] ERROR: Could not detect platform. Please provide either:\"
+              echo \"  - For Pangolin: DOMAIN and EMAIL\"
+              echo \"  - For Coolify: DB_USERNAME, REDIS_PASSWORD, and PUSHER_APP_ID\"
+              exit 1
+            fi
+
+            # Add optional components based on environment variables
             if [ -n \"$$CROWDSEC_ENROLLMENT_KEY\" ]; then
               echo \"[orchestrator] Adding crowdsec (CROWDSEC_ENROLLMENT_KEY is set)\"
               COMPONENTS=\"$$COMPONENTS,crowdsec\"

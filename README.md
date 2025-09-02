@@ -1,34 +1,50 @@
-# Manidae - Modular Orchestrator Setup
+# Manidae - Flexible Docker Deployment Generator
 
-A pre-packaged, modular, containerized deployment of Pangolin with Middleware-Manager, CrowdSec, Traefik, and optional components. The setup container now delegates all file/folder creation and compose.yaml generation to a modular orchestrator.
+A flexible, modular docker deployment generator that supports multiple base platforms and optional components. Generate complete docker-compose deployments for Pangolin, Coolify, or other platforms with customizable add-on components like middleware management, security, monitoring, and more.
 
-**Core Components:**
-- **Pangolin** - Main application platform
-- **Middleware-Manager** - Dynamic Traefik middleware management (included by default)
+## Supported Base Platforms
+
+**Pangolin Platform:**
+- **Pangolin** - Main application platform with WireGuard VPN (Gerbil)
 - **Traefik** - Reverse proxy and load balancer
-- **Gerbil** - WireGuard VPN management
+- **Middleware-Manager** - Dynamic Traefik middleware management
 
-**Optional Components:**
+**Coolify Platform:**
+- **Coolify** - Self-hosted application deployment platform
+- **PostgreSQL** - Database for Coolify
+- **Redis** - Cache and session storage
+- **Soketi** - WebSocket server for real-time features
+
+## Optional Add-on Components
+
+**Security & Monitoring:**
 - **CrowdSec** - Collaborative security engine
+- **Traefik Log Dashboard** - Enhanced logging and analytics with GeoIP
+
+**Authentication & Management:**
 - **MCPAuth** - OAuth authentication
 - **Komodo** - Infrastructure management
 - **NLWeb** - Natural language web interface
+- **Static Page** - Custom landing pages
 
-## Refactored Setup Flow
+## How It Works
 
-- Run the setup container once with your environment variables
-- The setup container validates envs and runs `orchestrator/build-compose.sh`
-- The orchestrator generates:
-  - compose.yaml
-  - container-setup.sh (from components)
-  - DEPLOYMENT_INFO.txt
-  - config/… files and folders as needed
-- Then you start the stack with `docker compose up -d`
+1. **Choose your base platform** - Pangolin or Coolify
+2. **Select optional components** - Add security, monitoring, authentication, etc.
+3. **Run the setup container** with your environment variables
+4. **The orchestrator generates**:
+   - `compose.yaml` - Complete docker-compose configuration
+   - `container-setup.sh` - Platform-specific setup scripts
+   - `DEPLOYMENT_INFO.txt` - Deployment summary and access information
+   - `config/` - Configuration files and folders
+5. **Start your stack** with `docker compose up -d`
 
-### Quick Start
+## Quick Start Examples
+
+### Pangolin Platform
 
 ```bash
-# From this repository root
+# Basic Pangolin deployment
 DOMAIN=example.com \
 EMAIL=admin@example.com \
 ADMIN_USERNAME=admin@example.com \
@@ -39,42 +55,92 @@ docker compose -f docker-compose-setup.yml up
 docker compose up -d
 ```
 
-### Auto-derived COMPONENTS
+### Coolify Platform
 
-If you do not set `COMPONENTS`, the setup derives it automatically:
-- Always includes `pangolin` and `middleware-manager`
-- Adds `crowdsec` if `CROWDSEC_ENROLLMENT_KEY` is set
-- Adds `mcpauth` if both `CLIENT_ID` and `CLIENT_SECRET` are set
-- Adds `komodo` if `KOMODO_HOST_IP` is set
-- Adds `nlweb` if any of `OPENAI_API_KEY`, `AZURE_OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `GEMINI_API_KEY` are set
-- Adds `static-page` if `STATIC_PAGE_SUBDOMAIN` is set
-- Adds `traefik-log-dashboard` if `MAXMIND_LICENSE_KEY` is set
-
-You can override:
 ```bash
-COMPONENTS="pangolin,middleware-manager,crowdsec,mcpauth,komodo" docker compose -f docker-compose-setup.yml up
+# Basic Coolify deployment
+DB_USERNAME=coolify \
+DB_PASSWORD=secure-db-password \
+REDIS_PASSWORD=secure-redis-password \
+PUSHER_APP_ID=coolify-app-id \
+PUSHER_APP_KEY=coolify-app-key \
+PUSHER_APP_SECRET=coolify-app-secret \
+docker compose -f docker-compose-setup.yml up
+
+# Start services
+docker compose up -d
 ```
 
-## Common Scenarios
+## Platform Auto-Detection
 
-- Pangolin with Middleware Manager (default):
+If you don't specify `COMPONENTS`, the system automatically detects your platform and components:
+
+**Pangolin Platform Detection:**
+- Detected when `DOMAIN` and `EMAIL` are provided
+- Base: `pangolin,middleware-manager`
+- Auto-adds components based on environment variables
+
+**Coolify Platform Detection:**
+- Detected when Coolify-specific variables are provided (`DB_USERNAME`, `REDIS_PASSWORD`, etc.)
+- Base: `coolify`
+- Auto-adds components based on environment variables
+
+**Component Auto-Addition (both platforms):**
+- `crowdsec` if `CROWDSEC_ENROLLMENT_KEY` is set
+- `mcpauth` if both `CLIENT_ID` and `CLIENT_SECRET` are set
+- `komodo` if `KOMODO_HOST_IP` is set (Pangolin only)
+- `nlweb` if any AI API key is set (`OPENAI_API_KEY`, `AZURE_OPENAI_API_KEY`, etc.)
+- `static-page` if `STATIC_PAGE_SUBDOMAIN` is set (Pangolin only)
+- `traefik-log-dashboard` if `MAXMIND_LICENSE_KEY` is set
+
+**Manual Override:**
 ```bash
-DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme docker compose -f docker-compose-setup.yml up
+# Explicit component selection
+COMPONENTS="pangolin,middleware-manager,crowdsec" docker compose -f docker-compose-setup.yml up
+
+# Or for Coolify
+COMPONENTS="coolify,crowdsec" docker compose -f docker-compose-setup.yml up
 ```
 
-- Pangolin with Middleware Manager + CrowdSec:
+## Common Deployment Scenarios
+
+### Pangolin Deployments
+
+**Basic Pangolin (pangolin + middleware-manager):**
+```bash
+DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme \
+docker compose -f docker-compose-setup.yml up
+```
+
+**Pangolin+ with Security (+ CrowdSec):**
 ```bash
 DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme \
 CROWDSEC_ENROLLMENT_KEY=your-key \
 docker compose -f docker-compose-setup.yml up
 ```
 
-- Full stack:
+**Full Pangolin Stack:**
 ```bash
 DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme \
 CROWDSEC_ENROLLMENT_KEY=your-key CLIENT_ID=your-client-id CLIENT_SECRET=your-client-secret \
-OPENAI_API_KEY=your-key \
-KOMODO_HOST_IP=127.0.0.1 \
+OPENAI_API_KEY=your-key KOMODO_HOST_IP=127.0.0.1 MAXMIND_LICENSE_KEY=your-maxmind-key \
+docker compose -f docker-compose-setup.yml up
+```
+
+### Coolify Deployments
+
+**Basic Coolify:**
+```bash
+DB_USERNAME=coolify DB_PASSWORD=secure-password REDIS_PASSWORD=redis-password \
+PUSHER_APP_ID=app-id PUSHER_APP_KEY=app-key PUSHER_APP_SECRET=app-secret \
+docker compose -f docker-compose-setup.yml up
+```
+
+**Coolify+ with Security (+ CrowdSec):**
+```bash
+DB_USERNAME=coolify DB_PASSWORD=secure-password REDIS_PASSWORD=redis-password \
+PUSHER_APP_ID=app-id PUSHER_APP_KEY=app-key PUSHER_APP_SECRET=app-secret \
+CROWDSEC_ENROLLMENT_KEY=your-key \
 docker compose -f docker-compose-setup.yml up
 ```
 

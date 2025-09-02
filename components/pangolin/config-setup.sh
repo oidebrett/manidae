@@ -1,5 +1,10 @@
 # Pangolin core setup (always run)
 
+# Core shared functions
+generate_secret() {
+    openssl rand -base64 32 | tr -d "=+/" | cut -c1-32
+}
+
 # Directories
 mkdir -p /host-setup/config/traefik
 mkdir -p /host-setup/config/traefik/rules
@@ -8,7 +13,7 @@ mkdir -p /host-setup/public_html
 chmod 600 /host-setup/config/letsencrypt
 
 # Secret
-SECRET_KEY=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-32)
+SECRET_KEY=$(generate_secret)
 
 # config.yml (base)
 cat > /host-setup/config/config.yml << EOF
@@ -73,14 +78,43 @@ EOF
 # Function to update domain in CSV files
 update_domains_in_csv() {
     echo "🔄 Updating domain references in CSV files..."
-    
+
     # Create postgres_export directory if it doesn't exist
     mkdir -p /host-setup/postgres_export
-    
+
+    # Copy postgres_export data from component to host setup directory
+    if [ -d "/host-setup/components/pangolin/postgres_export" ]; then
+        cp -r /host-setup/components/pangolin/postgres_export/* /host-setup/postgres_export/
+        echo "✅ Copied postgres_export data from pangolin component"
+    fi
+
     # Check if resources.csv exists
     if [ -f "/host-setup/postgres_export/resources.csv" ]; then
         # Replace yourdomain.com with the DOMAIN variable in resources.csv
         sed -i "s/yourdomain\.com/${DOMAIN}/g" /host-setup/postgres_export/resources.csv
+
+        # Update custom subdomains if provided
+        if [ -n "${MIDDLEWARE_MANAGER_SUBDOMAIN:-}" ]; then
+            sed -i "s/middleware-manager\.${DOMAIN}/${MIDDLEWARE_MANAGER_SUBDOMAIN}.${DOMAIN}/g" /host-setup/postgres_export/resources.csv
+            echo "✅ Updated middleware-manager subdomain to ${MIDDLEWARE_MANAGER_SUBDOMAIN}"
+        fi
+        if [ -n "${TRAEFIK_SUBDOMAIN:-}" ]; then
+            sed -i "s/traefik\.${DOMAIN}/${TRAEFIK_SUBDOMAIN}.${DOMAIN}/g" /host-setup/postgres_export/resources.csv
+            echo "✅ Updated traefik subdomain to ${TRAEFIK_SUBDOMAIN}"
+        fi
+        if [ -n "${KOMODO_SUBDOMAIN:-}" ]; then
+            sed -i "s/komodo\.${DOMAIN}/${KOMODO_SUBDOMAIN}.${DOMAIN}/g" /host-setup/postgres_export/resources.csv
+            echo "✅ Updated komodo subdomain to ${KOMODO_SUBDOMAIN}"
+        fi
+        if [ -n "${NLWEB_SUBDOMAIN:-}" ]; then
+            sed -i "s/nlweb\.${DOMAIN}/${NLWEB_SUBDOMAIN}.${DOMAIN}/g" /host-setup/postgres_export/resources.csv
+            echo "✅ Updated nlweb subdomain to ${NLWEB_SUBDOMAIN}"
+        fi
+        if [ -n "${LOGS_SUBDOMAIN:-}" ]; then
+            sed -i "s/logs\.${DOMAIN}/${LOGS_SUBDOMAIN}.${DOMAIN}/g" /host-setup/postgres_export/resources.csv
+            echo "✅ Updated logs subdomain to ${LOGS_SUBDOMAIN}"
+        fi
+
         echo "✅ Updated domain references in resources.csv"
     else
         echo "⚠️ resources.csv not found, skipping domain update"
