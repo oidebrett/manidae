@@ -1,5 +1,5 @@
 {
   "name": "middleware-manager",
   "required_env": [],
-  "optional_env": []
+  "optional_env": ["MIDDLEWARE_MANAGER_SUBDOMAIN"]
 }

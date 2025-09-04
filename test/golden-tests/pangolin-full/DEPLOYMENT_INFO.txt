@@ -1,0 +1,17 @@
+# Base deployment info additions for Pangolin
+# (This content will be appended to DEPLOYMENT_INFO.txt by orchestrator)
+
+└── crowdsec/
+    ├── acquis.yaml
+    ├── config.yaml
+    └── profiles.yaml
+📁 Additional:
+./crowdsec_logs/          # Log volume for CrowdSec
+
+🛡️ CrowdSec Notes:
+- AppSec and log parsing is configured
+- Prometheus and API are enabled
+- CAPTCHA and remediation profiles are active
+- Remember to get the bouncer API key after containers start:
+  docker exec crowdsec cscli bouncers add traefik-bouncer
+

@@ -1,7 +1,7 @@
 {
   "name": "traefik-log-dashboard",
   "required_env": ["MAXMIND_LICENSE_KEY"],
-  "optional_env": [],
+  "optional_env": ["LOGS_SUBDOMAIN"],
   "dependencies": [],
   "description": "Enhanced Traefik log dashboard with OTLP support and GeoIP capabilities"
 }

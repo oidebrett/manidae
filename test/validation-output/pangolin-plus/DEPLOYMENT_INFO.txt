@@ -1,0 +1,3 @@
+# Base deployment info additions for Pangolin
+# (This content will be appended to DEPLOYMENT_INFO.txt by orchestrator)
+

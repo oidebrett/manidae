@@ -1,6 +1,6 @@
 {
   "name": "nlweb",
   "required_env": [],
-  "optional_env": ["OPENAI_API_KEY", "AZURE_OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY"],
+  "optional_env": ["OPENAI_API_KEY", "AZURE_OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY", "NLWEB_SUBDOMAIN"],
   "description": "Natural language web interface - requires at least one AI API key"
 }

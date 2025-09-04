@@ -121,3 +121,10 @@ if [ -n "${MAXMIND_LICENSE_KEY:-}" ]; then
 else
     echo "⚠️ MAXMIND_LICENSE_KEY not set, skipping Traefik Log Dashboard setup"
 fi
+
+# Update subdomain in postgres_export if present and custom subdomain is provided
+if [ -f "/host-setup/postgres_export/resources.csv" ] && [ -n "${LOGS_SUBDOMAIN:-}" ]; then
+    echo "🔄 Updating logs subdomain to ${LOGS_SUBDOMAIN}..."
+    sed -i "s/logs\.${DOMAIN}/${LOGS_SUBDOMAIN}.${DOMAIN}/g" /host-setup/postgres_export/resources.csv
+    echo "✅ Updated logs subdomain to ${LOGS_SUBDOMAIN}"
+fi
