@@ -79,7 +79,7 @@ services:
 
     command: |
       sh -c "
-        echo '🚀 Starting Pangolin setup container (modular orchestrator only)...'
+        echo '🚀 Starting Manidae setup container (modular orchestrator only)...'
 
         # Install required tools
         apk add --no-cache bash gettext curl docker-cli openssl
@@ -119,28 +119,30 @@ services:
           exit 1
         fi
 
-        # Validate domain format
-        if ! echo \"$$DOMAIN\" | grep -E '^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]?\\.[a-zA-Z]{2,}$$' > /dev/null; then
-          echo '❌ Error: Invalid domain format'
-          exit 1
+        # Validate domain and email format (only for Pangolin platform)
+        if [ \"$$PANGOLIN_VARS_SET\" = true ]; then
+          if ! echo \"$$DOMAIN\" | grep -E '^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]?\\.[a-zA-Z]{2,}$$' > /dev/null; then
+            echo '❌ Error: Invalid domain format'
+            exit 1
+          fi
+
+          if ! echo \"$$EMAIL\" | grep -E '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$$' > /dev/null; then
+            echo '❌ Error: Invalid email format'
+            exit 1
+          fi
         fi
 
-        # Validate email format
-        if ! echo \"$$EMAIL\" | grep -E '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$$' > /dev/null; then
-          echo '❌ Error: Invalid email format'
-          exit 1
-        fi
+        # Validate [optional] username and password (only for Pangolin platform)
+        if [ \"$$PANGOLIN_VARS_SET\" = true ]; then
+          if [ ! -z \"$$ADMIN_USERNAME\" ] && [ \"$$ADMIN_USERNAME\" != \"None\" ] && ! echo \"$$ADMIN_USERNAME\" | grep -E '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$$' > /dev/null; then
+            echo '❌ Error: Invalid admin username email format'
+            exit 1
+          fi
 
-        # Validate [optional] username as email format
-        if [ ! -z \"$$ADMIN_USERNAME\" ] && [ \"$$ADMIN_USERNAME\" != \"None\" ] && ! echo \"$$ADMIN_USERNAME\" | grep -E '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$$' > /dev/null; then
-          echo '❌ Error: Invalid admin username email format'
-          exit 1
-        fi
-
-        # Validate [optional] password length
-        if [ ! -z \"$$ADMIN_PASSWORD\" ] && [ \"$$ADMIN_PASSWORD\" != \"None\" ] &&  [ $${#ADMIN_PASSWORD} -lt 8 ]; then
-          echo '❌ Error: Password must be at least 8 characters long'
-          exit 1
+          if [ ! -z \"$$ADMIN_PASSWORD\" ] && [ \"$$ADMIN_PASSWORD\" != \"None\" ] &&  [ $${#ADMIN_PASSWORD} -lt 8 ]; then
+            echo '❌ Error: Password must be at least 8 characters long'
+            exit 1
+          fi
         fi
 
         echo '✅ Environment variables validated'
