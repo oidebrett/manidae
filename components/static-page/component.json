@@ -1,7 +1,11 @@
 {
   "name": "static-page",
   "required_env": ["STATIC_PAGE_SUBDOMAIN"],
-  "optional_env": ["DOMAIN", "ADMIN_SUBDOMAIN", "OPENAI_API_KEY", "KOMODO_HOST_IP"],
+  "optional_env": [
+    "DOMAIN", "ADMIN_SUBDOMAIN", "OPENAI_API_KEY", "KOMODO_HOST_IP",
+    "MIDDLEWARE_MANAGER_SUBDOMAIN", "TRAEFIK_SUBDOMAIN", "KOMODO_SUBDOMAIN",
+    "NLWEB_SUBDOMAIN", "LOGS_SUBDOMAIN"
+  ],
   "dependencies": ["middleware-manager"],
   "description": "Creates a static landing page and configures Traefik routing for it"
 }

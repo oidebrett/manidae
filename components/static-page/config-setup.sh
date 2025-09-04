@@ -38,11 +38,41 @@ create_static_page_html() {
             sed -i 's/Pangolin • Komodo/Pangolin/g' "/tmp/index.html.template"
         fi
         
-        # Replace domain placeholders and write to final location
-        cat "/tmp/index.html.template" | sed "s/yourdomain\.com/${DOMAIN}/g" | sed "s/subdomain/${ADMIN_SUBDOMAIN}/g" > /host-setup/public_html/index.html
-        
-        # Clean up temporary file
-        rm "/tmp/index.html.template"
+        # Replace domain placeholders and custom subdomains
+        cp "/tmp/index.html.template" "/tmp/index.html.processing"
+
+        # Replace main domain
+        sed -i "s/yourdomain\.com/${DOMAIN}/g" "/tmp/index.html.processing"
+
+        # Replace admin subdomain (pangolin admin interface)
+        sed -i "s/subdomain/${ADMIN_SUBDOMAIN}/g" "/tmp/index.html.processing"
+
+        # Replace component-specific subdomains if provided
+        if [ -n "${MIDDLEWARE_MANAGER_SUBDOMAIN:-}" ]; then
+            sed -i "s/middleware-manager\.${DOMAIN}/${MIDDLEWARE_MANAGER_SUBDOMAIN}.${DOMAIN}/g" "/tmp/index.html.processing"
+        fi
+
+        if [ -n "${TRAEFIK_SUBDOMAIN:-}" ]; then
+            sed -i "s/traefik\.${DOMAIN}/${TRAEFIK_SUBDOMAIN}.${DOMAIN}/g" "/tmp/index.html.processing"
+        fi
+
+        if [ -n "${KOMODO_SUBDOMAIN:-}" ]; then
+            sed -i "s/komodo\.${DOMAIN}/${KOMODO_SUBDOMAIN}.${DOMAIN}/g" "/tmp/index.html.processing"
+        fi
+
+        if [ -n "${NLWEB_SUBDOMAIN:-}" ]; then
+            sed -i "s/nlweb\.${DOMAIN}/${NLWEB_SUBDOMAIN}.${DOMAIN}/g" "/tmp/index.html.processing"
+        fi
+
+        if [ -n "${LOGS_SUBDOMAIN:-}" ]; then
+            sed -i "s/logs\.${DOMAIN}/${LOGS_SUBDOMAIN}.${DOMAIN}/g" "/tmp/index.html.processing"
+        fi
+
+        # Write to final location
+        cp "/tmp/index.html.processing" /host-setup/public_html/index.html
+
+        # Clean up temporary files
+        rm "/tmp/index.html.template" "/tmp/index.html.processing"
     else
         echo "Template not found, using embedded version"
         # Create basic index.html (fallback to embedded version)

@@ -175,31 +175,31 @@ if [ -s "$setup_src" ]; then
   fi
 else
   echo "[orchestrator] Source container-setup.sh missing or empty; generating default"
-  cat <<'EOS' > "$setup_out"
+  cat > "$setup_out" <<EOF
 #!/bin/sh
 set -e
 ROOT_HOST_DIR="/host-setup"
-COMPONENTS_CSV="${COMPONENTS:-pangolin}"
-log() { printf "%s\n" "$*"; }
+COMPONENTS_CSV="$COMPONENTS_RAW"
+log() { printf "%s\n" "\$*"; }
 run_component_hooks() {
-  comps_csv="${COMPONENTS_CSV}"
+  comps_csv="\${COMPONENTS_CSV}"
   # Core-shared functionality is now integrated into platform-specific components
   # POSIX sh split (BusyBox ash compatible)
-  old_ifs="$IFS"; IFS=','; set -- $comps_csv; IFS="$old_ifs"
-  for c in "$@"; do
-    [ -z "$c" ] && continue
+  old_ifs="\$IFS"; IFS=','; set -- \$comps_csv; IFS="\$old_ifs"
+  for c in "\$@"; do
+    [ -z "\$c" ] && continue
     # Handle pangolin+ as alias for pangolin
-    component_dir="$c"
-    if [ "$c" = "pangolin+" ]; then
+    component_dir="\$c"
+    if [ "\$c" = "pangolin+" ]; then
       component_dir="pangolin"
     fi
-    if [ -f "${ROOT_HOST_DIR}/components/${component_dir}/config-setup.sh" ]; then
-      /bin/sh "${ROOT_HOST_DIR}/components/${component_dir}/config-setup.sh" || true
+    if [ -f "\${ROOT_HOST_DIR}/components/\${component_dir}/config-setup.sh" ]; then
+      /bin/sh "\${ROOT_HOST_DIR}/components/\${component_dir}/config-setup.sh" || true
     fi
   done
 }
 run_component_hooks
-EOS
+EOF
 fi
 chmod +x "$setup_out"
 echo "[orchestrator] Wrote $setup_out"
