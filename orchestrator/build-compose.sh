@@ -119,30 +119,18 @@ compose_out="$OUTPUT_DIR/compose.yaml"
     cat <<'EOF'
 # Coolify Platform Docker Compose Configuration
 #
+# 📁 Directory Structure:
+# The setup script creates ./data/coolify/ with all required subdirectories
+# and generates SSH keys automatically.
+#
 # 🚨 IMPORTANT SERVER PREREQUISITES:
-# Before running 'docker compose up -d', you MUST run these commands on your server:
+# Before running 'docker compose up -d', you MUST:
 #
-# 1. Create Directories:
-#    mkdir -p /data/coolify/source
-#    mkdir -p /data/coolify/ssh/keys
-#    mkdir -p /data/coolify/ssh/mux
-#    mkdir -p /data/coolify/applications
-#    mkdir -p /data/coolify/databases
-#    mkdir -p /data/coolify/backups
-#    mkdir -p /data/coolify/services
-#    mkdir -p /data/coolify/proxy/dynamic
-#    mkdir -p /data/coolify/webhooks-during-maintenance
-#
-# 2. Generate & Add SSH Key:
-#    ssh-keygen -f /data/coolify/ssh/keys/id.root@host.docker.internal -t ed25519 -N '' -C root@coolify
-#    cat /data/coolify/ssh/keys/id.root@host.docker.internal.pub >> ~/.ssh/authorized_keys
+# 1. Add SSH Key to authorized_keys:
+#    cat ./data/coolify/ssh/keys/id.root@host.docker.internal.pub >> ~/.ssh/authorized_keys
 #    chmod 600 ~/.ssh/authorized_keys
 #
-# 3. Set Permissions:
-#    chown -R 9999:root /data/coolify
-#    chmod -R 700 /data/coolify
-#
-# 4. Create Docker Network:
+# 2. Create Docker Network:
 #    docker network create --attachable coolify
 #
 # 📋 Environment Variables:

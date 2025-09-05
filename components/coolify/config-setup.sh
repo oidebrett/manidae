@@ -19,29 +19,39 @@ APP_KEY="${APP_KEY:-base64:$(generate_random_base64)}"
 
 echo "📁 Creating Coolify directory structure..."
 
-# Create all necessary directories as per official Coolify setup
-# Note: These directories need to be created on the HOST at /data/coolify, not in the container
-# The user must run these commands on their server before docker compose up:
-echo "⚠️  Directory creation will be handled by server prerequisites"
-echo "    The following directories must be created on the HOST system:"
-echo "    mkdir -p /data/coolify/source"
-echo "    mkdir -p /data/coolify/ssh/keys"
-echo "    mkdir -p /data/coolify/ssh/mux"
-echo "    mkdir -p /data/coolify/applications"
-echo "    mkdir -p /data/coolify/databases"
-echo "    mkdir -p /data/coolify/backups"
-echo "    mkdir -p /data/coolify/services"
-echo "    mkdir -p /data/coolify/proxy/dynamic"
-echo "    mkdir -p /data/coolify/webhooks-during-maintenance"
+# Create all necessary directories in the project folder (./data/coolify)
+# These will be mounted as volumes in the compose.yaml
+mkdir -p /host-setup/data/coolify/source
+mkdir -p /host-setup/data/coolify/ssh/keys
+mkdir -p /host-setup/data/coolify/ssh/mux
+mkdir -p /host-setup/data/coolify/applications
+mkdir -p /host-setup/data/coolify/databases
+mkdir -p /host-setup/data/coolify/backups
+mkdir -p /host-setup/data/coolify/services
+mkdir -p /host-setup/data/coolify/proxy/dynamic
+mkdir -p /host-setup/data/coolify/webhooks-during-maintenance
+
+echo "✅ Created Coolify directory structure in ./data/coolify"
 
 echo "🔑 Setting up SSH keys..."
 
-# SSH key generation must be done on the HOST system, not in the container
-echo "⚠️  SSH key generation will be handled by server prerequisites"
-echo "    The SSH key must be generated on the HOST system:"
-echo "    ssh-keygen -f /data/coolify/ssh/keys/id.root@host.docker.internal -t ed25519 -N '' -C root@coolify"
-echo "    cat /data/coolify/ssh/keys/id.root@host.docker.internal.pub >> ~/.ssh/authorized_keys"
-echo "    chmod 600 ~/.ssh/authorized_keys"
+# Generate SSH key for Coolify to manage the server
+if [ ! -f "/host-setup/data/coolify/ssh/keys/id.root@host.docker.internal" ]; then
+    if command -v ssh-keygen >/dev/null 2>&1; then
+        ssh-keygen -f /host-setup/data/coolify/ssh/keys/id.root@host.docker.internal -t ed25519 -N '' -C root@coolify
+        echo "✅ Generated SSH key for Coolify"
+        echo "📋 Add the public key to your ~/.ssh/authorized_keys:"
+        echo "    cat ./data/coolify/ssh/keys/id.root@host.docker.internal.pub >> ~/.ssh/authorized_keys"
+        echo "    chmod 600 ~/.ssh/authorized_keys"
+    else
+        echo "⚠️ ssh-keygen not available in container. Please generate SSH key manually:"
+        echo "    ssh-keygen -f ./data/coolify/ssh/keys/id.root@host.docker.internal -t ed25519 -N '' -C root@coolify"
+        echo "    cat ./data/coolify/ssh/keys/id.root@host.docker.internal.pub >> ~/.ssh/authorized_keys"
+        echo "    chmod 600 ~/.ssh/authorized_keys"
+    fi
+else
+    echo "✅ SSH key already exists"
+fi
 
 echo "🔧 Auto-generating missing Coolify environment variables..."
 
@@ -115,11 +125,11 @@ fi
 
 echo "📋 Setting up permissions..."
 
-# Permissions must be set on the HOST system, not in the container
-echo "⚠️  Permissions will be handled by server prerequisites"
-echo "    The following permissions must be set on the HOST system:"
-echo "    chown -R 9999:root /data/coolify"
-echo "    chmod -R 700 /data/coolify"
+# Set correct permissions for Coolify directories
+chown -R 9999:root /host-setup/data/coolify 2>/dev/null || echo "⚠️ Could not set ownership (this is normal in some environments)"
+chmod -R 700 /host-setup/data/coolify 2>/dev/null || echo "⚠️ Could not set permissions (this is normal in some environments)"
+
+echo "✅ Set permissions for Coolify directories"
 
 echo "✅ Coolify platform setup complete"
 echo ""
