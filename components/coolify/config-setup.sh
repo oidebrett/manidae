@@ -35,20 +35,26 @@ echo "✅ Created Coolify directory structure in ./data/coolify"
 
 echo "🔑 Setting up SSH keys..."
 
-# Generate SSH key for Coolify to manage the server
-if [ ! -f "/host-setup/data/coolify/ssh/keys/id.root@host.docker.internal" ]; then
-    if command -v ssh-keygen >/dev/null 2>&1; then
-        ssh-keygen -f /host-setup/data/coolify/ssh/keys/id.root@host.docker.internal -t ed25519 -N '' -C root@coolify
-        echo "✅ Generated SSH key for Coolify"
-        echo "📋 Add the public key to your ~/.ssh/authorized_keys:"
-        echo "    cat ./data/coolify/ssh/keys/id.root@host.docker.internal.pub >> ~/.ssh/authorized_keys"
-        echo "    chmod 600 ~/.ssh/authorized_keys"
-    else
-        echo "⚠️ ssh-keygen not available in container. Please generate SSH key manually:"
+# Install ssh-keygen if not available
+if ! command -v ssh-keygen >/dev/null 2>&1; then
+    echo "📦 Installing openssh-client for SSH key generation..."
+    apk add --no-cache openssh-client >/dev/null 2>&1 || {
+        echo "⚠️ Failed to install openssh-client. Please generate SSH key manually:"
         echo "    ssh-keygen -f ./data/coolify/ssh/keys/id.root@host.docker.internal -t ed25519 -N '' -C root@coolify"
         echo "    cat ./data/coolify/ssh/keys/id.root@host.docker.internal.pub >> ~/.ssh/authorized_keys"
         echo "    chmod 600 ~/.ssh/authorized_keys"
-    fi
+        return 0
+    }
+    echo "✅ Installed openssh-client"
+fi
+
+# Generate SSH key for Coolify to manage the server
+if [ ! -f "/host-setup/data/coolify/ssh/keys/id.root@host.docker.internal" ]; then
+    ssh-keygen -f /host-setup/data/coolify/ssh/keys/id.root@host.docker.internal -t ed25519 -N '' -C root@coolify
+    echo "✅ Generated SSH key for Coolify"
+    echo "📋 Add the public key to your ~/.ssh/authorized_keys:"
+    echo "    cat ./data/coolify/ssh/keys/id.root@host.docker.internal.pub >> ~/.ssh/authorized_keys"
+    echo "    chmod 600 ~/.ssh/authorized_keys"
 else
     echo "✅ SSH key already exists"
 fi
@@ -134,9 +140,10 @@ echo "✅ Set permissions for Coolify directories"
 echo "✅ Coolify platform setup complete"
 echo ""
 echo "🚨 IMPORTANT: Before running 'docker compose up -d', ensure you have:"
-echo "   1. Run the server prerequisites listed in the compose.yaml file comments"
-echo "   2. Added the SSH public key to your ~/.ssh/authorized_keys"
-echo "   3. Set proper permissions on /data/coolify directories"
-echo "   4. Created the coolify Docker network"
+echo "   1. Added the SSH public key to your ~/.ssh/authorized_keys:"
+echo "      cat ./data/coolify/ssh/keys/id.root@host.docker.internal.pub >> ~/.ssh/authorized_keys"
+echo "      chmod 600 ~/.ssh/authorized_keys"
+echo "   2. Created the coolify Docker network:"
+echo "      docker network create --attachable coolify"
 echo ""
 
