@@ -92,22 +92,28 @@ services:
           PANGOLIN_VARS_SET=true
         fi
 
-        if [ -n \"$$DB_USERNAME\" ] && [ -n \"$$DB_PASSWORD\" ] && [ -n \"$$REDIS_PASSWORD\" ] && [ -n \"$$PUSHER_APP_ID\" ] && [ -n \"$$PUSHER_APP_KEY\" ] && [ -n \"$$PUSHER_APP_SECRET\" ]; then
+        # For Coolify, check if COMPONENTS explicitly includes coolify OR if any Coolify vars are set
+        if [ \"$$COMPONENTS\" = \"coolify\" ] || echo \"$$COMPONENTS\" | grep -q \"coolify\" || [ -n \"$$DB_USERNAME\" ] || [ -n \"$$DB_PASSWORD\" ] || [ -n \"$$REDIS_PASSWORD\" ] || [ -n \"$$PUSHER_APP_ID\" ] || [ -n \"$$PUSHER_APP_KEY\" ] || [ -n \"$$PUSHER_APP_SECRET\" ]; then
           COOLIFY_VARS_SET=true
         fi
 
         if [ \"$$PANGOLIN_VARS_SET\" = false ] && [ \"$$COOLIFY_VARS_SET\" = false ]; then
-          echo '❌ Error: Required environment variables not set for any platform!'
+          echo '❌ Error: No platform detected!'
           echo ''
-          echo '🐧 For Pangolin platform:'
-          echo 'DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=mypassword docker compose -f docker-compose-setup.yml up'
+          echo '🐧 For Pangolin platform (required):'
+          echo 'DOMAIN=example.com EMAIL=admin@example.com docker compose -f docker-compose-setup.yml up'
           echo 'Required: DOMAIN, EMAIL'
           echo 'Optional: ADMIN_SUBDOMAIN, ADMIN_USERNAME, ADMIN_PASSWORD'
           echo ''
-          echo '🚀 For Coolify platform:'
-          echo 'DB_USERNAME=coolify DB_PASSWORD=secure-password REDIS_PASSWORD=redis-password PUSHER_APP_ID=app-id PUSHER_APP_KEY=app-key PUSHER_APP_SECRET=app-secret docker compose -f docker-compose-setup.yml up'
-          echo 'Required: DB_USERNAME, DB_PASSWORD, REDIS_PASSWORD, PUSHER_APP_ID, PUSHER_APP_KEY, PUSHER_APP_SECRET'
-          echo 'Optional: DB_DATABASE, REGISTRY_URL, LATEST_IMAGE, APP_ENV, APP_PORT, etc.'
+          echo '🚀 For Coolify platform (all optional - will auto-generate):'
+          echo 'COMPONENTS=coolify docker compose -f docker-compose-setup.yml up'
+          echo 'Or provide any Coolify variables:'
+          echo 'DB_USERNAME=coolify DB_PASSWORD=secure-password docker compose -f docker-compose-setup.yml up'
+          echo 'All Coolify variables are optional and will be auto-generated if not provided'
+          echo ''
+          echo '📋 Use .env file:'
+          echo 'Copy .env.pangolin.example or .env.coolify.example to .env and run:'
+          echo 'docker compose -f docker-compose-setup.yml up'
           exit 1
         fi
 

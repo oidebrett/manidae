@@ -6,7 +6,7 @@
     extra_hosts:
       - host.docker.internal:host-gateway
     networks:
-      - manidae
+      - coolify
     depends_on:
       postgres:
         condition: service_healthy
@@ -54,7 +54,7 @@
       POSTGRES_PASSWORD: "${DB_PASSWORD}"
       POSTGRES_DB: "${DB_DATABASE:-coolify}"
     networks:
-      - manidae
+      - coolify
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME}", "-d", "${DB_DATABASE:-coolify}"]
       interval: 5s
@@ -70,9 +70,9 @@
     volumes:
       - coolify-redis:/data
     networks:
-      - manidae
+      - coolify
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli ping"]
+      test: redis-cli ping
       interval: 5s
       retries: 10
       timeout: 2s
@@ -94,7 +94,7 @@
       SOKETI_DEFAULT_APP_KEY: "${PUSHER_APP_KEY}"
       SOKETI_DEFAULT_APP_SECRET: "${PUSHER_APP_SECRET}"
     networks:
-      - manidae
+      - coolify
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:6001/ready && wget -qO- http://127.0.0.1:6002/ready || exit 1"]
       interval: 5s

@@ -20,8 +20,8 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
   echo "[orchestrator] Auto-deriving COMPONENTS..."
 
   # Detect base platform
-  if [[ -n "${DB_USERNAME:-}" && -n "${REDIS_PASSWORD:-}" && -n "${PUSHER_APP_ID:-}" ]]; then
-    echo "[orchestrator] Detected Coolify platform (DB_USERNAME, REDIS_PASSWORD, PUSHER_APP_ID are set)"
+  if [[ -n "${DB_USERNAME:-}" || -n "${REDIS_PASSWORD:-}" || -n "${PUSHER_APP_ID:-}" || -n "${PUSHER_APP_KEY:-}" || -n "${PUSHER_APP_SECRET:-}" ]]; then
+    echo "[orchestrator] Detected Coolify platform (Coolify environment variables are set)"
     COMPONENTS_RAW="coolify"
   elif [[ -n "${DOMAIN:-}" && -n "${EMAIL:-}" ]]; then
     echo "[orchestrator] Detected Pangolin platform (DOMAIN and EMAIL are set)"
@@ -29,7 +29,7 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
   else
     echo "[orchestrator] ERROR: Could not detect platform. Please provide either:"
     echo "  - For Pangolin: DOMAIN and EMAIL"
-    echo "  - For Coolify: DB_USERNAME, REDIS_PASSWORD, and PUSHER_APP_ID"
+    echo "  - For Coolify: Any Coolify environment variables (or COMPONENTS=coolify)"
     echo "  - Or specify COMPONENTS explicitly"
     exit 1
   fi
@@ -114,7 +114,40 @@ mkdir -p "$OUTPUT_DIR"
 # --- Build compose.yaml ---
 compose_out="$OUTPUT_DIR/compose.yaml"
 {
-  echo "services:"
+  # Add Coolify-specific comments before services section
+  if [[ "$BASE_PLATFORM" == "coolify" ]]; then
+    cat <<'EOF'
+# Coolify Platform Docker Compose Configuration
+#
+# 🚨 IMPORTANT SERVER PREREQUISITES:
+# Before running 'docker compose up -d', you MUST run these commands on your server:
+#
+# 1. Create Directories:
+#    mkdir -p /data/coolify/{source,ssh,applications,databases,backups,services,proxy,webhooks-during-maintenance}
+#    mkdir -p /data/coolify/ssh/{keys,mux}
+#    mkdir -p /data/coolify/proxy/dynamic
+#
+# 2. Generate & Add SSH Key:
+#    ssh-keygen -f /data/coolify/ssh/keys/id.root@host.docker.internal -t ed25519 -N '' -C root@coolify
+#    cat /data/coolify/ssh/keys/id.root@host.docker.internal.pub >> ~/.ssh/authorized_keys
+#    chmod 600 ~/.ssh/authorized_keys
+#
+# 3. Set Permissions:
+#    chown -R 9999:root /data/coolify
+#    chmod -R 700 /data/coolify
+#
+# 4. Create Docker Network:
+#    docker network create --attachable coolify
+#
+# 📋 Environment Variables:
+# Copy .env.coolify.example to .env and configure your values.
+# Missing values will be auto-generated during setup.
+
+services:
+EOF
+  else
+    echo "services:"
+  fi
 
   # Base platform services
   if [[ "$BASE_PLATFORM" == "pangolin" ]]; then
@@ -151,8 +184,8 @@ EOF
   elif [[ "$BASE_PLATFORM" == "coolify" ]]; then
     cat <<'EOF'
 networks:
-  manidae:
-    name: manidae
+  coolify:
+    name: coolify
     driver: bridge
     external: true
 EOF

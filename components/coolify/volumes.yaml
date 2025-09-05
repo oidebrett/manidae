@@ -1,5 +1,5 @@
 volumes:
-    coolify-db:
-        name: coolify-db
-    coolify-redis:
-        name: coolify-redis
+  coolify-db:
+    name: coolify-db
+  coolify-redis:
+    name: coolify-redis
