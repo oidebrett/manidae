@@ -123,9 +123,15 @@ compose_out="$OUTPUT_DIR/compose.yaml"
 # Before running 'docker compose up -d', you MUST run these commands on your server:
 #
 # 1. Create Directories:
-#    mkdir -p /data/coolify/{source,ssh,applications,databases,backups,services,proxy,webhooks-during-maintenance}
-#    mkdir -p /data/coolify/ssh/{keys,mux}
+#    mkdir -p /data/coolify/source
+#    mkdir -p /data/coolify/ssh/keys
+#    mkdir -p /data/coolify/ssh/mux
+#    mkdir -p /data/coolify/applications
+#    mkdir -p /data/coolify/databases
+#    mkdir -p /data/coolify/backups
+#    mkdir -p /data/coolify/services
 #    mkdir -p /data/coolify/proxy/dynamic
+#    mkdir -p /data/coolify/webhooks-during-maintenance
 #
 # 2. Generate & Add SSH Key:
 #    ssh-keygen -f /data/coolify/ssh/keys/id.root@host.docker.internal -t ed25519 -N '' -C root@coolify
