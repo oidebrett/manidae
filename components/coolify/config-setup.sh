@@ -94,11 +94,52 @@ fi
 echo "📋 Permissions will be handled on the server"
 echo "    Server setup must include: chown -R 9999:root /data/coolify && chmod -R 700 /data/coolify"
 
+# Generate custom domain configuration for Coolify proxy
+echo "🌐 Generating custom domain configuration..."
+
+# Set default admin subdomain if not provided
+ADMIN_SUBDOMAIN="${ADMIN_SUBDOMAIN:-coolify}"
+
+# Validate required DOMAIN variable
+if [ -z "${DOMAIN}" ]; then
+    echo "❌ Error: DOMAIN environment variable is required for Coolify proxy configuration"
+    exit 1
+fi
+
+# Create config directory if it doesn't exist
+mkdir -p /host-setup/config/coolify
+
+# Generate the custom domain configuration file
+cat > /host-setup/config/coolify/custom_domain.yml << EOF
+http:
+  routers:
+    coolify-ui:
+      rule: "Host(\`${ADMIN_SUBDOMAIN}.${DOMAIN}\`)"
+      service: coolify-ui-service
+      entryPoints:
+        - https
+      tls:
+        certResolver: letsencrypt
+
+  services:
+    coolify-ui-service:
+      loadBalancer:
+        servers:
+          - url: "http://coolify:8080"
+EOF
+
+echo "✅ Generated custom domain configuration at config/coolify/custom_domain.yml"
+echo "   Domain: ${ADMIN_SUBDOMAIN}.${DOMAIN}"
+
 echo "✅ Coolify platform setup complete"
 echo ""
 echo "🚨 IMPORTANT: Before running 'docker compose up -d', complete the server prerequisites:"
 echo "   See the detailed instructions in the generated compose.yaml file comments"
 echo "   Or follow the official Coolify manual installation guide:"
 echo "   https://coolify.io/docs/installation#manual"
+echo ""
+echo "📋 Additional step required for custom domain:"
+echo "   Copy the generated proxy configuration to the server:"
+echo "   cp config/coolify/custom_domain.yml /data/coolify/proxy/dynamic/"
 echo ""
 

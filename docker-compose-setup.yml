@@ -93,7 +93,8 @@ services:
         fi
 
         # For Coolify, check if COMPONENTS explicitly includes coolify OR if any Coolify vars are set
-        if [ \"$$COMPONENTS\" = \"coolify\" ] || echo \"$$COMPONENTS\" | grep -q \"coolify\" || [ -n \"$$DB_USERNAME\" ] || [ -n \"$$DB_PASSWORD\" ] || [ -n \"$$REDIS_PASSWORD\" ] || [ -n \"$$PUSHER_APP_ID\" ] || [ -n \"$$PUSHER_APP_KEY\" ] || [ -n \"$$PUSHER_APP_SECRET\" ]; then
+        # Also check for DOMAIN without EMAIL (Coolify-specific pattern)
+        if [ \"$$COMPONENTS\" = \"coolify\" ] || echo \"$$COMPONENTS\" | grep -q \"coolify\" || [ -n \"$$DB_USERNAME\" ] || [ -n \"$$DB_PASSWORD\" ] || [ -n \"$$REDIS_PASSWORD\" ] || [ -n \"$$PUSHER_APP_ID\" ] || [ -n \"$$PUSHER_APP_KEY\" ] || [ -n \"$$PUSHER_APP_SECRET\" ] || ([ -n \"$$DOMAIN\" ] && [ -z \"$$EMAIL\" ]); then
           COOLIFY_VARS_SET=true
         fi
 
@@ -105,11 +106,13 @@ services:
           echo 'Required: DOMAIN, EMAIL'
           echo 'Optional: ADMIN_SUBDOMAIN, ADMIN_USERNAME, ADMIN_PASSWORD'
           echo ''
-          echo '🚀 For Coolify platform (all optional - will auto-generate):'
+          echo '🚀 For Coolify platform:'
+          echo 'DOMAIN=example.com docker compose -f docker-compose-setup.yml up'
+          echo 'Or explicitly specify components:'
           echo 'COMPONENTS=coolify docker compose -f docker-compose-setup.yml up'
           echo 'Or provide any Coolify variables:'
           echo 'DB_USERNAME=coolify DB_PASSWORD=secure-password docker compose -f docker-compose-setup.yml up'
-          echo 'All Coolify variables are optional and will be auto-generated if not provided'
+          echo 'Most Coolify variables are optional and will be auto-generated if not provided'
           echo ''
           echo '📋 Use .env file:'
           echo 'Copy .env.pangolin.example or .env.coolify.example to .env and run:'
@@ -170,10 +173,13 @@ services:
             elif [ -n \"$$DOMAIN\" ] && [ -n \"$$EMAIL\" ]; then
               echo \"[orchestrator] Detected Pangolin platform (DOMAIN and EMAIL are set)\"
               COMPONENTS=\"pangolin,middleware-manager\"
+            elif [ -n \"$$DOMAIN\" ] && [ -z \"$$EMAIL\" ]; then
+              echo \"[orchestrator] Detected Coolify platform (DOMAIN is set without EMAIL)\"
+              COMPONENTS=\"coolify\"
             else
               echo \"[orchestrator] ERROR: Could not detect platform. Please provide either:\"
               echo \"  - For Pangolin: DOMAIN and EMAIL\"
-              echo \"  - For Coolify: DB_USERNAME, REDIS_PASSWORD, and PUSHER_APP_ID\"
+              echo \"  - For Coolify: DOMAIN (without EMAIL) or DB_USERNAME, REDIS_PASSWORD, and PUSHER_APP_ID\"
               exit 1
             fi
 

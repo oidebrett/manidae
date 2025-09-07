@@ -29,8 +29,11 @@ Before running 'docker compose up -d', you MUST run these commands on your serve
 4. Create Docker Network:
    docker network create --attachable coolify
 
+5. Copy Custom Domain Configuration:
+   cp config/coolify/custom_domain.yml /data/coolify/proxy/dynamic/
+
 🌐 Access Information:
-- Coolify Dashboard: http://localhost:${APP_PORT:-8000}
+- Coolify Dashboard: https://${ADMIN_SUBDOMAIN:-coolify}.${DOMAIN}
 - Database: PostgreSQL on port 5432
 - Redis: Redis on port 6379
 - WebSocket: Soketi on port ${SOKETI_PORT:-6001}
@@ -52,7 +55,7 @@ Before running 'docker compose up -d', you MUST run these commands on your serve
 🔧 Next Steps:
 1. Complete the server prerequisites above
 2. Run: docker compose up -d
-3. Access Coolify at http://localhost:${APP_PORT:-8000}
+3. Access Coolify at https://${ADMIN_SUBDOMAIN:-coolify}.${DOMAIN}
 4. Complete the initial setup wizard
 5. Configure your first application deployment
 
