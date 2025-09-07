@@ -139,9 +139,6 @@ compose_out="$OUTPUT_DIR/compose.yaml"
 # 4. Create Docker Network:
 #    docker network create --attachable coolify
 #
-# 5. Open your firewall to allow access to the Coolify:
-#   open tcp port 8000 for inbound traffic
-#
 # 📋 Environment Variables:
 # Copy .env.coolify.example to .env and configure your values.
 # Missing values will be auto-generated during setup.
