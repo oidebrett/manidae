@@ -29,6 +29,9 @@ Before running 'docker compose up -d', you MUST run these commands on your serve
 4. Create Docker Network:
    docker network create --attachable coolify
 
+5. Open your firewall to allow access to the Coolify:
+   open tcp port 8000 for inbound traffic
+
 🌐 Access Information:
 - Coolify Dashboard: http://localhost:${APP_PORT:-8000}
 - Database: PostgreSQL on port 5432
