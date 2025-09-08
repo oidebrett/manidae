@@ -36,6 +36,10 @@ add_env_var_if_missing() {
 
     # Only add if the variable doesn't exist at all in the file
     if ! grep -q "^${var_name}=" "$env_file"; then
+        # Ensure the file ends with a newline before appending
+        if [ -s "$env_file" ] && [ "$(tail -c1 "$env_file" | wc -l)" -eq 0 ]; then
+            echo "" >> "$env_file"
+        fi
         echo "${var_name}=${var_value}" >> "$env_file"
         echo "Added ${var_name} to .env file"
         export "${var_name}=${var_value}"
