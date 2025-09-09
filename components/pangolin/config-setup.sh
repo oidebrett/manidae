@@ -1,22 +1,25 @@
 # Pangolin core setup (always run)
 
+# Use ROOT_HOST_DIR if set, otherwise default to /host-setup
+ROOT_HOST_DIR="${ROOT_HOST_DIR:-/host-setup}"
+
 # Core shared functions
 generate_secret() {
     openssl rand -base64 32 | tr -d "=+/" | cut -c1-32
 }
 
 # Directories
-mkdir -p /host-setup/config/traefik
-mkdir -p /host-setup/config/traefik/rules
-mkdir -p /host-setup/config/letsencrypt
-mkdir -p /host-setup/public_html
-chmod 600 /host-setup/config/letsencrypt
+mkdir -p "$ROOT_HOST_DIR/config/traefik"
+mkdir -p "$ROOT_HOST_DIR/config/traefik/rules"
+mkdir -p "$ROOT_HOST_DIR/config/letsencrypt"
+mkdir -p "$ROOT_HOST_DIR/public_html"
+chmod 600 "$ROOT_HOST_DIR/config/letsencrypt"
 
 # Secret
 SECRET_KEY=$(generate_secret)
 
 # config.yml (base)
-cat > /host-setup/config/config.yml << EOF
+cat > "$ROOT_HOST_DIR/config/config.yml" << EOF
 app:
     dashboard_url: "https://${ADMIN_SUBDOMAIN}.${DOMAIN}"
     log_level: "info"
@@ -80,22 +83,22 @@ update_domains_in_csv() {
     echo "🔄 Updating domain references in CSV files..."
 
     # Create postgres_export directory if it doesn't exist
-    mkdir -p /host-setup/postgres_export
+    mkdir -p "$ROOT_HOST_DIR/postgres_export"
 
     # Copy postgres_export data from component to host setup directory
-    if [ -d "/host-setup/components/pangolin/postgres_export" ]; then
-        cp -r /host-setup/components/pangolin/postgres_export/* /host-setup/postgres_export/
+    if [ -d "$ROOT_HOST_DIR/components/pangolin/postgres_export" ]; then
+        cp -r "$ROOT_HOST_DIR/components/pangolin/postgres_export"/* "$ROOT_HOST_DIR/postgres_export/"
         echo "✅ Copied postgres_export data from pangolin component"
     fi
 
     # Check if resources.csv exists
-    if [ -f "/host-setup/postgres_export/resources.csv" ]; then
+    if [ -f "$ROOT_HOST_DIR/postgres_export/resources.csv" ]; then
         # Replace yourdomain.com with the DOMAIN variable in resources.csv
-        sed -i "s/yourdomain\.com/${DOMAIN}/g" /host-setup/postgres_export/resources.csv
+        sed -i "s/yourdomain\.com/${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
 
         # Update traefik subdomain if custom subdomain is provided (traefik is part of pangolin platform)
         if [ -n "${TRAEFIK_SUBDOMAIN:-}" ]; then
-            sed -i "s/traefik\.${DOMAIN}/${TRAEFIK_SUBDOMAIN}.${DOMAIN}/g" /host-setup/postgres_export/resources.csv
+            sed -i "s/traefik\.${DOMAIN}/${TRAEFIK_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
             echo "✅ Updated traefik subdomain to ${TRAEFIK_SUBDOMAIN}"
         fi
 
@@ -109,7 +112,7 @@ update_domains_in_csv() {
 update_domains_in_csv
 
 # Traefik static config
-cat > /host-setup/config/traefik/traefik_config.yml << EOF
+cat > "$ROOT_HOST_DIR/config/traefik/traefik_config.yml" << EOF
 api:
   insecure: true
   dashboard: true
@@ -168,7 +171,7 @@ serversTransport:
 EOF
 
 # Basic dynamic_config.yml without optional middlewares
-cat > /host-setup/config/traefik/rules/dynamic_config.yml << EOF
+cat > "$ROOT_HOST_DIR/config/traefik/rules/dynamic_config.yml" << EOF
 http:
   middlewares:
     redirect-to-https:
@@ -230,7 +233,7 @@ if [ -n "${OPENAI_API_KEY:-}" ]; then
 fi
 
 # Deployment info (base)
-cat > /host-setup/DEPLOYMENT_INFO.txt << EOF
+cat > "$ROOT_HOST_DIR/DEPLOYMENT_INFO.txt" << EOF
 🚀 Pangolin + Traefik Stack Deployment
 
 Deployment completed at: $(date)

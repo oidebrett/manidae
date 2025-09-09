@@ -4,7 +4,7 @@
     environment:
       GID: "1000"
       COLLECTIONS: crowdsecurity/traefik crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules crowdsecurity/linux
-      ENROLL_INSTANCE_NAME: "pangolin-crowdsec"
+      ENROLL_INSTANCE_NAME: "${CROWDSEC_INSTANCE_NAME:-pangolin-crowdsec}"
       PARSERS: crowdsecurity/whitelists
       ENROLL_TAGS: docker
       ENROLL_KEY: ${CROWDSEC_ENROLLMENT_KEY}
@@ -19,9 +19,11 @@
       # crowdsec container data
       - ./config/crowdsec:/etc/crowdsec # crowdsec config
       - ./config/crowdsec/db:/var/lib/crowdsec/data # crowdsec db
-      # log bind mounts into crowdsec
-      - ./config/traefik/logs:/var/log/traefik # traefik logs
+      # log bind mounts into crowdsec (platform-specific)
+      - ${CROWDSEC_LOG_VOLUME:-./config/traefik/logs:/var/log/traefik} # traefik logs
     ports:
       - 6060:6060 # metrics endpoint for prometheus
     restart: unless-stopped
     command: -t # Add test config flag to verify configuration
+    networks:
+      - ${CROWDSEC_NETWORK:-default}
