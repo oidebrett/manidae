@@ -7,7 +7,7 @@
 
   coolify:
     image: "${REGISTRY_URL:-ghcr.io}/coollabsio/coolify:${LATEST_IMAGE:-latest}"
-    #container_name: coolify
+    container_name: coolify
     restart: always
     working_dir: /var/www/html
     extra_hosts:
@@ -52,7 +52,7 @@
       timeout: 2s
   postgres:
     image: postgres:15-alpine
-    #container_name: coolify-db
+    container_name: coolify-db
     restart: always
     volumes:
       - coolify-db:/var/lib/postgresql/data
@@ -69,7 +69,7 @@
       timeout: 2s
   redis:
     image: redis:7-alpine
-    #container_name: coolify-redis
+    container_name: coolify-redis
     restart: always
     command: redis-server --save 20 1 --loglevel warning --requirepass ${REDIS_PASSWORD:-coolify}
     environment:
@@ -85,7 +85,7 @@
       timeout: 2s
   soketi:
     image: '${REGISTRY_URL:-ghcr.io}/coollabsio/coolify-realtime:1.0.10'
-    #container_name: coolify-realtime
+    container_name: coolify-realtime
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: always

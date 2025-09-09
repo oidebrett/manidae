@@ -128,7 +128,7 @@ EOF
 # This will enable access logging required for CrowdSec integration
 
 services:
-  coolify-proxy:
+  traefik:
     command:
       - '--ping=true'
       - '--ping.entrypoint=http'
@@ -148,10 +148,10 @@ services:
       - '--api.insecure=false'
       - '--providers.docker=true'
       - '--providers.docker.exposedbydefault=false'
-      # 🔽 Added log settings for CrowdSec integration
+      # 🔽 Added log settings
       - '--accesslog=true'
       - '--accesslog.format=json'
-      - '--accesslog.filepath=/traefik/access.log'
+      - '--accesslog.filepath=/traefik/access.log'      
 EOF
 
     # Create docker-compose.overlay.yml for CrowdSec service integration
