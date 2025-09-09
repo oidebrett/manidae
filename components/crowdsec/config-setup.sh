@@ -111,7 +111,42 @@ http:
           enabled: true
 EOF
 
-    # Create docker-compose.overlay.yml for Coolify with CrowdSec integration
+    # Create docker-compose.override.yml for Coolify proxy logging (to be placed in /data/coolify/proxy/)
+    cat > "$ROOT_HOST_DIR/config/coolify/proxy/docker-compose.override.yml" << 'EOF'
+# Coolify Proxy Logging Override
+# This file enables access logging for Coolify's Traefik proxy
+#
+# IMPORTANT: Copy this file to /data/coolify/proxy/docker-compose.override.yml
+# This will enable access logging required for CrowdSec integration
+
+services:
+  coolify-proxy:
+    command:
+      - '--ping=true'
+      - '--ping.entrypoint=http'
+      - '--api.dashboard=true'
+      - '--entrypoints.http.address=:80'
+      - '--entrypoints.https.address=:443'
+      - '--entrypoints.http.http.encodequerysemicolons=true'
+      - '--entryPoints.http.http2.maxConcurrentStreams=250'
+      - '--entrypoints.https.http.encodequerysemicolons=true'
+      - '--entryPoints.https.http2.maxConcurrentStreams=250'
+      - '--entrypoints.https.http3'
+      - '--providers.file.directory=/traefik/dynamic/'
+      - '--providers.file.watch=true'
+      - '--certificatesresolvers.letsencrypt.acme.httpchallenge=true'
+      - '--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=http'
+      - '--certificatesresolvers.letsencrypt.acme.storage=/traefik/acme.json'
+      - '--api.insecure=false'
+      - '--providers.docker=true'
+      - '--providers.docker.exposedbydefault=false'
+      # 🔽 Added log settings for CrowdSec integration
+      - '--accesslog=true'
+      - '--accesslog.format=json'
+      - '--accesslog.filepath=/traefik/access.log'
+EOF
+
+    # Create docker-compose.overlay.yml for CrowdSec service integration
     cat > "$ROOT_HOST_DIR/docker-compose.overlay.yml" << 'EOF'
 # CrowdSec Integration Overlay for Coolify
 # This file adds CrowdSec integration to the base Coolify deployment
@@ -271,7 +306,8 @@ elif [ "$PLATFORM" = "coolify" ]; then
 └── coolify/
     └── proxy/
         ├── crowdsec-plugin.yml
-        └── captcha.html
+        ├── captcha.html
+        └── docker-compose.override.yml
 📁 Additional:
 ./crowdsec_logs/          # Log volume for CrowdSec
 docker-compose.overlay.yml # CrowdSec integration overlay
@@ -285,23 +321,28 @@ docker-compose.overlay.yml # CrowdSec integration overlay
 - CAPTCHA and remediation profiles are active
 
 🚨 IMPORTANT POST-DEPLOYMENT STEPS:
-1. Get the bouncer API key:
+1. Enable Coolify proxy logging (REQUIRED for CrowdSec):
+   cp config/coolify/proxy/docker-compose.override.yml /data/coolify/proxy/
+   docker restart coolify-proxy
+
+2. Get the bouncer API key:
    docker exec coolify-crowdsec cscli bouncers add traefik-bouncer
 
-2. Update the CrowdSec plugin configuration:
-   # Copy the API key from step 1 and update:
+3. Update the CrowdSec plugin configuration:
+   # Copy the API key from step 2 and update:
    sed -i 's/PASTE_YOUR_KEY_HERE/YOUR_ACTUAL_API_KEY/' config/coolify/proxy/crowdsec-plugin.yml
 
-3. Copy overlay files to Coolify proxy directory:
+4. Copy CrowdSec plugin files to Coolify proxy directory:
    cp config/coolify/proxy/crowdsec-plugin.yml /data/coolify/proxy/dynamic/
    cp config/coolify/proxy/captcha.html /data/coolify/proxy/
 
-4. Restart Coolify proxy to apply CrowdSec integration:
+5. Restart Coolify proxy to apply CrowdSec plugin:
    docker restart coolify-proxy
 
-5. Verify CrowdSec is working:
+6. Verify CrowdSec is working:
    docker exec coolify-crowdsec cscli metrics
    # Look for coolify-proxy logs being parsed
+   # Check that /data/coolify/proxy/access.log is being created
 
 📚 CrowdSec Documentation:
 - CrowdSec Docs: https://docs.crowdsec.net/
