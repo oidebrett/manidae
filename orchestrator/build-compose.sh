@@ -37,7 +37,9 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
   # Add optional components based on environment variables
   if [[ -n "${CROWDSEC_ENROLLMENT_KEY:-}" ]]; then
     echo "[orchestrator] Adding crowdsec (CROWDSEC_ENROLLMENT_KEY is set)"
-    COMPONENTS_RAW="$COMPONENTS_RAW,crowdsec"
+    if [[ "$COMPONENTS_RAW" != *"crowdsec"* ]]; then
+      COMPONENTS_RAW="$COMPONENTS_RAW,crowdsec"
+    fi
   fi
   if [[ -n "${CLIENT_ID:-}" && -n "${CLIENT_SECRET:-}" ]]; then
     echo "[orchestrator] Adding mcpauth (CLIENT_ID and CLIENT_SECRET are set)"
@@ -63,6 +65,20 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
   echo "[orchestrator] Auto-derived COMPONENTS: $COMPONENTS_RAW"
 fi
 
+# Handle platform+ aliases by adding required components (applies to both auto-derived and explicit components)
+if [[ "$COMPONENTS_RAW" == *"pangolin+"* ]]; then
+  echo "[orchestrator] pangolin+ detected - ensuring crowdsec is included"
+  if [[ "$COMPONENTS_RAW" != *"crowdsec"* ]]; then
+    COMPONENTS_RAW="$COMPONENTS_RAW,crowdsec"
+  fi
+fi
+if [[ "$COMPONENTS_RAW" == *"coolify+"* ]]; then
+  echo "[orchestrator] coolify+ detected - ensuring crowdsec is included"
+  if [[ "$COMPONENTS_RAW" != *"crowdsec"* ]]; then
+    COMPONENTS_RAW="$COMPONENTS_RAW,crowdsec"
+  fi
+fi
+
 IFS="," read -r -a COMPONENTS_ARR <<< "$COMPONENTS_RAW"
 
 # Helpers
@@ -71,6 +87,9 @@ has_component() {
   for x in "${COMPONENTS_ARR[@]}"; do
     # Handle pangolin+ as alias for pangolin
     if [[ "$c" == "pangolin" && ("$x" == "pangolin" || "$x" == "pangolin+") ]]; then
+      return 0
+    # Handle coolify+ as alias for coolify
+    elif [[ "$c" == "coolify" && ("$x" == "coolify" || "$x" == "coolify+") ]]; then
       return 0
     elif [[ "$x" == "$c" ]]; then
       return 0
@@ -200,21 +219,14 @@ echo "[orchestrator] Wrote $compose_out"
 # --- Build container-setup.sh (copy if present; fallback generate if missing/empty) ---
 setup_out="$OUTPUT_DIR/container-setup.sh"
 setup_src="$ROOT_DIR/container-setup.sh"
-if [ -s "$setup_src" ]; then
-  if [ "$setup_src" = "$setup_out" ]; then
-    tmp_file="$(mktemp)"
-    sed -n '1,9999p' "$setup_src" > "$tmp_file"
-    cat "$tmp_file" > "$setup_out"
-    rm -f "$tmp_file"
-  else
-    sed -n '1,9999p' "$setup_src" > "$setup_out"
-  fi
-else
-  echo "[orchestrator] Source container-setup.sh missing or empty; generating default"
+
+# Always regenerate container-setup.sh when platform+ aliases are used to ensure proper handling
+if [[ "$COMPONENTS_RAW" == *"+"* ]]; then
+  echo "[orchestrator] Platform+ alias detected; generating container-setup.sh with proper alias handling"
   cat > "$setup_out" <<EOF
 #!/bin/sh
 set -e
-ROOT_HOST_DIR="/host-setup"
+ROOT_HOST_DIR="\${ROOT_HOST_DIR:-/host-setup}"
 COMPONENTS_CSV="$COMPONENTS_RAW"
 log() { printf "%s\n" "\$*"; }
 run_component_hooks() {
@@ -225,12 +237,57 @@ run_component_hooks() {
   for c in "\$@"; do
     [ -z "\$c" ] && continue
     # Handle pangolin+ as alias for pangolin
+    # Handle coolify+ as alias for coolify
     component_dir="\$c"
     if [ "\$c" = "pangolin+" ]; then
       component_dir="pangolin"
+    elif [ "\$c" = "coolify+" ]; then
+      component_dir="coolify"
     fi
-    if [ -f "\${ROOT_HOST_DIR}/components/\${component_dir}/config-setup.sh" ]; then
-      /bin/sh "\${ROOT_HOST_DIR}/components/\${component_dir}/config-setup.sh" || true
+    if [ -f "\${MANIDAE_ROOT:-\$ROOT_HOST_DIR}/components/\${component_dir}/config-setup.sh" ]; then
+      /bin/sh "\${MANIDAE_ROOT:-\$ROOT_HOST_DIR}/components/\${component_dir}/config-setup.sh" || true
+    fi
+  done
+}
+run_component_hooks
+EOF
+elif [ -s "$setup_src" ]; then
+  if [ "$setup_src" = "$setup_out" ]; then
+    tmp_file="$(mktemp)"
+    sed -n '1,9999p' "$setup_src" > "$tmp_file"
+    # Update COMPONENTS_CSV with the current COMPONENTS_RAW
+    sed -i "s/^COMPONENTS_CSV=.*/COMPONENTS_CSV=\"$COMPONENTS_RAW\"/" "$tmp_file"
+    cat "$tmp_file" > "$setup_out"
+    rm -f "$tmp_file"
+  else
+    # Copy and update COMPONENTS_CSV with the current COMPONENTS_RAW
+    sed "s/^COMPONENTS_CSV=.*/COMPONENTS_CSV=\"$COMPONENTS_RAW\"/" "$setup_src" > "$setup_out"
+  fi
+else
+  echo "[orchestrator] Source container-setup.sh missing or empty; generating default"
+  cat > "$setup_out" <<EOF
+#!/bin/sh
+set -e
+ROOT_HOST_DIR="\${ROOT_HOST_DIR:-/host-setup}"
+COMPONENTS_CSV="$COMPONENTS_RAW"
+log() { printf "%s\n" "\$*"; }
+run_component_hooks() {
+  comps_csv="\${COMPONENTS_CSV}"
+  # Core-shared functionality is now integrated into platform-specific components
+  # POSIX sh split (BusyBox ash compatible)
+  old_ifs="\$IFS"; IFS=','; set -- \$comps_csv; IFS="\$old_ifs"
+  for c in "\$@"; do
+    [ -z "\$c" ] && continue
+    # Handle pangolin+ as alias for pangolin
+    # Handle coolify+ as alias for coolify
+    component_dir="\$c"
+    if [ "\$c" = "pangolin+" ]; then
+      component_dir="pangolin"
+    elif [ "\$c" = "coolify+" ]; then
+      component_dir="coolify"
+    fi
+    if [ -f "\${MANIDAE_ROOT:-\$ROOT_HOST_DIR}/components/\${component_dir}/config-setup.sh" ]; then
+      /bin/sh "\${MANIDAE_ROOT:-\$ROOT_HOST_DIR}/components/\${component_dir}/config-setup.sh" || true
     fi
   done
 }
@@ -259,7 +316,8 @@ echo "[orchestrator] Wrote $info_out"
 # --- Execute setup script unless dry run ---
 if [[ "${DRY_RUN:-}" != "1" ]]; then
   echo "[orchestrator] Executing $setup_out"
-  "$setup_out"
+  # Execute from the output directory with proper environment
+  (cd "$OUTPUT_DIR" && ROOT_HOST_DIR="." MANIDAE_ROOT="$ROOT_DIR" "./$(basename "$setup_out")")
 else
   echo "[orchestrator] DRY_RUN=1 set; skipping execution."
 fi

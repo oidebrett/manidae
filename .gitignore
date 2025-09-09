@@ -10,7 +10,7 @@ public_html/
 /compose.yaml
 /DEPLOYMENT_INFO.txt
 /container-setup.sh
-
+/postgres_export
 .env
 
 data

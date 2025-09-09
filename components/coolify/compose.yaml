@@ -1,3 +1,10 @@
+# Coolify Docker Compose Configuration
+#
+# For CrowdSec integration (coolify+), you must enable proxy logging:
+# 1. Copy config/coolify/proxy/docker-compose.override.yml to /data/coolify/proxy/
+# 2. Restart coolify-proxy: docker restart coolify-proxy
+# This enables access.log generation required for CrowdSec monitoring.
+
   coolify:
     image: "${REGISTRY_URL:-ghcr.io}/coollabsio/coolify:${LATEST_IMAGE:-latest}"
     container_name: coolify
