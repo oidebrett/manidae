@@ -4,6 +4,14 @@
 ROOT_HOST_DIR="${ROOT_HOST_DIR:-/host-setup}"
 
 # Detect platform based on environment variables
+# First check if .env file exists and source it to get auto-generated variables
+if [ -f "$ROOT_HOST_DIR/.env" ]; then
+    # Source the .env file to get auto-generated Coolify variables
+    set -a  # automatically export all variables
+    . "$ROOT_HOST_DIR/.env"
+    set +a  # stop automatically exporting
+fi
+
 if [ -n "${DB_USERNAME:-}" ] && [ -n "${REDIS_PASSWORD:-}" ] && [ -n "${PUSHER_APP_ID:-}" ]; then
     PLATFORM="coolify"
     echo "🛡️ Setting up CrowdSec for Coolify platform"
@@ -241,7 +249,7 @@ fi
 if [ "$PLATFORM" = "coolify" ]; then
     # Set environment variables for Coolify CrowdSec configuration
     export CROWDSEC_INSTANCE_NAME="coolify-crowdsec"
-    export CROWDSEC_LOG_VOLUME="/data/coolify/proxy:/var/log/coolify/proxy"
+    export CROWDSEC_LOG_VOLUME="/data/coolify/proxy:/var/log/traefik"
     export CROWDSEC_NETWORK="coolify"
 
     # Add environment variables to .env file if they don't exist
