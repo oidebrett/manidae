@@ -37,9 +37,7 @@ elif [ "$PLATFORM" = "coolify" ]; then
     mkdir -p "$ROOT_HOST_DIR/config/coolify/proxy"
 fi
 
-# Config files - platform-specific
-if [ "$PLATFORM" = "pangolin" ]; then
-    cat > "$ROOT_HOST_DIR/config/crowdsec/acquis.yaml" << 'EOF'
+cat > "$ROOT_HOST_DIR/config/crowdsec/acquis.yaml" << 'EOF'
 poll_without_inotify: false
 filenames:
   - /var/log/traefik/*.log
@@ -53,23 +51,6 @@ source: appsec
 labels:
   type: appsec
 EOF
-elif [ "$PLATFORM" = "coolify" ]; then
-    cat > "$ROOT_HOST_DIR/config/crowdsec/acquis.yaml" << 'EOF'
-poll_without_inotify: false
-filenames:
-  - /var/log/traefik/*.log
-labels:
-  type: traefik
-  log_type: http_access-log
----
-listen_addr: 0.0.0.0:7422
-appsec_config: crowdsecurity/appsec-default
-name: myAppSecComponent
-source: appsec
-labels:
-  type: appsec
-EOF
-fi
 
 cat > "$ROOT_HOST_DIR/config/crowdsec/profiles.yaml" << 'EOF'
 name: captcha_remediation
@@ -148,102 +129,13 @@ services:
       - '--api.insecure=false'
       - '--providers.docker=true'
       - '--providers.docker.exposedbydefault=false'
-      # 🔽 Added log settings
-      - '--accesslog=true'
-      - '--accesslog.format=json'
-      - '--accesslog.filepath=/traefik/access.log'      
-EOF
-
-    # Create docker-compose.overlay.yml for CrowdSec service integration
-    cat > "$ROOT_HOST_DIR/docker-compose.overlay.yml" << 'EOF'
-# CrowdSec Integration Overlay for Coolify
-# This file adds CrowdSec integration to the base Coolify deployment
-#
-# IMPORTANT: After deployment, you need to:
-# 1. Get the bouncer API key: docker exec crowdsec cscli bouncers add traefik-bouncer
-# 2. Update the crowdsecLapiKey in /data/coolify/proxy/dynamic/crowdsec-plugin.yml
-# 3. Copy the overlay files to /data/coolify/proxy/dynamic/:
-#    cp config/coolify/proxy/crowdsec-plugin.yml /data/coolify/proxy/dynamic/
-#    cp config/coolify/proxy/captcha.html /data/coolify/proxy/
-
-services:
-  # Override coolify-proxy with CrowdSec integration
-  coolify-proxy:
-    command:
-      - '--ping=true'
-      - '--ping.entrypoint=http'
-      - '--api.dashboard=true'
-      - '--entrypoints.http.address=:80'
-      - '--entrypoints.https.address=:443'
-      - '--entrypoints.http.http.encodequerysemicolons=true'
-      - '--entryPoints.http.http2.maxConcurrentStreams=250'
-      - '--entrypoints.https.http.encodequerysemicolons=true'
-      - '--entryPoints.https.http2.maxConcurrentStreams=250'
-      - '--entrypoints.https.http3'
-      - '--providers.file.directory=/traefik/dynamic/'
-      - '--providers.file.watch=true'
-      - '--certificatesresolvers.letsencrypt.acme.httpchallenge=true'
-      - '--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=http'
-      - '--certificatesresolvers.letsencrypt.acme.storage=/traefik/acme.json'
-      - '--api.insecure=false'
-      - '--providers.docker=true'
-      - '--providers.docker.exposedbydefault=false'
-      # CrowdSec Traefik integration
-      - '--entrypoints.http.http.middlewares=crowdsec@file'
-      - '--entrypoints.https.http.middlewares=crowdsec@file'
-      # CrowdSec plugin configuration
-      - '--experimental.plugins.crowdsec-bouncer.modulename=github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin'
-      - '--experimental.plugins.crowdsec-bouncer.version=v1.2.1'
-      # Access log settings for CrowdSec
-      - '--accesslog=true'
-      - '--accesslog.format=json'
-      - '--accesslog.bufferingsize=0'
-      - '--accesslog.fields.headers.defaultmode=drop'
-      - '--accesslog.fields.headers.names.User-Agent=keep'
-      - '--accesslog.filepath=/traefik/access.log'
-      # Enhanced logging
+      # Added log settings
+      - '--log.format=json'
       - '--log.level=INFO'
-      # Cloudflare support (if using Cloudflare DNS)
-      - '--entryPoints.http.forwardedHeaders.insecure=true'
-      - '--entryPoints.https.forwardedHeaders.insecure=true'
-    extra_hosts:
-      - host.docker.internal:host-gateway
-    networks:
-      - coolify
-
-  # Add CrowdSec service to the stack
-  crowdsec:
-    image: crowdsecurity/crowdsec:latest
-    container_name: coolify-crowdsec
-    environment:
-      GID: "1000"
-      COLLECTIONS: crowdsecurity/traefik crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules crowdsecurity/linux
-      ENROLL_INSTANCE_NAME: "coolify-crowdsec"
-      PARSERS: crowdsecurity/whitelists
-      ENROLL_TAGS: docker
-      ENROLL_KEY: ${CROWDSEC_ENROLLMENT_KEY}
-    healthcheck:
-      interval: 10s
-      retries: 15
-      timeout: 10s
-      test: ["CMD", "cscli", "capi", "status"]
-    volumes:
-      # crowdsec container data
-      - ./config/crowdsec:/etc/crowdsec
-      - ./config/crowdsec/db:/var/lib/crowdsec/data
-      # log bind mounts into crowdsec (Coolify-specific)
-      - /data/coolify/proxy:/var/log/coolify/proxy
-    ports:
-      - 6060:6060 # metrics endpoint for prometheus
-      - 8080:8080 # LAPI endpoint for bouncers
-    restart: unless-stopped
-    command: -t
-    networks:
-      - coolify
-    extra_hosts:
-      - host.docker.internal:host-gateway
+      - '--accesslog=true'
+      - '--accesslog.format=json'
+      - '--accesslog.filepath=/traefik/access.log'
 EOF
-fi
 
 # Set platform-specific environment variables for CrowdSec compose configuration
 if [ "$PLATFORM" = "coolify" ]; then
