@@ -148,9 +148,12 @@ services:
       - '--providers.docker=true'
       - '--providers.docker.exposedbydefault=false'
       # 🔽 Added log settings
+      - '--log.format=json
+      - '--log.level=INFO'
       - '--accesslog=true'
       - '--accesslog.format=json'
-      - '--accesslog.filepath=/traefik/access.log'      
+      - '--accesslog.filepath=/traefik/access.log'
+      
 EOF
 
 fi
