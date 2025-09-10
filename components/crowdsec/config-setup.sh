@@ -163,6 +163,7 @@ if [ "$PLATFORM" = "coolify" ]; then
     # Set environment variables for Coolify CrowdSec configuration
     export CROWDSEC_INSTANCE_NAME="coolify-crowdsec"
     export CROWDSEC_LOG_VOLUME="/data/coolify/proxy:/var/log/traefik"
+    export CROWDSEC_CAPTCHA_PATH="./config/coolify/proxy/crowdsec-plugin.yml:/etc/traefik/conf/captcha.html"
     export CROWDSEC_NETWORK="coolify"
 
     # Add environment variables to .env file if they don't exist
@@ -188,11 +189,13 @@ if [ "$PLATFORM" = "coolify" ]; then
 
     add_env_var_if_missing "CROWDSEC_INSTANCE_NAME" "coolify-crowdsec"
     add_env_var_if_missing "CROWDSEC_LOG_VOLUME" "/data/coolify/proxy:/var/log/traefik"
+    add_env_var_if_missing "CROWDSEC_CAPTCHA_PATH" "./config/coolify/proxy/crowdsec-plugin.yml:/etc/traefik/conf/captcha.html"
     add_env_var_if_missing "CROWDSEC_NETWORK" "coolify"
 elif [ "$PLATFORM" = "pangolin" ]; then
     # Set environment variables for Pangolin CrowdSec configuration (defaults)
     export CROWDSEC_INSTANCE_NAME="pangolin-crowdsec"
     export CROWDSEC_LOG_VOLUME="./config/traefik/logs:/var/log/traefik"
+    export CROWDSEC_CAPTCHA_PATH="./config/traefik/conf/captcha.html:/etc/traefik/conf/captcha.html"
     export CROWDSEC_NETWORK="default"
 fi
 
