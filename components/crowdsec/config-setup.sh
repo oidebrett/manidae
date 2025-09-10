@@ -37,7 +37,9 @@ elif [ "$PLATFORM" = "coolify" ]; then
     mkdir -p "$ROOT_HOST_DIR/config/coolify/proxy"
 fi
 
-cat > "$ROOT_HOST_DIR/config/crowdsec/acquis.yaml" << 'EOF'
+# Config files - platform-specific
+if [ "$PLATFORM" = "pangolin" ]; then
+    cat > "$ROOT_HOST_DIR/config/crowdsec/acquis.yaml" << 'EOF'
 poll_without_inotify: false
 filenames:
   - /var/log/traefik/*.log
@@ -51,6 +53,22 @@ source: appsec
 labels:
   type: appsec
 EOF
+elif [ "$PLATFORM" = "coolify" ]; then
+    cat > "$ROOT_HOST_DIR/config/crowdsec/acquis.yaml" << 'EOF'
+poll_without_inotify: false
+filenames:
+  - /var/log/traefik/*.log
+labels:
+  type: traefik
+---
+listen_addr: 0.0.0.0:7422
+appsec_config: crowdsecurity/appsec-default
+name: myAppSecComponent
+source: appsec
+labels:
+  type: appsec
+EOF
+fi
 
 cat > "$ROOT_HOST_DIR/config/crowdsec/profiles.yaml" << 'EOF'
 name: captcha_remediation
@@ -129,13 +147,13 @@ services:
       - '--api.insecure=false'
       - '--providers.docker=true'
       - '--providers.docker.exposedbydefault=false'
-      # Added log settings
-      - '--log.format=json'
-      - '--log.level=INFO'
+      # 🔽 Added log settings
       - '--accesslog=true'
       - '--accesslog.format=json'
-      - '--accesslog.filepath=/traefik/access.log'
+      - '--accesslog.filepath=/traefik/access.log'      
 EOF
+
+fi
 
 # Set platform-specific environment variables for CrowdSec compose configuration
 if [ "$PLATFORM" = "coolify" ]; then
