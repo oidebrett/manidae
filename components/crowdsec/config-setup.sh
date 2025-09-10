@@ -57,7 +57,7 @@ elif [ "$PLATFORM" = "coolify" ]; then
     cat > "$ROOT_HOST_DIR/config/crowdsec/acquis.yaml" << 'EOF'
 poll_without_inotify: false
 filenames:
-  - /var/log/coolify/proxy/access.log
+  - /var/log/traefik/*.log
 labels:
   type: traefik
   log_type: http_access-log
@@ -274,7 +274,7 @@ if [ "$PLATFORM" = "coolify" ]; then
     }
 
     add_env_var_if_missing "CROWDSEC_INSTANCE_NAME" "coolify-crowdsec"
-    add_env_var_if_missing "CROWDSEC_LOG_VOLUME" "/data/coolify/proxy:/var/log/coolify/proxy"
+    add_env_var_if_missing "CROWDSEC_LOG_VOLUME" "/data/coolify/proxy:/var/log/traefik"
     add_env_var_if_missing "CROWDSEC_NETWORK" "coolify"
 elif [ "$PLATFORM" = "pangolin" ]; then
     # Set environment variables for Pangolin CrowdSec configuration (defaults)
