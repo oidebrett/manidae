@@ -111,10 +111,10 @@ if [ -z "${DOMAIN}" ]; then
 fi
 
 # Create config directory if it doesn't exist
-mkdir -p /host-setup/config/coolify
+mkdir -p /host-setup/config/coolify/proxy/dynamic
 
 # Generate the custom domain configuration file
-cat > /host-setup/config/coolify/custom_domain.yml << EOF
+cat > /host-setup/config/coolify/proxy/dynamic/custom_domain.yml << EOF
 http:
   routers:
     coolify-ui:
@@ -131,10 +131,10 @@ http:
     coolify-ui-service:
       loadBalancer:
         servers:
-          - url: "http://coolify:8080"
+          - url: "http://crowdsec:8081"
 EOF
 
-echo "✅ Generated custom domain configuration at config/coolify/custom_domain.yml"
+echo "✅ Generated custom domain configuration at config/coolify/proxy/dynamic/custom_domain.yml"
 echo "   Domain: ${ADMIN_SUBDOMAIN}.${DOMAIN}"
 
 echo "✅ Coolify platform setup complete"
