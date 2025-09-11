@@ -106,7 +106,7 @@ elif [ "$PLATFORM" = "coolify" ]; then
     wget -O "$ROOT_HOST_DIR/config/coolify/proxy/captcha.html" https://gist.githubusercontent.com/hhftechnology/48569d9f899bb6b889f9de2407efd0d2/raw/captcha.html
 
     # Create CrowdSec plugin configuration for Coolify Traefik
-    cat > "$ROOT_HOST_DIR/config/coolify/proxy/crowdsec-plugin.yml" << 'EOF'
+    cat > "$ROOT_HOST_DIR/config/coolify/proxy/dynamic/crowdsec-plugin.yml" << 'EOF'
 http:
   middlewares:
     crowdsec:
@@ -166,7 +166,7 @@ if [ "$PLATFORM" = "coolify" ]; then
     # Set environment variables for Coolify CrowdSec configuration
     export CROWDSEC_INSTANCE_NAME="coolify-crowdsec"
     export CROWDSEC_LOG_VOLUME="/data/coolify/proxy:/var/log/traefik"
-    export CROWDSEC_CAPTCHA_PATH="./config/coolify/proxy/crowdsec-plugin.yml:/etc/traefik/conf/captcha.html"
+    export CROWDSEC_CAPTCHA_PATH="./config/coolify/proxy/captcha.html:/etc/traefik/conf/captcha.html"
     export CROWDSEC_NETWORK="coolify"
 
     # Add environment variables to .env file if they don't exist
@@ -192,7 +192,7 @@ if [ "$PLATFORM" = "coolify" ]; then
 
     add_env_var_if_missing "CROWDSEC_INSTANCE_NAME" "coolify-crowdsec"
     add_env_var_if_missing "CROWDSEC_LOG_VOLUME" "/data/coolify/proxy:/var/log/traefik"
-    add_env_var_if_missing "CROWDSEC_CAPTCHA_PATH" "./config/coolify/proxy/crowdsec-plugin.yml:/etc/traefik/conf/captcha.html"
+    add_env_var_if_missing "CROWDSEC_CAPTCHA_PATH" "./config/coolify/proxy/captcha.html:/etc/traefik/conf/captcha.html"
     add_env_var_if_missing "CROWDSEC_NETWORK" "coolify"
 elif [ "$PLATFORM" = "pangolin" ]; then
     # Set environment variables for Pangolin CrowdSec configuration (defaults)
@@ -232,9 +232,10 @@ elif [ "$PLATFORM" = "coolify" ]; then
     └── profiles.yaml
 └── coolify/
     └── proxy/
-        ├── crowdsec-plugin.yml
         ├── captcha.html
         └── docker-compose.override.yml
+        └── proxy/
+          └── crowdsec-plugin.yml
 📁 Additional:
 ./crowdsec_logs/          # Log volume for CrowdSec
 docker-compose.overlay.yml # CrowdSec integration overlay
@@ -257,10 +258,10 @@ docker-compose.overlay.yml # CrowdSec integration overlay
 
 3. Update the CrowdSec plugin configuration:
    # Copy the API key from step 2 and update:
-   sed -i 's/PASTE_YOUR_KEY_HERE/YOUR_ACTUAL_API_KEY/' config/coolify/proxy/crowdsec-plugin.yml
+   sed -i 's/PASTE_YOUR_KEY_HERE/YOUR_ACTUAL_API_KEY/' config/coolify/proxy/dynamic/crowdsec-plugin.yml
 
 4. Copy CrowdSec plugin files to Coolify proxy directory:
-   cp config/coolify/proxy/crowdsec-plugin.yml /data/coolify/proxy/dynamic/
+   cp config/coolify/proxy/dynamic/crowdsec-plugin.yml /data/coolify/proxy/dynamic/
    cp config/coolify/proxy/captcha.html /data/coolify/proxy/
 
 5. Restart Coolify proxy to apply CrowdSec plugin:

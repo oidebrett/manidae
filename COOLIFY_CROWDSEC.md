@@ -78,10 +78,10 @@ docker compose up -d
 docker exec coolify-crowdsec cscli bouncers add traefik-bouncer
 
 # 3. Update the CrowdSec plugin with your API key
-sed -i 's/PASTE_YOUR_KEY_HERE/YOUR_ACTUAL_API_KEY/' config/coolify/proxy/crowdsec-plugin.yml
+sed -i 's/PASTE_YOUR_KEY_HERE/YOUR_ACTUAL_API_KEY/' config/coolify/proxy/dynamic/crowdsec-plugin.yml
 
 # 4. Copy CrowdSec plugin files to Coolify
-cp config/coolify/proxy/crowdsec-plugin.yml /data/coolify/proxy/dynamic/
+cp config/coolify/proxy/dynamic/crowdsec-plugin.yml /data/coolify/proxy/dynamic/
 cp config/coolify/proxy/captcha.html /data/coolify/proxy/
 
 # 5. Restart Coolify proxy to apply changes
@@ -215,7 +215,7 @@ services:
       - '--accesslog.filepath=/traefik/access.log'
 ```
 
-Create `config/coolify/proxy/crowdsec-plugin.yml`:
+Create `config/coolify/proxy/dynamic/crowdsec-plugin.yml`:
 
 ```yaml
 http:
@@ -333,10 +333,10 @@ docker restart coolify-proxy
 docker exec coolify-crowdsec cscli bouncers add traefik-bouncer
 
 # 3. Update the CrowdSec plugin with your API key
-sed -i 's/PASTE_YOUR_KEY_HERE/YOUR_ACTUAL_API_KEY/' config/coolify/proxy/crowdsec-plugin.yml
+sed -i 's/PASTE_YOUR_KEY_HERE/YOUR_ACTUAL_API_KEY/' config/coolify/proxy/dynamic/crowdsec-plugin.yml
 
 # 4. Copy CrowdSec plugin files to Coolify
-cp config/coolify/proxy/crowdsec-plugin.yml /data/coolify/proxy/dynamic/
+cp config/coolify/proxy/dynamic/crowdsec-plugin.yml /data/coolify/proxy/dynamic/
 cp config/coolify/proxy/captcha.html /data/coolify/proxy/
 
 # 5. Restart Coolify proxy to apply changes
