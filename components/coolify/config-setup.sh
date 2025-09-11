@@ -122,6 +122,8 @@ http:
       service: coolify-ui-service
       entryPoints:
         - https
+      middlewares:
+        - crowdsec@file
       tls:
         certResolver: letsencrypt
 

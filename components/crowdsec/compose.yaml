@@ -1,6 +1,8 @@
   crowdsec:
     image: crowdsecurity/crowdsec:latest
     #container_name: crowdsec
+    extra_hosts:
+      - host.docker.internal:host-gateway    
     environment:
       GID: "1000"
       COLLECTIONS: crowdsecurity/traefik crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules crowdsecurity/linux
@@ -21,7 +23,7 @@
       - ./config/crowdsec/db:/var/lib/crowdsec/data # crowdsec db
       # log bind mounts into crowdsec (platform-specific)
       - ${CROWDSEC_LOG_VOLUME:-./config/traefik/logs:/var/log/traefik} # traefik logs
-      - ./config/coolify/proxy/captcha.html:/etc/traefik/conf/captcha.html
+      - ${CROWDSEC_CAPTCHA_PATH:-./config/traefik/conf/captcha.html:/etc/traefik/conf/captcha.html}
     ports:
       - 6060:6060 # metrics endpoint for prometheus
     restart: unless-stopped
