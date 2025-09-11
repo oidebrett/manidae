@@ -139,6 +139,11 @@ services:
       - '--entrypoints.https.http.encodequerysemicolons=true'
       - '--entryPoints.https.http2.maxConcurrentStreams=250'
       - '--entrypoints.https.http3'
+      # 🔽 Added crowdsec as middleware
+      - '--entrypoints.http.http.middlewares=crowdsec@file'
+      - '--entrypoints.https.http.middlewares=crowdsec@file'
+      - "--entryPoints.http.forwardedHeaders.insecure=true"
+      - "--entryPoints.https.forwardedHeaders.insecure=true"      
       - '--providers.file.directory=/traefik/dynamic/'
       - '--providers.file.watch=true'
       - '--certificatesresolvers.letsencrypt.acme.httpchallenge=true'
@@ -147,6 +152,9 @@ services:
       - '--api.insecure=false'
       - '--providers.docker=true'
       - '--providers.docker.exposedbydefault=false'
+      # 🔽 Added crowdsec bounver
+      - '--experimental.plugins.crowdsec-bouncer.modulename=github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin'
+      - '--experimental.plugins.crowdsec-bouncer.version=v1.4.5'      
       # 🔽 Added log settings
       - '--log.format=json'
       - '--log.level=INFO'
