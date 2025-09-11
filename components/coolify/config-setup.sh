@@ -131,7 +131,7 @@ http:
     coolify-ui-service:
       loadBalancer:
         servers:
-          - url: "http://crowdsec:8081"
+          - url: "http://coolify:8080"
 EOF
 
 echo "✅ Generated custom domain configuration at config/coolify/proxy/dynamic/custom_domain.yml"

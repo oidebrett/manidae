@@ -224,7 +224,7 @@ http:
       plugin:
         crowdsec-bouncer:
           crowdsecMode: live
-          crowdsecLapiHost: 'host.docker.internal:8080'
+          crowdsecLapiHost: 'crowdsec:8080'
           crowdsecLapiKey: 'PASTE_YOUR_KEY_HERE'
           enabled: true
 ```
