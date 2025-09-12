@@ -5,6 +5,8 @@
     image: hhftechnology/traefik-log-dashboard-backend:latest
     #container_name: log-dashboard-backend
     restart: unless-stopped
+    depends_on:
+      - traefik
     volumes:
       - ./config/traefik/logs:/logs:ro # Mount the Traefik logs directory
       - ./config/maxmind:/maxmind # Mount the Traefik logs directory

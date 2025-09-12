@@ -228,6 +228,7 @@ if [[ "$COMPONENTS_RAW" == *"+"* ]]; then
 set -e
 ROOT_HOST_DIR="\${ROOT_HOST_DIR:-/host-setup}"
 COMPONENTS_CSV="$COMPONENTS_RAW"
+export COMPONENTS_CSV
 log() { printf "%s\n" "\$*"; }
 run_component_hooks() {
   comps_csv="\${COMPONENTS_CSV}"
@@ -270,6 +271,7 @@ else
 set -e
 ROOT_HOST_DIR="\${ROOT_HOST_DIR:-/host-setup}"
 COMPONENTS_CSV="$COMPONENTS_RAW"
+export COMPONENTS_CSV
 log() { printf "%s\n" "\$*"; }
 run_component_hooks() {
   comps_csv="\${COMPONENTS_CSV}"

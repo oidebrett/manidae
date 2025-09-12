@@ -6,6 +6,7 @@ A flexible, modular docker deployment generator that supports multiple base plat
 
 **Pangolin Platform:**
 - **Pangolin** - Main application platform with WireGuard VPN (Gerbil)
+- **Pangolin+** - Enhanced Pangolin with integrated CrowdSec security
 - **Traefik** - Reverse proxy and load balancer
 - **Middleware-Manager** - Dynamic Traefik middleware management
 
@@ -44,11 +45,18 @@ A flexible, modular docker deployment generator that supports multiple base plat
 ### Pangolin Platform
 
 ```bash
-# Basic Pangolin deployment
+# Basic Pangolin deployment (minimal requirements)
+DOMAIN=example.com \
+EMAIL=admin@example.com \
+docker compose -f docker-compose-setup.yml up
+
+# Pangolin+ with enhanced security (includes CrowdSec)
+COMPONENTS="pangolin+" \
 DOMAIN=example.com \
 EMAIL=admin@example.com \
 ADMIN_USERNAME=admin@example.com \
 ADMIN_PASSWORD=changeme \
+CROWDSEC_ENROLLMENT_KEY=your-enrollment-key \
 docker compose -f docker-compose-setup.yml up
 
 # Start services
@@ -78,6 +86,7 @@ If you don't specify `COMPONENTS`, the system automatically detects your platfor
 **Pangolin Platform Detection:**
 - Detected when `DOMAIN` and `EMAIL` are provided
 - Base: `pangolin,middleware-manager`
+- **Pangolin+**: Use `COMPONENTS="pangolin+"` for enhanced security with integrated CrowdSec
 - Auto-adds components based on environment variables
 
 **Coolify Platform Detection:**
@@ -86,17 +95,22 @@ If you don't specify `COMPONENTS`, the system automatically detects your platfor
 - Auto-adds components based on environment variables
 
 **Component Auto-Addition (both platforms):**
-- `crowdsec` if `CROWDSEC_ENROLLMENT_KEY` is set
+- `crowdsec` if `CROWDSEC_ENROLLMENT_KEY` is set (or automatically with `pangolin+`)
 - `mcpauth` if both `CLIENT_ID` and `CLIENT_SECRET` are set
 - `komodo` if `KOMODO_HOST_IP` is set (Pangolin only)
 - `nlweb` if any AI API key is set (`OPENAI_API_KEY`, `AZURE_OPENAI_API_KEY`, etc.)
 - `static-page` if `STATIC_PAGE_SUBDOMAIN` is set (Pangolin only)
 - `traefik-log-dashboard` if `MAXMIND_LICENSE_KEY` is set
 
+**Note:** `pangolin+` automatically includes CrowdSec with enhanced Traefik integration.
+
 **Manual Override:**
 ```bash
 # Explicit component selection
 COMPONENTS="pangolin,middleware-manager,crowdsec" docker compose -f docker-compose-setup.yml up
+
+# Pangolin+ (enhanced with integrated CrowdSec)
+COMPONENTS="pangolin+" docker compose -f docker-compose-setup.yml up
 
 # Or for Coolify
 COMPONENTS="coolify,crowdsec" docker compose -f docker-compose-setup.yml up
@@ -106,22 +120,28 @@ COMPONENTS="coolify,crowdsec" docker compose -f docker-compose-setup.yml up
 
 ### Pangolin Deployments
 
-**Basic Pangolin (pangolin + middleware-manager):**
+**Basic Pangolin (minimal setup):**
 ```bash
-DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme \
+# Only requires DOMAIN and EMAIL
+DOMAIN=example.com EMAIL=admin@example.com \
 docker compose -f docker-compose-setup.yml up
 ```
 
-**Pangolin+ with Security (+ CrowdSec):**
+**Pangolin+ (enhanced with integrated CrowdSec security):**
 ```bash
-DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme \
-CROWDSEC_ENROLLMENT_KEY=your-key \
+# Requires admin credentials and CrowdSec enrollment key
+COMPONENTS="pangolin+" \
+DOMAIN=example.com EMAIL=admin@example.com \
+ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme \
+CROWDSEC_ENROLLMENT_KEY=your-enrollment-key \
 docker compose -f docker-compose-setup.yml up
 ```
 
-**Full Pangolin Stack:**
+**Full Pangolin+ Stack (all optional components):**
 ```bash
-DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme \
+COMPONENTS="pangolin+" \
+DOMAIN=example.com EMAIL=admin@example.com \
+ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme \
 CROWDSEC_ENROLLMENT_KEY=your-key CLIENT_ID=your-client-id CLIENT_SECRET=your-client-secret \
 OPENAI_API_KEY=your-key KOMODO_HOST_IP=127.0.0.1 MAXMIND_LICENSE_KEY=your-maxmind-key \
 docker compose -f docker-compose-setup.yml up
@@ -143,6 +163,39 @@ PUSHER_APP_ID=app-id PUSHER_APP_KEY=app-key PUSHER_APP_SECRET=app-secret \
 CROWDSEC_ENROLLMENT_KEY=your-key \
 docker compose -f docker-compose-setup.yml up
 ```
+
+## Pangolin vs Pangolin+
+
+### Pangolin (Standard)
+**Minimal Requirements:** `DOMAIN` and `EMAIL` only
+
+**What's Included:**
+- Pangolin application platform
+- Gerbil WireGuard VPN management
+- Traefik reverse proxy
+- Middleware Manager
+- Basic Traefik configuration
+
+**Use Case:** Simple deployments where you want the core functionality without additional security layers.
+
+### Pangolin+ (Enhanced Security)
+**Requirements:** `DOMAIN`, `EMAIL`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, and `CROWDSEC_ENROLLMENT_KEY`
+
+**What's Included:**
+- Everything from standard Pangolin
+- **CrowdSec security engine** with collaborative threat intelligence
+- **Enhanced Traefik configuration** with CrowdSec middleware integration
+- **Automatic security plugin setup** (CrowdSec bouncer v1.4.5)
+- **Integrated threat protection** on all HTTP/HTTPS entry points
+
+**Key Security Features:**
+- Real-time IP reputation and threat detection
+- Collaborative security with CrowdSec community
+- CAPTCHA challenges for suspicious traffic
+- Automatic IP banning for malicious actors
+- AppSec virtual patching capabilities
+
+**Use Case:** Production deployments requiring enhanced security and threat protection.
 
 ## Components
 
@@ -166,20 +219,24 @@ The Middleware Manager is a standalone component that provides dynamic middlewar
 
 Include by default (auto-derivation):
 ```bash
-# Middleware Manager included automatically
-DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme docker compose -f docker-compose-setup.yml up
+# Middleware Manager included automatically with basic Pangolin
+DOMAIN=example.com EMAIL=admin@example.com docker compose -f docker-compose-setup.yml up
 ```
 
 Exclude middleware-manager:
 ```bash
 # Only Pangolin, no middleware manager
-COMPONENTS="pangolin" DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme docker compose -f docker-compose-setup.yml up
+COMPONENTS="pangolin" DOMAIN=example.com EMAIL=admin@example.com docker compose -f docker-compose-setup.yml up
 ```
 
 Explicitly include with other components:
 ```bash
-# Pangolin + Middleware Manager + CrowdSec
-COMPONENTS="pangolin,middleware-manager,crowdsec" DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme CROWDSEC_ENROLLMENT_KEY=your-key docker compose -f docker-compose-setup.yml up
+# Pangolin + Middleware Manager + CrowdSec (manual component selection)
+COMPONENTS="pangolin,middleware-manager,crowdsec" \
+DOMAIN=example.com EMAIL=admin@example.com \
+ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme \
+CROWDSEC_ENROLLMENT_KEY=your-key \
+docker compose -f docker-compose-setup.yml up
 ```
 
 **Accessing Middleware Manager:**
@@ -205,14 +262,19 @@ The Static Page component creates a custom landing page for your deployment and 
 
 Enable static page:
 ```bash
-# Static page with custom subdomain
-STATIC_PAGE_SUBDOMAIN=www DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme docker compose -f docker-compose-setup.yml up
+# Static page with custom subdomain (basic Pangolin)
+STATIC_PAGE_SUBDOMAIN=www DOMAIN=example.com EMAIL=admin@example.com \
+docker compose -f docker-compose-setup.yml up
 ```
 
 Combined with other components:
 ```bash
-# Static page + CrowdSec + other components
-STATIC_PAGE_SUBDOMAIN=www DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme CROWDSEC_ENROLLMENT_KEY=your-key docker compose -f docker-compose-setup.yml up
+# Static page + CrowdSec + other components (requires admin credentials for CrowdSec)
+STATIC_PAGE_SUBDOMAIN=www \
+DOMAIN=example.com EMAIL=admin@example.com \
+ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme \
+CROWDSEC_ENROLLMENT_KEY=your-key \
+docker compose -f docker-compose-setup.yml up
 ```
 
 **Important Notes:**
@@ -247,14 +309,20 @@ The Traefik Log Dashboard component provides enhanced logging, monitoring, and a
 
 Enable log dashboard:
 ```bash
-# Basic setup with log dashboard
-MAXMIND_LICENSE_KEY=your-license-key DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme docker compose -f docker-compose-setup.yml up
+# Basic setup with log dashboard (basic Pangolin)
+MAXMIND_LICENSE_KEY=your-license-key \
+DOMAIN=example.com EMAIL=admin@example.com \
+docker compose -f docker-compose-setup.yml up
 ```
 
 Combined with other components:
 ```bash
-# Full stack with log dashboard
-MAXMIND_LICENSE_KEY=your-license-key CROWDSEC_ENROLLMENT_KEY=your-crowdsec-key DOMAIN=example.com EMAIL=admin@example.com ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme docker compose -f docker-compose-setup.yml up
+# Full stack with log dashboard + CrowdSec (requires admin credentials)
+MAXMIND_LICENSE_KEY=your-license-key \
+CROWDSEC_ENROLLMENT_KEY=your-crowdsec-key \
+DOMAIN=example.com EMAIL=admin@example.com \
+ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme \
+docker compose -f docker-compose-setup.yml up
 ```
 
 **Performance Optimization (Optional):**

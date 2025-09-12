@@ -111,8 +111,86 @@ update_domains_in_csv() {
 # Update domains in CSV if present
 update_domains_in_csv
 
+# Function to detect if pangolin+ is being used
+is_pangolin_plus() {
+    # Check if COMPONENTS_CSV contains pangolin+
+    case "${COMPONENTS_CSV:-}" in
+        *"pangolin+"*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
 # Traefik static config
-cat > "$ROOT_HOST_DIR/config/traefik/traefik_config.yml" << EOF
+if is_pangolin_plus; then
+    # Pangolin+ configuration with CrowdSec support
+    cat > "$ROOT_HOST_DIR/config/traefik/traefik_config.yml" << EOF
+api:
+  insecure: true
+  dashboard: true
+
+providers:
+  http:
+    endpoint: "http://pangolin:3001/api/v1/traefik-config"
+    pollInterval: "5s"
+  file:
+    directory: "/rules"
+    watch: true
+
+experimental:
+  plugins:
+    badger:
+      moduleName: "github.com/fosrl/badger"
+      version: "v1.2.0"
+    statiq:
+      moduleName: github.com/hhftechnology/statiq
+      version: v1.0.1
+    crowdsec:
+      moduleName: "github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin"
+      version: "v1.4.5"
+
+log:
+    level: "INFO"
+    format: "json"
+    maxSize: 100
+    maxAge: 3
+    compress: true
+
+accessLog:
+    filePath: "/var/log/traefik/access.log"
+    format: json
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      httpChallenge:
+        entryPoint: web
+      email: ${EMAIL}
+      storage: "/letsencrypt/acme.json"
+      caServer: "https://acme-v02.api.letsencrypt.org/directory"
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      middlewares:
+        - crowdsec@file
+  websecure:
+    address: ":443"
+    transport:
+      respondingTimeouts:
+        readTimeout: "30m"
+    http:
+      tls:
+        certResolver: "letsencrypt"
+      middlewares:
+        - crowdsec@file
+
+serversTransport:
+  insecureSkipVerify: true
+EOF
+else
+    # Standard Pangolin configuration without CrowdSec
+    cat > "$ROOT_HOST_DIR/config/traefik/traefik_config.yml" << EOF
 api:
   insecure: true
   dashboard: true
@@ -169,8 +247,9 @@ entryPoints:
 serversTransport:
   insecureSkipVerify: true
 EOF
+fi
 
-# Basic dynamic_config.yml without optional middlewares
+# Dynamic config for pangolin and pangolin+
 cat > "$ROOT_HOST_DIR/config/traefik/rules/dynamic_config.yml" << EOF
 http:
   middlewares:
