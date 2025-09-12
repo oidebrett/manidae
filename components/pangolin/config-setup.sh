@@ -171,9 +171,6 @@ certificatesResolvers:
 entryPoints:
   web:
     address: ":80"
-    http:
-      middlewares:
-        - crowdsec@file
   websecure:
     address: ":443"
     transport:
