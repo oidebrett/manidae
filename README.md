@@ -197,6 +197,12 @@ docker compose -f docker-compose-setup.yml up
 
 **Use Case:** Production deployments requiring enhanced security and threat protection.
 
+**Important Notes:** Pangolin+ requires that the CROWDSEC bouncer api key is added. You can do this using the following script *post* install
+```bash
+chmod +x ./components/crowdsec/update-bouncer-post-install.sh
+./components/crowdsec/update-bouncer-post-install.sh manidae_crowdsec_1
+```
+
 ## Components
 
 ### Middleware Manager
