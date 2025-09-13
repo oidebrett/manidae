@@ -113,8 +113,20 @@ fi
 # Create config directory if it doesn't exist
 mkdir -p /host-setup/config/coolify/proxy/dynamic
 
+# Function to detect if pangolin+ is being used
+is_coolify_plus() {
+    # Check if COMPONENTS_CSV contains pangolin+
+    case "${COMPONENTS_CSV:-}" in
+        *"coolify+"*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Traefik custom domain config
+if is_coolify_plus; then
+
 # Generate the custom domain configuration file
-cat > /host-setup/config/coolify/proxy/dynamic/custom_domain.yml << EOF
+    cat > /host-setup/config/coolify/proxy/dynamic/custom_domain.yml << EOF
 http:
   routers:
     coolify-ui:
@@ -133,6 +145,26 @@ http:
         servers:
           - url: "http://coolify:8080"
 EOF
+else
+    cat > /host-setup/config/coolify/proxy/dynamic/custom_domain.yml << EOF
+http:
+  routers:
+    coolify-ui:
+      rule: "Host(\`${ADMIN_SUBDOMAIN}.${DOMAIN}\`)"
+      service: coolify-ui-service
+      entryPoints:
+        - https
+      tls:
+        certResolver: letsencrypt
+
+  services:
+    coolify-ui-service:
+      loadBalancer:
+        servers:
+          - url: "http://coolify:8080"
+EOF
+fi
+
 
 echo "✅ Generated custom domain configuration at config/coolify/proxy/dynamic/custom_domain.yml"
 echo "   Domain: ${ADMIN_SUBDOMAIN}.${DOMAIN}"
