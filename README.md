@@ -46,6 +46,7 @@ A flexible, modular docker deployment generator that supports multiple base plat
 
 ```bash
 # Basic Pangolin deployment (minimal requirements)
+COMPONENTS="pangolin" \
 DOMAIN=example.com \
 EMAIL=admin@example.com \
 docker compose -f docker-compose-setup.yml up
@@ -67,6 +68,7 @@ docker compose up -d
 
 ```bash
 # Basic Coolify deployment
+COMPONENTS="coolify" \
 DB_USERNAME=coolify \
 DB_PASSWORD=secure-db-password \
 REDIS_PASSWORD=secure-redis-password \
@@ -123,6 +125,7 @@ COMPONENTS="coolify,crowdsec" docker compose -f docker-compose-setup.yml up
 **Basic Pangolin (minimal setup):**
 ```bash
 # Only requires DOMAIN and EMAIL
+COMPONENTS="pangolin" \
 DOMAIN=example.com EMAIL=admin@example.com \
 docker compose -f docker-compose-setup.yml up
 ```
@@ -143,7 +146,7 @@ COMPONENTS="pangolin+" \
 DOMAIN=example.com EMAIL=admin@example.com \
 ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme \
 CROWDSEC_ENROLLMENT_KEY=your-key CLIENT_ID=your-client-id CLIENT_SECRET=your-client-secret \
-OPENAI_API_KEY=your-key KOMODO_HOST_IP=127.0.0.1 MAXMIND_LICENSE_KEY=your-maxmind-key \
+OPENAI_API_KEY=your-key MAXMIND_LICENSE_KEY=your-maxmind-key \
 docker compose -f docker-compose-setup.yml up
 ```
 

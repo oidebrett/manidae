@@ -153,6 +153,9 @@ services:
       # 🔽 Added log settings
       - '--log.format=json'
       - '--log.level=INFO'
+      - '--log.maxSize=100'
+      - '--log.maxAge=3'
+      - '--log.compress=true'
       - '--accesslog=true'
       - '--accesslog.format=json'
       - '--accesslog.filepath=/traefik/access.log'
