@@ -260,8 +260,8 @@ import_resources_csv() {
     sqlite3 "$DB_PATH" <<EOF
 CREATE TEMP TABLE temp_resources (
     resourceId TEXT,
-    siteId TEXT,
     orgId TEXT,
+    niceId TEXT,
     name TEXT,
     subdomain TEXT,
     fullDomain TEXT,
@@ -278,7 +278,8 @@ CREATE TEMP TABLE temp_resources (
     stickySession TEXT,
     tlsServerName TEXT,
     setHostHeader TEXT,
-    niceId TEXT,
+    enableProxy TEXT,
+    skipToIdpId TEXT,
     headers TEXT
 );
 
@@ -288,7 +289,7 @@ CREATE TEMP TABLE temp_resources (
 INSERT INTO resources (
     resourceId, orgId, niceId, name, subdomain, fullDomain, domainId,
     ssl, blockAccess, sso, http, protocol, proxyPort, emailWhitelistEnabled,
-    applyRules, enabled, stickySession, tlsServerName, setHostHeader, enableProxy, headers
+    applyRules, enabled, stickySession, tlsServerName, setHostHeader, enableProxy, skipToIdpId, headers
 )
 SELECT
     CASE WHEN resourceId = '' THEN NULL ELSE CAST(resourceId AS INTEGER) END,
@@ -310,7 +311,8 @@ SELECT
     CASE WHEN stickySession = 't' THEN 1 WHEN stickySession = 'f' THEN 0 ELSE CAST(stickySession AS INTEGER) END,
     CASE WHEN tlsServerName = '' THEN NULL ELSE tlsServerName END,
     CASE WHEN setHostHeader = '' THEN NULL ELSE setHostHeader END,
-    1 as enableProxy,
+    CASE WHEN enableProxy = 't' THEN 1 WHEN enableProxy = 'f' THEN 0 WHEN enableProxy = '' THEN 1 ELSE CAST(enableProxy AS INTEGER) END,
+    CASE WHEN skipToIdpId = '' THEN NULL ELSE CAST(skipToIdpId AS INTEGER) END,
     CASE WHEN headers = '' THEN NULL ELSE headers END
 FROM temp_resources;
 

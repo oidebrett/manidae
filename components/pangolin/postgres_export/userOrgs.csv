@@ -1,2 +1,2 @@
-userId,orgId,roleId,isOwner
-2zd8jy2kvbunwv1,admin,1,t
+userId,orgId,roleId,isOwner,autoProvisioned
+2zd8jy2kvbunwv1,admin,1,t,0
