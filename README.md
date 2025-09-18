@@ -12,9 +12,6 @@ A flexible, modular docker deployment generator that supports multiple base plat
 
 **Coolify Platform:**
 - **Coolify** - Self-hosted application deployment platform
-- **PostgreSQL** - Database for Coolify
-- **Redis** - Cache and session storage
-- **Soketi** - WebSocket server for real-time features
 
 ## Optional Add-on Components
 
@@ -23,8 +20,7 @@ A flexible, modular docker deployment generator that supports multiple base plat
 - **Traefik Log Dashboard** - Enhanced logging and analytics with GeoIP
 
 **Authentication & Management:**
-- **MCPAuth** - OAuth authentication
-- **Komodo** - Infrastructure management
+- **MCPAuth** - MCP OAuth authentication (currently only Google IDP supported)
 - **NLWeb** - Natural language web interface
 - **Static Page** - Custom landing pages
 
@@ -39,6 +35,7 @@ A flexible, modular docker deployment generator that supports multiple base plat
    - `DEPLOYMENT_INFO.txt` - Deployment summary and access information
    - `config/` - Configuration files and folders
 5. **Start your stack** with `docker compose up -d`
+6. **Complete any manual post-deployment steps** 
 
 ## Quick Start Examples
 
@@ -64,6 +61,18 @@ docker compose -f docker-compose-setup.yml up
 docker compose up -d
 ```
 
+Note: the EMAIL is your letsencrypt contact email. It is not used for authentication.
+
+##### Pangolin+ Post-Deployment Steps
+
+Run the following post-deployment steps to complete the setup of your Pangolin+ stack:
+
+```bash
+docker exec pangolin-stack-pangolin-1 pangctl set-admin-credentials --email "admin@yourdomain.com"  --password "Password123"
+chmod +x initialize_sqlite.sh
+./initialize_sqlite.sh
+```
+
 ### Coolify Platform
 
 ```bash
@@ -80,6 +89,8 @@ docker compose -f docker-compose-setup.yml up
 # Start services
 docker compose up -d
 ```
+
+Note: you can easily generate keys using `openssl rand -hex 32`
 
 ## Platform Auto-Detection
 
@@ -99,7 +110,6 @@ If you don't specify `COMPONENTS`, the system automatically detects your platfor
 **Component Auto-Addition (both platforms):**
 - `crowdsec` if `CROWDSEC_ENROLLMENT_KEY` is set (or automatically with `pangolin+`)
 - `mcpauth` if both `CLIENT_ID` and `CLIENT_SECRET` are set
-- `komodo` if `KOMODO_HOST_IP` is set (Pangolin only)
 - `nlweb` if any AI API key is set (`OPENAI_API_KEY`, `AZURE_OPENAI_API_KEY`, etc.)
 - `static-page` if `STATIC_PAGE_SUBDOMAIN` is set (Pangolin only)
 - `traefik-log-dashboard` if `MAXMIND_LICENSE_KEY` is set
@@ -199,6 +209,13 @@ docker compose -f docker-compose-setup.yml up
 - AppSec virtual patching capabilities
 
 **Use Case:** Production deployments requiring enhanced security and threat protection.
+
+**Important Notes:** Pangolin+ requires dynamic configuration of Pangolin.
+```bash
+docker exec pangolin-stack-pangolin-1 pangctl set-admin-credentials --email "admin@yourdomain.com"  --password "Password123"
+chmod +x initialize_sqlite.sh
+./initialize_sqlite.sh
+```
 
 **Important Notes:** Pangolin+ requires that the CROWDSEC bouncer api key is added. You can do this using the following script *post* install
 ```bash
@@ -383,6 +400,5 @@ All at the repository root (mounted as `/host-setup` in the setup container).
 
 ## Notes
 
-- The old monolithic `container-setup.sh` and inline heredoc compose generation were removed. The setup compose now only drives the orchestrator.
 - Keep ports 80/443/51820 open.
 - Ensure your domain DNS points to the host.
