@@ -1,6 +1,6 @@
-targetId,resourceId,ip,method,port,internalPort,enabled
-1,1,middleware-manager,http,3456,,t
-2,2,localhost,http,8080,,t
-3,3,komodo-core-1,http,9120,,t
-4,4,nlweb,http,8000,,t
-5,5,frontend,http,80,,t
+targetId,resourceId,ip,method,port,internalPort,enabled,siteId,path,pathMatchType
+1,1,middleware-manager,http,3456,,t,1,,
+2,2,localhost,http,8080,,t,1,,
+3,3,komodo-core-1,http,9120,,t,1,,
+4,4,nlweb,http,8000,,t,1,,
+5,5,frontend,http,80,,t,1,,

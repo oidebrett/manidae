@@ -113,6 +113,9 @@ import_csv_to_sqlite() {
     elif [[ "$table_name" == "resources" ]]; then
         # resources table has an extra enableProxy column in SQLite
         import_resources_csv "$csv_file"
+    elif [[ "$table_name" == "siteResources" ]]; then
+        # resources table has an extra enableProxy column in SQLite
+        import_site_resources_csv "$csv_file"
     elif [[ "$table_name" == "targets" ]]; then
         # targets table needs special handling for data types
         import_targets_csv "$csv_file"
@@ -188,7 +191,7 @@ INSERT INTO sites (
 SELECT
     CASE WHEN siteId = '' THEN NULL ELSE CAST(siteId AS INTEGER) END,
     orgId,
-    niceId,
+    CASE WHEN niceId = '' OR niceId IS NULL THEN 'site-' || siteId ELSE niceId END,
     CASE WHEN exitNode = '' THEN NULL ELSE CAST(exitNode AS INTEGER) END,
     name,
     CASE WHEN pubKey = '' THEN NULL ELSE pubKey END,
@@ -212,6 +215,37 @@ EOF
 
     # Clean up temp file
     rm -f "$TEMP_CSV"
+}
+
+# Function to generate a unique niceId
+generate_nice_id() {
+    local used_ids="$1"
+    local nice_id=""
+    local loops=0
+
+    # Simple adjective-animal generator (basic version)
+    local adjectives=("happy" "clever" "brave" "swift" "bright" "calm" "bold" "wise" "kind" "cool")
+    local animals=("cat" "dog" "fox" "owl" "bee" "elk" "ant" "bat" "cod" "eel")
+
+    while true; do
+        if [ $loops -gt 100 ]; then
+            # Fallback to timestamp-based ID
+            nice_id="resource-$(date +%s)-$RANDOM"
+            break
+        fi
+
+        local adj_idx=$((RANDOM % ${#adjectives[@]}))
+        local animal_idx=$((RANDOM % ${#animals[@]}))
+        nice_id="${adjectives[$adj_idx]}-${animals[$animal_idx]}"
+
+        # Check if this ID is already used
+        if ! echo "$used_ids" | grep -q "^$nice_id$"; then
+            break
+        fi
+        loops=$((loops + 1))
+    done
+
+    echo "$nice_id"
 }
 
 # Special function for resources table
@@ -243,21 +277,23 @@ CREATE TEMP TABLE temp_resources (
     enabled TEXT,
     stickySession TEXT,
     tlsServerName TEXT,
-    setHostHeader TEXT
+    setHostHeader TEXT,
+    niceId TEXT,
+    headers TEXT
 );
 
 .mode csv
 .import "$TEMP_CSV" temp_resources
 
 INSERT INTO resources (
-    resourceId, siteId, orgId, name, subdomain, fullDomain, domainId,
+    resourceId, orgId, niceId, name, subdomain, fullDomain, domainId,
     ssl, blockAccess, sso, http, protocol, proxyPort, emailWhitelistEnabled,
-    applyRules, enabled, stickySession, tlsServerName, setHostHeader, enableProxy
+    applyRules, enabled, stickySession, tlsServerName, setHostHeader, enableProxy, headers
 )
 SELECT
     CASE WHEN resourceId = '' THEN NULL ELSE CAST(resourceId AS INTEGER) END,
-    CASE WHEN siteId = '' THEN NULL ELSE CAST(siteId AS INTEGER) END,
     orgId,
+    CASE WHEN niceId = '' OR niceId IS NULL THEN 'resource-' || resourceId ELSE niceId END,
     name,
     CASE WHEN subdomain = '' THEN NULL ELSE subdomain END,
     CASE WHEN fullDomain = '' THEN NULL ELSE fullDomain END,
@@ -274,10 +310,60 @@ SELECT
     CASE WHEN stickySession = 't' THEN 1 WHEN stickySession = 'f' THEN 0 ELSE CAST(stickySession AS INTEGER) END,
     CASE WHEN tlsServerName = '' THEN NULL ELSE tlsServerName END,
     CASE WHEN setHostHeader = '' THEN NULL ELSE setHostHeader END,
-    1 as enableProxy
+    1 as enableProxy,
+    CASE WHEN headers = '' THEN NULL ELSE headers END
 FROM temp_resources;
 
 DROP TABLE temp_resources;
+EOF
+
+    # Clean up temp file
+    rm -f "$TEMP_CSV"
+}
+
+# Special function for site resources table
+import_site_resources_csv() {
+    local csv_file="$1"
+
+    # Create a temporary CSV file without header
+    TEMP_CSV="/tmp/site_resources_temp.csv"
+    tail -n +2 "$csv_file" > "$TEMP_CSV"
+
+    # Create a temporary table to import CSV data
+    sqlite3 "$DB_PATH" <<EOF
+CREATE TEMP TABLE temp_site_resources (
+    siteResourceId TEXT,
+    siteId TEXT,
+    orgId TEXT,
+    niceId TEXT,
+    name TEXT,
+    protocol TEXT,
+    proxyPort TEXT,
+    destinationPort TEXT,
+    destinationIp TEXT,
+    enabled TEXT
+);
+
+.mode csv
+.import "$TEMP_CSV" temp_site_resources
+
+INSERT INTO siteResources (
+    siteResourceId, siteId, orgId, niceId, name, protocol, proxyPort, destinationPort, destinationIp, enabled
+)
+SELECT
+    CASE WHEN siteResourceId = '' THEN NULL ELSE CAST(siteResourceId AS INTEGER) END,
+    CASE WHEN siteId = '' THEN NULL ELSE CAST(siteId AS INTEGER) END,
+    orgId,
+    CASE WHEN niceId = '' OR niceId IS NULL THEN 'site-resource-' || siteResourceId ELSE niceId END,
+    name,
+    protocol,
+    CASE WHEN proxyPort = '' THEN NULL ELSE CAST(proxyPort AS INTEGER) END,
+    CASE WHEN destinationPort = '' THEN NULL ELSE CAST(destinationPort AS INTEGER) END,
+    destinationIp,
+    CASE WHEN enabled = 't' THEN 1 WHEN enabled = 'f' THEN 0 ELSE CAST(enabled AS INTEGER) END
+FROM temp_site_resources;
+
+DROP TABLE temp_site_resources;
 EOF
 
     # Clean up temp file
@@ -292,6 +378,12 @@ import_targets_csv() {
     TEMP_CSV="/tmp/targets_temp.csv"
     tail -n +2 "$csv_file" > "$TEMP_CSV"
 
+    # Get the first site ID to use as default for targets that don't have siteId
+    FIRST_SITE_ID=$(sqlite3 "$DB_PATH" "SELECT siteId FROM sites LIMIT 1;")
+    if [ -z "$FIRST_SITE_ID" ]; then
+        FIRST_SITE_ID=1
+    fi
+
     # Create a temporary table to import CSV data
     sqlite3 "$DB_PATH" <<EOF
 CREATE TEMP TABLE temp_targets (
@@ -301,23 +393,29 @@ CREATE TEMP TABLE temp_targets (
     method TEXT,
     port TEXT,
     internalPort TEXT,
-    enabled TEXT
+    enabled TEXT,
+    siteId TEXT,
+    path TEXT,
+    pathMatchType TEXT
 );
 
 .mode csv
 .import "$TEMP_CSV" temp_targets
 
 INSERT INTO targets (
-    targetId, resourceId, ip, method, port, internalPort, enabled
+    targetId, resourceId, siteId, ip, method, port, internalPort, enabled, path, pathMatchType
 )
 SELECT
     CASE WHEN targetId = '' THEN NULL ELSE CAST(targetId AS INTEGER) END,
     CASE WHEN resourceId = '' THEN NULL ELSE CAST(resourceId AS INTEGER) END,
+    CASE WHEN siteId = '' OR siteId IS NULL THEN $FIRST_SITE_ID ELSE CAST(siteId AS INTEGER) END,
     ip,
     CASE WHEN method = '' THEN NULL ELSE method END,
     CASE WHEN port = '' THEN NULL ELSE CAST(port AS INTEGER) END,
     CASE WHEN internalPort = '' THEN NULL ELSE CAST(internalPort AS INTEGER) END,
-    CASE WHEN enabled = 't' THEN 1 WHEN enabled = 'f' THEN 0 ELSE CAST(enabled AS INTEGER) END
+    CASE WHEN enabled = 't' THEN 1 WHEN enabled = 'f' THEN 0 ELSE CAST(enabled AS INTEGER) END,
+    CASE WHEN path = '' THEN NULL ELSE path END,
+    CASE WHEN pathMatchType = '' THEN NULL ELSE pathMatchType END
 FROM temp_targets;
 
 DROP TABLE temp_targets;
@@ -380,7 +478,7 @@ TABLES=(
     "versionMigrations" "resourceRules" "supporterKey" "idpOidcConfig"
     "licenseKey" "hostMeta" "apiKeys" "apiKeyActions" "apiKeyOrg" "idpOrg"
     "clientSession" "clientSites" "clients" "olms" "roleClients" "userClients"
-    "webauthnChallenge" "webauthnCredentials"
+    "webauthnChallenge" "webauthnCredentials" "setupTokens" "siteResources"
 )
 
 echo "Importing CSV data into SQLite database: $DB_PATH"
