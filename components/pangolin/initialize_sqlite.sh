@@ -391,12 +391,12 @@ import_targets_csv() {
 CREATE TEMP TABLE temp_targets (
     targetId TEXT,
     resourceId TEXT,
+    siteId TEXT,
     ip TEXT,
     method TEXT,
     port TEXT,
     internalPort TEXT,
     enabled TEXT,
-    siteId TEXT,
     path TEXT,
     pathMatchType TEXT
 );
