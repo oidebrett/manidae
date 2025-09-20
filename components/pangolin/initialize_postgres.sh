@@ -114,14 +114,15 @@ CREATE TABLE IF NOT EXISTS sites (
     "publicKey" TEXT,
     "lastHolePunch" BIGINT,
     "listenPort" INTEGER,
-    "dockerSocketEnabled" BOOLEAN NOT NULL DEFAULT TRUE
+    "dockerSocketEnabled" BOOLEAN NOT NULL DEFAULT TRUE,
+    "remoteSubnets" TEXT
 );
 
 -- Resources table
 CREATE TABLE IF NOT EXISTS resources (
     "resourceId" SERIAL PRIMARY KEY,
-    "siteId" INTEGER NOT NULL REFERENCES sites("siteId") ON DELETE CASCADE,
     "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE,
+    "niceId" TEXT NOT NULL,
     name TEXT NOT NULL,
     subdomain TEXT,
     "fullDomain" TEXT,
@@ -137,18 +138,38 @@ CREATE TABLE IF NOT EXISTS resources (
     enabled BOOLEAN NOT NULL DEFAULT TRUE,
     "stickySession" BOOLEAN NOT NULL DEFAULT FALSE,
     "tlsServerName" TEXT,
-    "setHostHeader" TEXT
+    "setHostHeader" TEXT,
+    "enableProxy" BOOLEAN DEFAULT TRUE,
+    "skipToIdpId" INTEGER REFERENCES idp("idpId") ON DELETE CASCADE,
+    headers TEXT
+);
+
+-- Site Resources table (new in v1.9)
+CREATE TABLE IF NOT EXISTS "siteResources" (
+    "siteResourceId" SERIAL PRIMARY KEY,
+    "siteId" INTEGER NOT NULL REFERENCES sites("siteId") ON DELETE CASCADE,
+    "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE,
+    "niceId" TEXT NOT NULL,
+    name TEXT NOT NULL,
+    protocol TEXT NOT NULL,
+    "proxyPort" INTEGER NOT NULL,
+    "destinationPort" INTEGER NOT NULL,
+    "destinationIp" TEXT NOT NULL,
+    enabled BOOLEAN DEFAULT TRUE NOT NULL
 );
 
 -- Targets table
 CREATE TABLE IF NOT EXISTS targets (
     "targetId" SERIAL PRIMARY KEY,
     "resourceId" INTEGER NOT NULL REFERENCES resources("resourceId") ON DELETE CASCADE,
+    "siteId" INTEGER NOT NULL REFERENCES sites("siteId") ON DELETE CASCADE,
     ip TEXT NOT NULL,
     method TEXT,
     port INTEGER NOT NULL,
     "internalPort" INTEGER,
-    enabled BOOLEAN NOT NULL DEFAULT TRUE
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    path TEXT,
+    "pathMatchType" TEXT
 );
 
 -- Identity providers table
@@ -174,6 +195,8 @@ CREATE TABLE IF NOT EXISTS "user" (
     "twoFactorSecret" TEXT,
     "emailVerified" BOOLEAN NOT NULL DEFAULT FALSE,
     "dateCreated" TEXT NOT NULL,
+    "termsAcceptedTimestamp" TEXT,
+    "termsVersion" TEXT,
     "serverAdmin" BOOLEAN NOT NULL DEFAULT FALSE,
     "twoFactorSetupRequested" BOOLEAN DEFAULT false
 );
@@ -208,12 +231,22 @@ CREATE TABLE IF NOT EXISTS "newtSession" (
     "expiresAt" BIGINT NOT NULL
 );
 
+-- Setup tokens table (new in v1.9)
+CREATE TABLE IF NOT EXISTS "setupTokens" (
+    "tokenId" TEXT PRIMARY KEY NOT NULL,
+    token TEXT NOT NULL,
+    used BOOLEAN DEFAULT FALSE NOT NULL,
+    "dateCreated" TEXT NOT NULL,
+    "dateUsed" TEXT
+);
+
 -- User organizations table
 CREATE TABLE IF NOT EXISTS "userOrgs" (
     "userId" TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
     "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE,
     "roleId" INTEGER NOT NULL,
-    "isOwner" BOOLEAN NOT NULL DEFAULT FALSE
+    "isOwner" BOOLEAN NOT NULL DEFAULT FALSE,
+    "autoProvisioned" BOOLEAN DEFAULT FALSE
 );
 
 -- Email verification codes table
@@ -533,9 +566,11 @@ CREATE TABLE IF NOT EXISTS "webauthnChallenge" (
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_sites_org_id ON sites("orgId");
-CREATE INDEX IF NOT EXISTS idx_resources_site_id ON resources("siteId");
 CREATE INDEX IF NOT EXISTS idx_resources_org_id ON resources("orgId");
 CREATE INDEX IF NOT EXISTS idx_targets_resource_id ON targets("resourceId");
+CREATE INDEX IF NOT EXISTS idx_targets_site_id ON targets("siteId");
+CREATE INDEX IF NOT EXISTS idx_site_resources_site_id ON "siteResources"("siteId");
+CREATE INDEX IF NOT EXISTS idx_site_resources_org_id ON "siteResources"("orgId");
 CREATE INDEX IF NOT EXISTS idx_user_email ON "user"(email);
 CREATE INDEX IF NOT EXISTS idx_session_user_id ON session("userId");
 CREATE INDEX IF NOT EXISTS idx_newt_site_id ON newt("siteId");
@@ -612,7 +647,7 @@ TABLES=(
     "versionMigrations" "resourceRules" "supporterKey" "idpOidcConfig"
     "licenseKey" "hostMeta" "apiKeys" "apiKeyActions" "apiKeyOrg" "idpOrg"
     "clientSession" "clientSites" "clients" "olms" "roleClients" "userClients"
-    "webauthnChallenge" "webauthnCredentials"
+    "webauthnChallenge" "webauthnCredentials" "setupTokens" "siteResources"
 )
 
 echo "Importing CSV data into PostgreSQL database: $PG_DB"
@@ -654,5 +689,6 @@ PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB
 PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "SELECT setval(pg_get_serial_sequence('targets', 'targetId'), COALESCE((SELECT MAX(\"targetId\") FROM targets), 1), true);"
 PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "SELECT setval(pg_get_serial_sequence('sites', 'siteId'), COALESCE((SELECT MAX(\"siteId\") FROM sites), 1), true);"
 PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "SELECT setval(pg_get_serial_sequence('roles', 'roleId'), COALESCE((SELECT MAX(\"roleId\") FROM roles), 1), true);"
+PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "SELECT setval(pg_get_serial_sequence('\"siteResources\"', 'siteResourceId'), COALESCE((SELECT MAX(\"siteResourceId\") FROM \"siteResources\"), 1), true);"
 
 echo "Import complete."
