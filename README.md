@@ -140,6 +140,12 @@ DOMAIN=example.com EMAIL=admin@example.com \
 docker compose -f docker-compose-setup.yml up
 ```
 
+Note: Pangolin now expects a server code in the initial setup. You can see it in the docker logs of the pangolin container. 
+Or you can use the following command to set the setup token:
+```bash
+docker exec pangolin node -e "const Database = require('better-sqlite3'); const db = new Database('/app/config/db/db.sqlite'); db.prepare('UPDATE setupTokens SET token = ? WHERE rowid = (SELECT rowid FROM setupTokens ORDER BY rowid LIMIT 1)').run('1234567');"
+```
+
 **Pangolin+ (enhanced with integrated CrowdSec security):**
 ```bash
 # Requires admin credentials and CrowdSec enrollment key
