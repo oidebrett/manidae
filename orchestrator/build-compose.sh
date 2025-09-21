@@ -221,7 +221,6 @@ EOF
 
     echo "  backup-job:"
     echo "    image: oideibrett/manidae-backup:latest"
-    echo "    container_name: manidae-backup-job"
     echo "    restart: unless-stopped"
     echo "    env_file:"
     echo "      - ./.env  # Load SSH_PRIVATE_KEY and other variables"
