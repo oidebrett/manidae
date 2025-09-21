@@ -191,10 +191,25 @@ EOF
 
   # Add backup service if MAX_BACKUPS is set and greater than 0
   if [[ -n "${MAX_BACKUPS:-}" && "${MAX_BACKUPS:-0}" -gt 0 ]]; then
-    # Derive deployment name from current working directory
-    current_dir=$(basename "$PWD")
+    # Derive deployment name from the host directory
+    # Method 1: Try to get from HOST_PWD environment variable (if passed)
+    if [[ -n "${HOST_PWD:-}" ]]; then
+      current_dir=$(basename "$HOST_PWD")
+    else
+      # Method 2: Try to extract from mount info or use a fallback
+      # Check if we can get the host path from /proc/mounts
+      host_mount=$(grep "/host-setup" /proc/mounts 2>/dev/null | head -1 | awk '{print $1}')
+      if [[ -n "$host_mount" && "$host_mount" != "." ]]; then
+        current_dir=$(basename "$host_mount")
+      else
+        # Method 3: Fallback - use a generic name and warn
+        current_dir="manidae-deployment"
+        echo "Warning: Could not determine deployment name, using fallback: $current_dir"
+      fi
+    fi
+
     if [[ "$current_dir" == *"_setup-stack" ]]; then
-      # Extract deployment name from folder like "ivobrett-432212_setup-stack"
+      # Extract deployment name from folder like "test-326962_setup-stack"
       DEPLOYMENT_NAME="${current_dir%_setup-stack}"
     else
       # If not in a _setup-stack folder, use the directory name as deployment name
