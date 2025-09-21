@@ -189,6 +189,61 @@ EOF
   if has_component nlweb; then sed -n '1,9999p' "$ROOT_DIR/components/nlweb/compose.yaml"; fi
   if has_component komodo; then sed -n '1,9999p' "$ROOT_DIR/components/komodo/compose.yaml"; fi
 
+  # Add backup service if MAX_BACKUPS is set and greater than 0
+  if [[ -n "${MAX_BACKUPS:-}" && "${MAX_BACKUPS:-0}" -gt 0 ]]; then
+    # Derive deployment name from current working directory
+    current_dir=$(basename "$PWD")
+    if [[ "$current_dir" == *"_setup-stack" ]]; then
+      # Extract deployment name from folder like "ivobrett-432212_setup-stack"
+      DEPLOYMENT_NAME="${current_dir%_setup-stack}"
+    else
+      # If not in a _setup-stack folder, use the directory name as deployment name
+      DEPLOYMENT_NAME="$current_dir"
+    fi
+
+    # Always use the standard Komodo path structure for production deployments
+    FULL_STACK_PATH="/etc/komodo/stacks/${DEPLOYMENT_NAME}_setup-stack"
+
+    echo "  backup-job:"
+    echo "    image: oideibrett/manidae-backup:latest"
+    echo "    container_name: manidae-backup-job"
+    echo "    restart: unless-stopped"
+    echo "    env_file:"
+    echo "      - ./.env  # Load SSH_PRIVATE_KEY and other variables"
+    echo "    environment:"
+    echo "      # Repository configuration"
+    echo "      - REPO_URL=git@github.com:ManidaeCloud/${DEPLOYMENT_NAME}_syncresources.git"
+    echo "      - BACKUP_SOURCE_PATH=${FULL_STACK_PATH}/config"
+    echo "      - BACKUP_MODE=backup"
+    echo "      - GIT_USER_NAME=Backup Bot"
+    echo "      - GIT_USER_EMAIL=backup@\${DOMAIN:-contextware.ai}"
+    echo "      # Backup configuration"
+    echo "      - MAX_BACKUPS=\${MAX_BACKUPS}"
+    echo "    volumes:"
+    echo "      # Mount the actual directory from your VPS"
+    echo "      - ${FULL_STACK_PATH}:${FULL_STACK_PATH}:ro"
+    echo "    # Run continuously like bandwidth monitor"
+    echo "    command: >"
+    echo "      sh -c \"while true; do"
+    echo "        echo 'Running backup at \$(date)' &&"
+    echo "        /usr/local/bin/backup_script.sh &&"
+    echo "        echo 'Backup completed. Sleeping for 1 day ...' &&"
+    echo "        sleep 86400;"
+    echo "      done\""
+    echo "    healthcheck:"
+    echo "      test: [\"CMD\", \"pgrep\", \"-f\", \"backup_script.sh\"]"
+    echo "      interval: 30s"
+    echo "      timeout: 10s"
+    echo "      retries: 3"
+    echo "      start_period: 10s"
+    echo "    logging:"
+    echo "      driver: \"json-file\""
+    echo "      options:"
+    echo "        max-size: \"10m\""
+    echo "        max-file: \"3\""
+    echo ""
+  fi
+
   # Volumes (platform and component specific)
   if [[ "$BASE_PLATFORM" == "coolify" ]]; then sed -n '1,9999p' "$ROOT_DIR/components/coolify/volumes.yaml"; fi
   if has_component komodo; then sed -n '1,9999p' "$ROOT_DIR/components/komodo/volumes.yaml"; fi

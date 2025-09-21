@@ -1,410 +1,220 @@
-# Manidae - Flexible Docker Deployment Generator
+# 🚀 Manidae - Simple Docker Deployment Generator
 
-A flexible, modular docker deployment generator that supports multiple base platforms and optional components. Generate complete docker-compose deployments for Pangolin, Coolify, or other platforms with customizable add-on components like middleware management, security, monitoring, and more.
+**One command. Complete deployments.** Generate production-ready Docker stacks for Pangolin, Coolify, and more with automatic security, monitoring, and backup features.
 
-## Supported Base Platforms
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue?logo=docker)](https://docker.com)
+[![Pangolin](https://img.shields.io/badge/Pangolin-Supported-green)](https://github.com/contextware/pangolin)
+[![Coolify](https://img.shields.io/badge/Coolify-Supported-orange)](https://coolify.io)
+[![CrowdSec](https://img.shields.io/badge/CrowdSec-Integrated-red)](https://crowdsec.net)
 
-**Pangolin Platform:**
-- **Pangolin** - Main application platform with WireGuard VPN (Gerbil)
-- **Pangolin+** - Enhanced Pangolin with integrated CrowdSec security
-- **Traefik** - Reverse proxy and load balancer
-- **Middleware-Manager** - Dynamic Traefik middleware management
+---
 
-**Coolify Platform:**
-- **Coolify** - Self-hosted application deployment platform
+## ✨ What is Manidae?
 
-## Optional Add-on Components
+Manidae is a **smart deployment generator** that creates complete Docker Compose stacks with just a few environment variables. No complex configuration files, no manual setup - just specify what you want and get a production-ready deployment.
 
-**Security & Monitoring:**
-- **CrowdSec** - Collaborative security engine
-- **Traefik Log Dashboard** - Enhanced logging and analytics with GeoIP
+### 🎯 Perfect for:
+- **DevOps Engineers** setting up new environments quickly
+- **Self-hosters** wanting secure, monitored applications
+- **Teams** needing consistent, reproducible deployments
+- **Anyone** who wants Docker deployments without the complexity
 
-**Authentication & Management:**
-- **MCPAuth** - MCP OAuth authentication (currently only Google IDP supported)
-- **NLWeb** - Natural language web interface
-- **Static Page** - Custom landing pages
+---
 
-## How It Works
+## 🏗️ Supported Platforms
 
-1. **Choose your base platform** - Pangolin or Coolify
-2. **Select optional components** - Add security, monitoring, authentication, etc.
-3. **Run the setup container** with your environment variables
-4. **The orchestrator generates**:
-   - `compose.yaml` - Complete docker-compose configuration
-   - `container-setup.sh` - Platform-specific setup scripts
-   - `DEPLOYMENT_INFO.txt` - Deployment summary and access information
-   - `config/` - Configuration files and folders
-5. **Start your stack** with `docker compose up -d`
-6. **Complete any manual post-deployment steps** 
+| Platform | Description | Best For |
+|----------|-------------|----------|
+| **🦎 Pangolin** | Application platform + WireGuard VPN | Secure app hosting with VPN access |
+| **🦎+ Pangolin+** | Pangolin + CrowdSec security | Production apps needing threat protection |
+| **🐳 Coolify** | Self-hosted deployment platform | Teams managing multiple applications |
 
-## Quick Start Examples
+### 🔧 Optional Add-ons
+- **🛡️ CrowdSec** - Collaborative security engine
+- **📊 Log Dashboard** - Real-time analytics with GeoIP
+- **🔐 OAuth** - Google authentication integration
+- **🤖 AI Interface** - Natural language management
+- **📄 Landing Pages** - Custom static pages
+- **💾 Automated Backups** - Git-based configuration backups
 
-### Pangolin Platform
+---
 
+## 🚀 Quick Start
+
+### 1️⃣ Basic Pangolin (2 minutes)
 ```bash
-# Basic Pangolin deployment (minimal requirements)
-COMPONENTS="pangolin" \
-DOMAIN=example.com \
-EMAIL=admin@example.com \
+# Minimal setup - just domain and email
+DOMAIN=yourdomain.com \
+EMAIL=admin@yourdomain.com \
 docker compose -f docker-compose-setup.yml up
 
-# Pangolin+ with enhanced security (includes CrowdSec)
-COMPONENTS="pangolin+" \
-DOMAIN=example.com \
-EMAIL=admin@example.com \
-ADMIN_USERNAME=admin@example.com \
-ADMIN_PASSWORD=changeme \
-CROWDSEC_ENROLLMENT_KEY=your-enrollment-key \
-docker compose -f docker-compose-setup.yml up
-
-# Start services
+# Start your stack
 docker compose up -d
 ```
+**Access:** `https://pangolin.yourdomain.com`
 
-Note: the EMAIL is your letsencrypt contact email. It is not used for authentication.
-
-##### Pangolin+ Post-Deployment Steps
-
-Run the following post-deployment steps to complete the setup of your Pangolin+ stack:
-
+### 2️⃣ Pangolin+ with Security (3 minutes)
 ```bash
-docker exec pangolin-stack-pangolin-1 pangctl set-admin-credentials --email "admin@yourdomain.com"  --password "Password123"
-chmod +x initialize_sqlite.sh
-./initialize_sqlite.sh
-```
-
-### Coolify Platform
-
-```bash
-# Basic Coolify deployment
-COMPONENTS="coolify" \
-DB_USERNAME=coolify \
-DB_PASSWORD=secure-db-password \
-REDIS_PASSWORD=secure-redis-password \
-PUSHER_APP_ID=coolify-app-id \
-PUSHER_APP_KEY=coolify-app-key \
-PUSHER_APP_SECRET=coolify-app-secret \
-docker compose -f docker-compose-setup.yml up
-
-# Start services
-docker compose up -d
-```
-
-Note: you can easily generate keys using `openssl rand -hex 32`
-
-## Platform Auto-Detection
-
-If you don't specify `COMPONENTS`, the system automatically detects your platform and components:
-
-**Pangolin Platform Detection:**
-- Detected when `DOMAIN` and `EMAIL` are provided
-- Base: `pangolin,middleware-manager`
-- **Pangolin+**: Use `COMPONENTS="pangolin+"` for enhanced security with integrated CrowdSec
-- Auto-adds components based on environment variables
-
-**Coolify Platform Detection:**
-- Detected when Coolify-specific variables are provided (`DB_USERNAME`, `REDIS_PASSWORD`, etc.)
-- Base: `coolify`
-- Auto-adds components based on environment variables
-
-**Component Auto-Addition (both platforms):**
-- `crowdsec` if `CROWDSEC_ENROLLMENT_KEY` is set (or automatically with `pangolin+`)
-- `mcpauth` if both `CLIENT_ID` and `CLIENT_SECRET` are set
-- `nlweb` if any AI API key is set (`OPENAI_API_KEY`, `AZURE_OPENAI_API_KEY`, etc.)
-- `static-page` if `STATIC_PAGE_SUBDOMAIN` is set (Pangolin only)
-- `traefik-log-dashboard` if `MAXMIND_LICENSE_KEY` is set
-
-**Note:** `pangolin+` automatically includes CrowdSec with enhanced Traefik integration.
-
-**Manual Override:**
-```bash
-# Explicit component selection
-COMPONENTS="pangolin,middleware-manager,crowdsec" docker compose -f docker-compose-setup.yml up
-
-# Pangolin+ (enhanced with integrated CrowdSec)
-COMPONENTS="pangolin+" docker compose -f docker-compose-setup.yml up
-
-# Or for Coolify
-COMPONENTS="coolify,crowdsec" docker compose -f docker-compose-setup.yml up
-```
-
-## Common Deployment Scenarios
-
-### Pangolin Deployments
-
-**Basic Pangolin (minimal setup):**
-```bash
-# Only requires DOMAIN and EMAIL
-COMPONENTS="pangolin" \
-DOMAIN=example.com EMAIL=admin@example.com \
-docker compose -f docker-compose-setup.yml up
-```
-
-Note: Pangolin now expects a server code in the initial setup. You can see it in the docker logs of the pangolin container. 
-Or you can use the following command to set the setup token:
-```bash
-docker exec pangolin node -e "const Database = require('better-sqlite3'); const db = new Database('/app/config/db/db.sqlite'); db.prepare('UPDATE setupTokens SET token = ? WHERE rowid = (SELECT rowid FROM setupTokens ORDER BY rowid LIMIT 1)').run('1234567');"
-```
-
-**Pangolin+ (enhanced with integrated CrowdSec security):**
-```bash
-# Requires admin credentials and CrowdSec enrollment key
-COMPONENTS="pangolin+" \
-DOMAIN=example.com EMAIL=admin@example.com \
-ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme \
-CROWDSEC_ENROLLMENT_KEY=your-enrollment-key \
-docker compose -f docker-compose-setup.yml up
-```
-
-**Full Pangolin+ Stack (all optional components):**
-```bash
-COMPONENTS="pangolin+" \
-DOMAIN=example.com EMAIL=admin@example.com \
-ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme \
-CROWDSEC_ENROLLMENT_KEY=your-key CLIENT_ID=your-client-id CLIENT_SECRET=your-client-secret \
-OPENAI_API_KEY=your-key MAXMIND_LICENSE_KEY=your-maxmind-key \
-docker compose -f docker-compose-setup.yml up
-```
-
-### Coolify Deployments
-
-**Basic Coolify:**
-```bash
-DB_USERNAME=coolify DB_PASSWORD=secure-password REDIS_PASSWORD=redis-password \
-PUSHER_APP_ID=app-id PUSHER_APP_KEY=app-key PUSHER_APP_SECRET=app-secret \
-docker compose -f docker-compose-setup.yml up
-```
-
-**Coolify+ with Security (+ CrowdSec):**
-```bash
-DB_USERNAME=coolify DB_PASSWORD=secure-password REDIS_PASSWORD=redis-password \
-PUSHER_APP_ID=app-id PUSHER_APP_KEY=app-key PUSHER_APP_SECRET=app-secret \
-CROWDSEC_ENROLLMENT_KEY=your-key \
-docker compose -f docker-compose-setup.yml up
-```
-
-## Pangolin vs Pangolin+
-
-### Pangolin (Standard)
-**Minimal Requirements:** `DOMAIN` and `EMAIL` only
-
-**What's Included:**
-- Pangolin application platform
-- Gerbil WireGuard VPN management
-- Traefik reverse proxy
-- Middleware Manager
-- Basic Traefik configuration
-
-**Use Case:** Simple deployments where you want the core functionality without additional security layers.
-
-### Pangolin+ (Enhanced Security)
-**Requirements:** `DOMAIN`, `EMAIL`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, and `CROWDSEC_ENROLLMENT_KEY`
-
-**What's Included:**
-- Everything from standard Pangolin
-- **CrowdSec security engine** with collaborative threat intelligence
-- **Enhanced Traefik configuration** with CrowdSec middleware integration
-- **Automatic security plugin setup** (CrowdSec bouncer v1.4.5)
-- **Integrated threat protection** on all HTTP/HTTPS entry points
-
-**Key Security Features:**
-- Real-time IP reputation and threat detection
-- Collaborative security with CrowdSec community
-- CAPTCHA challenges for suspicious traffic
-- Automatic IP banning for malicious actors
-- AppSec virtual patching capabilities
-
-**Use Case:** Production deployments requiring enhanced security and threat protection.
-
-**Important Notes:** Pangolin+ requires dynamic configuration of Pangolin.
-```bash
-docker exec pangolin-stack-pangolin-1 pangctl set-admin-credentials --email "admin@yourdomain.com"  --password "Password123"
-chmod +x initialize_sqlite.sh
-./initialize_sqlite.sh
-```
-
-**Important Notes:** Pangolin+ requires that the CROWDSEC bouncer api key is added. You can do this using the following script *post* install
-```bash
-chmod +x ./components/crowdsec/update-bouncer-post-install.sh
-./components/crowdsec/update-bouncer-post-install.sh manidae_crowdsec_1
-```
-
-## Components
-
-### Middleware Manager
-
-The Middleware Manager is a standalone component that provides dynamic middleware management for Traefik and integrates with Pangolin. It's included by default but can be excluded if not needed.
-
-**What it does:**
-- Manages Traefik middleware configurations dynamically
-- Integrates with Pangolin's API for configuration management
-- Provides a web interface for middleware management
-- Supports plugin management for Traefik
-
-**Configuration:**
-- Automatically creates `config/middleware-manager/` directory
-- Connects to Pangolin API at `http://pangolin:3001/api/v1`
-- Uses SQLite database at `./data/middleware.db`
-- Runs on port 3456 (internal to Docker network)
-
-**Usage scenarios:**
-
-Include by default (auto-derivation):
-```bash
-# Middleware Manager included automatically with basic Pangolin
-DOMAIN=example.com EMAIL=admin@example.com docker compose -f docker-compose-setup.yml up
-```
-
-Exclude middleware-manager:
-```bash
-# Only Pangolin, no middleware manager
-COMPONENTS="pangolin" DOMAIN=example.com EMAIL=admin@example.com docker compose -f docker-compose-setup.yml up
-```
-
-Explicitly include with other components:
-```bash
-# Pangolin + Middleware Manager + CrowdSec (manual component selection)
-COMPONENTS="pangolin,middleware-manager,crowdsec" \
-DOMAIN=example.com EMAIL=admin@example.com \
-ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme \
-CROWDSEC_ENROLLMENT_KEY=your-key \
-docker compose -f docker-compose-setup.yml up
-```
-
-**Accessing Middleware Manager:**
-Once deployed, the Middleware Manager integrates with Pangolin and is accessible through the Pangolin dashboard. It runs as a backend service and doesn't expose a separate web interface - all management is done through Pangolin's interface.
-
-### Static Page
-
-The Static Page component creates a custom landing page for your deployment and configures Traefik to serve it. This component doesn't add new Docker services but modifies existing configuration files.
-
-**What it does:**
-- Creates a static HTML landing page in the `public_html/` directory
-- Modifies Traefik's dynamic configuration to add security headers and static file serving
-- Supports conditional content based on available components (removes sections for unavailable services)
-- Uses templates from `templates/html/index.html` if available, otherwise creates a basic fallback
-
-**Configuration:**
-- Triggered by setting `STATIC_PAGE_SUBDOMAIN` environment variable
-- Creates files in `public_html/` directory
-- Modifies `config/traefik/rules/dynamic_config.yml` to add middleware and routing
-- **Requires middleware-manager component** to function properly
-
-**Usage scenarios:**
-
-Enable static page:
-```bash
-# Static page with custom subdomain (basic Pangolin)
-STATIC_PAGE_SUBDOMAIN=www DOMAIN=example.com EMAIL=admin@example.com \
-docker compose -f docker-compose-setup.yml up
-```
-
-Combined with other components:
-```bash
-# Static page + CrowdSec + other components (requires admin credentials for CrowdSec)
-STATIC_PAGE_SUBDOMAIN=www \
-DOMAIN=example.com EMAIL=admin@example.com \
-ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme \
-CROWDSEC_ENROLLMENT_KEY=your-key \
-docker compose -f docker-compose-setup.yml up
-```
-
-**Important Notes:**
-- The static-page component requires the middleware-manager component to be included
-- The component will automatically remove sections for unavailable services (e.g., removes Komodo section if `KOMODO_HOST_IP` is not set)
-- Uses the Statiq plugin for Traefik to serve static files
-
-### Traefik Log Dashboard
-
-The Traefik Log Dashboard component provides enhanced logging, monitoring, and analytics for your Traefik deployment with OpenTelemetry (OTLP) support and GeoIP capabilities.
-
-**What it does:**
-- Real-time log analysis and visualization of Traefik access logs
-- OpenTelemetry tracing integration with OTLP endpoints (GRPC and HTTP)
-- GeoIP location tracking using MaxMind databases
-- Performance metrics and request analytics
-- Automatic MaxMind database updates
-
-**Configuration:**
-- Triggered by setting `MAXMIND_LICENSE_KEY` environment variable
-- Creates `config/maxmind/` directory for GeoIP databases
-- Adds OTLP tracing configuration to `traefik_config.yml`
-- Exposes OTLP endpoints on ports 4317 (GRPC) and 4318 (HTTP)
-- Frontend accessible on port 3000, backend on port 3001
-
-**Getting a MaxMind License Key:**
-1. Get a free MaxMind account: Sign up at https://www.maxmind.com/en/geolite2/signup
-2. Generate a license key in your account dashboard
-3. Use the license key in your deployment
-
-**Usage scenarios:**
-
-Enable log dashboard:
-```bash
-# Basic setup with log dashboard (basic Pangolin)
-MAXMIND_LICENSE_KEY=your-license-key \
-DOMAIN=example.com EMAIL=admin@example.com \
-docker compose -f docker-compose-setup.yml up
-```
-
-Combined with other components:
-```bash
-# Full stack with log dashboard + CrowdSec (requires admin credentials)
-MAXMIND_LICENSE_KEY=your-license-key \
+# Enhanced security with CrowdSec protection
+DOMAIN=yourdomain.com \
+EMAIL=admin@yourdomain.com \
+ADMIN_USERNAME=admin@yourdomain.com \
+ADMIN_PASSWORD=YourSecurePassword123! \
 CROWDSEC_ENROLLMENT_KEY=your-crowdsec-key \
-DOMAIN=example.com EMAIL=admin@example.com \
-ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=changeme \
+docker compose -f docker-compose-setup.yml up
+
+# Start your stack
+docker compose up -d
+```
+**Features:** Automatic threat detection, IP blocking, CAPTCHA challenges
+
+### 3️⃣ Coolify Platform (2 minutes)
+```bash
+# Self-hosted app deployment platform
+DB_PASSWORD=$(openssl rand -hex 32) \
+REDIS_PASSWORD=$(openssl rand -hex 32) \
+PUSHER_APP_KEY=$(openssl rand -hex 16) \
+docker compose -f docker-compose-setup.yml up
+
+# Start your stack
+docker compose up -d
+```
+**Access:** `http://your-server-ip:8000`
+
+---
+
+## 🎛️ Smart Auto-Detection
+
+**No need to specify components!** Manidae automatically detects what you want based on your environment variables:
+
+```bash
+# This automatically includes CrowdSec because you provided the enrollment key
+DOMAIN=example.com \
+EMAIL=admin@example.com \
+CROWDSEC_ENROLLMENT_KEY=your-key \
 docker compose -f docker-compose-setup.yml up
 ```
 
-**Performance Optimization (Optional):**
+**Auto-detected components:**
+- 🛡️ CrowdSec (when `CROWDSEC_ENROLLMENT_KEY` is set)
+- 📊 Log Dashboard (when `MAXMIND_LICENSE_KEY` is set)
+- 🔐 OAuth (when `CLIENT_ID` + `CLIENT_SECRET` are set)
+- 🤖 AI Interface (when `OPENAI_API_KEY` is set)
+- 💾 Backups (when `MAX_BACKUPS > 0`)
 
-For high-traffic environments, consider these optimizations:
+---
 
-*Reduce OTLP Sampling:*
-```yaml
-# In traefik_config.yml
-tracing:
-  sampleRate: 0.1  # 10% sampling for production
+## 💾 Automated Backups
+
+Enable automatic Git-based configuration backups:
+
+```bash
+# Backup your config to Git every 24 hours, keep 7 days
+MAX_BACKUPS=7 \
+DOMAIN=yourdomain.com \
+EMAIL=admin@yourdomain.com \
+docker compose -f docker-compose-setup.yml up
 ```
 
-*Use GRPC for Better Performance:*
-```yaml
-# In traefik_config.yml
-tracing:
-  otlp:
-    grpc:
-      endpoint: "log-dashboard-backend:4317"
-      insecure: true
+**What gets backed up:**
+- All configuration files
+- Database schemas and data
+- SSL certificates
+- Custom settings
+
+**Repository:** `git@github.com:ManidaeCloud/{deployment-name}_syncresources.git`
+
+---
+
+## 🛡️ Security Features
+
+### Pangolin+ Security Stack
+- **Real-time threat detection** with CrowdSec
+- **Automatic IP blocking** for malicious actors
+- **CAPTCHA challenges** for suspicious traffic
+- **Collaborative intelligence** from global threat feeds
+- **SSL/TLS encryption** with automatic certificate management
+
+### Built-in Security
+- **Traefik reverse proxy** with security headers
+- **Let's Encrypt SSL** certificates
+- **Network isolation** between services
+- **Secure defaults** for all components
+
+---
+
+## 📊 What You Get
+
+After running the setup, you'll have:
+
+```
+📁 Your Deployment
+├── 🐳 compose.yaml              # Complete Docker Compose stack
+├── ⚙️ config/                   # All configuration files
+│   ├── 🦎 pangolin/            # App configuration
+│   ├── 🔀 traefik/             # Reverse proxy rules
+│   ├── 🛡️ crowdsec/            # Security configuration
+│   └── 🔐 letsencrypt/         # SSL certificates
+├── 📋 DEPLOYMENT_INFO.txt       # Access URLs and credentials
+└── 🔧 container-setup.sh       # Post-deployment scripts
 ```
 
-*Optimize Resource Usage:*
-```yaml
-# In docker-compose.yml
-environment:
-  - GOGC=20  # More aggressive garbage collection
-  - GOMEMLIMIT=1GiB
+---
+
+## 🎯 Use Cases
+
+### 🏢 **Business Applications**
+```bash
+# Secure business app with monitoring
+COMPONENTS="pangolin+" \
+DOMAIN=company.com \
+MAXMIND_LICENSE_KEY=your-key \
+CROWDSEC_ENROLLMENT_KEY=your-key \
+docker compose -f docker-compose-setup.yml up
 ```
 
-**Documentation:**
-- Full documentation: https://github.com/hhftechnology/traefik-log-dashboard
-- Middleware Manager: https://github.com/hhftechnology/middleware-manager
+### 🏠 **Home Lab**
+```bash
+# Simple home server setup
+DOMAIN=homelab.local \
+EMAIL=admin@homelab.local \
+docker compose -f docker-compose-setup.yml up
+```
 
-## Where outputs go
+### 👥 **Team Development**
+```bash
+# Coolify for team app deployments
+DB_PASSWORD=secure123 \
+REDIS_PASSWORD=redis123 \
+docker compose -f docker-compose-setup.yml up
+```
 
-- compose.yaml
-- container-setup.sh
-- DEPLOYMENT_INFO.txt
-- config/
-  - config.yml (Pangolin configuration)
-  - traefik/ (Traefik configuration and rules)
-  - middleware-manager/ (Middleware Manager configuration, if included)
-  - maxmind/ (GeoIP databases, if traefik-log-dashboard is included)
-  - letsencrypt/ (SSL certificates)
+---
 
-All at the repository root (mounted as `/host-setup` in the setup container).
+## 📚 Need More Details?
 
-## Notes
+- **📋 [Complete Configuration Guide](docs/CONFIGURATION.md)** - All options and advanced features
+- **🔄 [Backup Service Guide](docs/BACKUP_SERVICE.md)** - Automated backup configuration
+- **🛠️ [Component Documentation](docs/)** - Individual component guides
 
-- Keep ports 80/443/51820 open.
-- Ensure your domain DNS points to the host.
+---
+
+## 🤝 Requirements
+
+- **Docker** and **Docker Compose** installed
+- **Domain name** pointing to your server (for Pangolin)
+- **Ports 80, 443, 51820** open on your firewall
+- **Basic knowledge** of Docker and domain management
+
+---
+
+## 💡 Why Manidae?
+
+✅ **Simple** - One command deployments
+✅ **Secure** - Built-in security best practices
+✅ **Smart** - Automatic component detection
+✅ **Complete** - Everything you need included
+✅ **Flexible** - Easy to customize and extend
+✅ **Reliable** - Production-tested configurations
+
+**Get started in minutes, not hours.** 🚀
