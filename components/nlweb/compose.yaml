@@ -1,14 +1,15 @@
   nlweb:
     image:  oideibrett/nlweb:latest
-    #container_name: nlweb
     ports:
       - "8000:8000"
     env_file:
       - .env
     environment:
-      - PYTHONPATH=/app
+      - PYTHONPATH=/app/code/python
       - PORT=8000
       - NLWEB_CONFIG_DIR=/app/config
+      - QDRANT_API_KEY=supersecretkey
+      - QDRANT_URL=http://qdrant:6333
     volumes:
       - ./config/nlweb/data:/app/data
       - ./config/nlweb/nlweb_config:/app/config:ro
@@ -20,4 +21,40 @@
       start_period: 10s
     restart: unless-stopped
     user: root
+
+  # Add a database service if needed
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      QDRANT__SERVICE__API_KEY: "supersecretkey"
+
+  crawler:
+    image:  oideibrett/nlweb-crawler:latest
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    volumes:
+      # Mount config directory to host for easy configuration changes
+      - ./config/nlweb/nlweb_config:/app/config:ro
+      # Mount data directory to host for accessing embeddings, JSON, etc.
+      - ./config/nlweb/data:/app/data
+      # Mount logs directory to host for log access
+      - ./logs:/app/logs
+    environment:
+      # Point to the Qdrant container instead of localhost
+      - QDRANT_URL=http://qdrant:6333
+      - QDRANT_API_KEY=supersecretkey
+      # Add any other environment variables your app needs
+      - FLASK_ENV=development
+      - PYTHONPATH=/app:/app
+    restart: unless-stopped
+
+volumes:
+   qdrant_data:
 

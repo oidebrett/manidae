@@ -1,13 +1,11 @@
   # Auth management
   mcpauth:
     image: oideibrett/mcpauth:olp
-    #container_name: mcpauth
     volumes:
       - ./config/data:/app/data
     environment:
       - PORT=11000
-      - CLIENT_ID=${CLIENT_ID}
-      - CLIENT_SECRET=${CLIENT_SECRET}
+      - PROVIDER=internal   # or google (overrides default)
       - OAUTH_DOMAIN=${OAUTH_DOMAIN:-oauth.${DOMAIN}}
       - ALLOWED_SCOPES=openid,email,profile
       - REQUIRED_SCOPES=openid,email

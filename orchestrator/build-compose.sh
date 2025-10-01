@@ -43,7 +43,9 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
   fi
   if [[ -n "${CLIENT_ID:-}" && -n "${CLIENT_SECRET:-}" ]]; then
     echo "[orchestrator] Adding mcpauth (CLIENT_ID and CLIENT_SECRET are set)"
-    COMPONENTS_RAW="$COMPONENTS_RAW,mcpauth"
+    if [[ "$COMPONENTS_RAW" != *"mcpauth"* ]]; then
+      COMPONENTS_RAW="$COMPONENTS_RAW,mcpauth"
+    fi
   fi
   if [[ -n "${OPENAI_API_KEY:-}" || -n "${AZURE_OPENAI_API_KEY:-}" || -n "${ANTHROPIC_API_KEY:-}" || -n "${GEMINI_API_KEY:-}" ]]; then
     echo "[orchestrator] Adding nlweb (AI_API_KEY is set)"
@@ -67,9 +69,12 @@ fi
 
 # Handle platform+ aliases by adding required components (applies to both auto-derived and explicit components)
 if [[ "$COMPONENTS_RAW" == *"pangolin+"* ]]; then
-  echo "[orchestrator] pangolin+ detected - ensuring crowdsec is included"
+  echo "[orchestrator] pangolin+ detected - ensuring crowdsec and mcpauth are included"
   if [[ "$COMPONENTS_RAW" != *"crowdsec"* ]]; then
     COMPONENTS_RAW="$COMPONENTS_RAW,crowdsec"
+  fi
+  if [[ "$COMPONENTS_RAW" != *"mcpauth"* ]]; then
+    COMPONENTS_RAW="$COMPONENTS_RAW,mcpauth"
   fi
 fi
 if [[ "$COMPONENTS_RAW" == *"coolify+"* ]]; then
@@ -184,7 +189,18 @@ EOF
   if has_component middleware-manager; then sed -n '1,9999p' "$ROOT_DIR/components/middleware-manager/compose.yaml"; fi
   if has_component static-page; then sed -n '1,9999p' "$ROOT_DIR/components/static-page/compose.yaml"; fi
   if has_component traefik-log-dashboard; then sed -n '1,9999p' "$ROOT_DIR/components/traefik-log-dashboard/compose.yaml"; fi
-  if has_component mcpauth; then sed -n '1,9999p' "$ROOT_DIR/components/mcpauth/compose.yaml"; fi
+
+  # MCPAuth with conditional configuration based on CLIENT_ID/CLIENT_SECRET
+  if has_component mcpauth; then
+    if [[ -n "${CLIENT_ID:-}" && -n "${CLIENT_SECRET:-}" ]]; then
+      echo "[orchestrator] Using mcpauth with Google OAuth (CLIENT_ID and CLIENT_SECRET are set)" >&2
+      sed -n '1,9999p' "$ROOT_DIR/components/mcpauth/compose.yaml"
+    else
+      echo "[orchestrator] Using mcpauth with internal OAuth (CLIENT_ID and CLIENT_SECRET not set)" >&2
+      sed -n '1,9999p' "$ROOT_DIR/components/mcpauth/compose-internal.yaml"
+    fi
+  fi
+
   if has_component crowdsec; then sed -n '1,9999p' "$ROOT_DIR/components/crowdsec/compose.yaml"; fi
   if has_component nlweb; then sed -n '1,9999p' "$ROOT_DIR/components/nlweb/compose.yaml"; fi
   if has_component komodo; then sed -n '1,9999p' "$ROOT_DIR/components/komodo/compose.yaml"; fi

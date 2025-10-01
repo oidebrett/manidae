@@ -4,3 +4,5 @@ resourceId,orgId,niceId,name,subdomain,fullDomain,domainId,ssl,blockAccess,sso,h
 3,admin,komodo-core,komodo,komodo,komodo.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,
 4,admin,nlweb-app,nlweb,nlweb,nlweb.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,
 5,admin,logs-viewer,logs,logs,logs.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,
+6,admin,idp,idp,idp,idp.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,
+7,admin,nlweb-crawler,nlweb-crawler,crawler.nlweb,crawler.nlweb.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,
