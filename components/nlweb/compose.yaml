@@ -55,6 +55,3 @@
       - PYTHONPATH=/app:/app
     restart: unless-stopped
 
-volumes:
-   qdrant_data:
-

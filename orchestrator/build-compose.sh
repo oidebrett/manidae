@@ -275,8 +275,17 @@ EOF
   fi
 
   # Volumes (platform and component specific)
-  if [[ "$BASE_PLATFORM" == "coolify" ]]; then sed -n '1,9999p' "$ROOT_DIR/components/coolify/volumes.yaml"; fi
-  if has_component komodo; then sed -n '1,9999p' "$ROOT_DIR/components/komodo/volumes.yaml"; fi
+  volumes_needed=false
+  if [[ "$BASE_PLATFORM" == "coolify" ]]; then volumes_needed=true; fi
+  if has_component komodo; then volumes_needed=true; fi
+  if has_component nlweb; then volumes_needed=true; fi
+
+  if [[ "$volumes_needed" == "true" ]]; then
+    echo "volumes:"
+    if [[ "$BASE_PLATFORM" == "coolify" ]]; then sed -n '1,9999p' "$ROOT_DIR/components/coolify/volumes.yaml"; fi
+    if has_component komodo; then sed -n '1,9999p' "$ROOT_DIR/components/komodo/volumes.yaml"; fi
+    if has_component nlweb; then sed -n '1,9999p' "$ROOT_DIR/components/nlweb/volumes.yaml"; fi
+  fi
 
   # Networks (generic for all platforms)
   if [[ "$BASE_PLATFORM" == "pangolin" ]]; then

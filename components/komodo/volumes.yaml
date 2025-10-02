@@ -1,4 +1,3 @@
-volumes:
   # Komodo volumes
   postgres-data:
     driver: local

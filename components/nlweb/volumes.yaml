@@ -1,0 +1,3 @@
+  # NLWeb volumes
+  qdrant_data:
+    driver: local
