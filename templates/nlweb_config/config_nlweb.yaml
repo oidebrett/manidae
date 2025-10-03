@@ -62,4 +62,6 @@ headers:
 # API Keys
 api_keys:
   google_maps: GOOGLE_MAPS_API_KEY  # Set via environment variable
-  
+
+# Ability to upload documents in the chat interface
+upload_docs_enabled: UPLOAD_DOCS_ENABLED
