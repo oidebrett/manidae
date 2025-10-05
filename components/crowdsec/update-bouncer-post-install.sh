@@ -33,7 +33,7 @@ for file in config/traefik/rules/resource-overrides.yml \
 done
 
 # --- 3. Update SQLite database ---
-sqlite3 data/middleware.db <<EOF
+sqlite3 config/data/middleware.db <<EOF
 UPDATE middlewares
 SET config = REPLACE(config, 'PUT_YOUR_BOUNCER_KEY_HERE_OR_IT_WILL_NOT_WORK', '$key'),
     updated_at = CURRENT_TIMESTAMP
