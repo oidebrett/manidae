@@ -66,6 +66,18 @@ EXPORT_DIR="${1:-./postgres_export}"
 
 echo "SQLite database path: $DB_PATH"
 
+# Detect and display deployment type
+echo "Detecting deployment type..."
+echo "COMPONENTS_CSV: ${COMPONENTS_CSV:-not set}"
+
+if is_pangolin_plus_ai; then
+    echo "🤖 Deployment type: Pangolin+AI (includes all resources)"
+elif is_pangolin_plus; then
+    echo "🛡️ Deployment type: Pangolin+ (core resources only)"
+else
+    echo "📦 Deployment type: Standard Pangolin (all resources)"
+fi
+
 # Function to create SQLite database structure (if needed)
 create_sqlite_structure() {
     echo "Checking SQLite schema..."
@@ -81,6 +93,68 @@ create_sqlite_structure() {
     echo "Creating SQLite schema..."
     # Note: In a real scenario, you would need to create the schema here
     # For now, we assume the schema already exists from the application
+}
+
+# Function to detect if pangolin+ is being used
+is_pangolin_plus() {
+    # Check if COMPONENTS_CSV contains pangolin+
+    case "${COMPONENTS_CSV:-}" in
+        *"pangolin+"*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Function to detect if AI components (nlweb/komodo) are being used
+is_pangolin_plus_ai() {
+    # Check if COMPONENTS_CSV contains nlweb or komodo components
+    case "${COMPONENTS_CSV:-}" in
+        *"nlweb"*|*"komodo"*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Function to filter CSV data based on deployment type
+filter_csv_for_deployment() {
+    local input_csv="$1"
+    local output_csv="$2"
+    local table_name="$3"
+
+    if [[ ! -f "$input_csv" ]]; then
+        echo "Input CSV file not found: $input_csv"
+        return 1
+    fi
+
+    # If AI components are present, use all resources
+    if is_pangolin_plus_ai; then
+        echo "AI components detected - including all resources"
+        cp "$input_csv" "$output_csv"
+        return 0
+    fi
+
+    # For pangolin+ without AI, filter to core resources only
+    echo "Pangolin+ core deployment detected - filtering to core resources only"
+
+    case "$table_name" in
+        "resources")
+            # Core resources: middleware-manager(1), traefik-dashboard(2), logs-viewer(5)
+            head -n 1 "$input_csv" > "$output_csv"  # Copy header
+            grep -E "^(1|2|5)," "$input_csv" >> "$output_csv" 2>/dev/null || true
+            ;;
+        "targets")
+            # Core targets: those linked to core resources (1, 2, 5)
+            head -n 1 "$input_csv" > "$output_csv"  # Copy header
+            grep -E "^[0-9]+,(1|2|5)," "$input_csv" >> "$output_csv" 2>/dev/null || true
+            ;;
+        "roleResources")
+            # Core roleResources: those linked to core resources (1, 2, 5)
+            head -n 1 "$input_csv" > "$output_csv"  # Copy header
+            grep -E "^[0-9]+,(1|2|5)$" "$input_csv" >> "$output_csv" 2>/dev/null || true
+            ;;
+        *)
+            # For other tables, copy as-is
+            cp "$input_csv" "$output_csv"
+            ;;
+    esac
 }
 
 # Function to import CSV into SQLite table
@@ -517,8 +591,20 @@ EOF
             echo "Skipped $table (file missing or empty)"
         fi
     else
-        # Normal import for other tables
-        import_csv_to_sqlite "$table" "$CSV_FILE"
+        # Check if this table needs filtering for deployment type
+        if [[ "$table" == "resources" || "$table" == "targets" || "$table" == "roleResources" ]]; then
+            # Use filtered CSV for deployment-specific tables
+            FILTERED_CSV="/tmp/${table}_filtered.csv"
+            if filter_csv_for_deployment "$CSV_FILE" "$FILTERED_CSV" "$table"; then
+                import_csv_to_sqlite "$table" "$FILTERED_CSV"
+                rm -f "$FILTERED_CSV"  # Clean up filtered file
+            else
+                echo "Failed to filter $table, skipping import"
+            fi
+        else
+            # Normal import for other tables
+            import_csv_to_sqlite "$table" "$CSV_FILE"
+        fi
     fi
 done
 

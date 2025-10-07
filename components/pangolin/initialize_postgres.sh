@@ -637,6 +637,80 @@ EOF
 # Create PostgreSQL structure
 create_postgres_structure "$PG_HOST" "$PG_PORT" "$PG_USER" "$PG_PASS" "$PG_DB"
 
+# Function to detect if pangolin+ is being used
+is_pangolin_plus() {
+    # Check if COMPONENTS_CSV contains pangolin+
+    case "${COMPONENTS_CSV:-}" in
+        *"pangolin+"*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Function to detect if AI components (nlweb/komodo) are being used
+is_pangolin_plus_ai() {
+    # Check if COMPONENTS_CSV contains nlweb or komodo components
+    case "${COMPONENTS_CSV:-}" in
+        *"nlweb"*|*"komodo"*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Function to filter CSV data based on deployment type
+filter_csv_for_deployment() {
+    local input_csv="$1"
+    local output_csv="$2"
+    local table_name="$3"
+
+    if [[ ! -f "$input_csv" ]]; then
+        echo "Input CSV file not found: $input_csv"
+        return 1
+    fi
+
+    # If AI components are present, use all resources
+    if is_pangolin_plus_ai; then
+        echo "AI components detected - including all resources"
+        cp "$input_csv" "$output_csv"
+        return 0
+    fi
+
+    # For pangolin+ without AI, filter to core resources only
+    echo "Pangolin+ core deployment detected - filtering to core resources only"
+
+    case "$table_name" in
+        "resources")
+            # Core resources: middleware-manager(1), traefik-dashboard(2), logs-viewer(5)
+            head -n 1 "$input_csv" > "$output_csv"  # Copy header
+            grep -E "^(1|2|5)," "$input_csv" >> "$output_csv" 2>/dev/null || true
+            ;;
+        "targets")
+            # Core targets: those linked to core resources (1, 2, 5)
+            head -n 1 "$input_csv" > "$output_csv"  # Copy header
+            grep -E "^[0-9]+,(1|2|5)," "$input_csv" >> "$output_csv" 2>/dev/null || true
+            ;;
+        "roleResources")
+            # Core roleResources: those linked to core resources (1, 2, 5)
+            head -n 1 "$input_csv" > "$output_csv"  # Copy header
+            grep -E "^[0-9]+,(1|2|5)$" "$input_csv" >> "$output_csv" 2>/dev/null || true
+            ;;
+        *)
+            # For other tables, copy as-is
+            cp "$input_csv" "$output_csv"
+            ;;
+    esac
+}
+
+# Detect and display deployment type
+echo "Detecting deployment type..."
+echo "COMPONENTS_CSV: ${COMPONENTS_CSV:-not set}"
+
+if is_pangolin_plus_ai; then
+    echo "🤖 Deployment type: Pangolin+AI (includes all resources)"
+elif is_pangolin_plus; then
+    echo "🛡️ Deployment type: Pangolin+ (core resources only)"
+else
+    echo "📦 Deployment type: Standard Pangolin (all resources)"
+fi
+
 TABLES=(
     "domains" "orgs" "orgDomains" "exitNodes" "sites" "resources" "targets"
     "idp" "user" "newt" "twoFactorBackupCodes" "session" "newtSession"
@@ -662,14 +736,23 @@ for table in "${TABLES[@]}"; do
             # Special handling for userOrgs - get the actual user ID and update CSV on the fly
             echo "Special handling for userOrgs table - updating userId with actual system user ID"
             ACTUAL_USER_ID=$(PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -t -c "SELECT id FROM \"user\" LIMIT 1;" | xargs)
-            
+
             # Create a temporary CSV with the correct userId
             TEMP_CSV="/tmp/userOrgs_temp.csv"
             head -n 1 "$CSV_FILE" > "$TEMP_CSV"  # Copy header
             tail -n +2 "$CSV_FILE" | sed "s/^[^,]*/$ACTUAL_USER_ID/" >> "$TEMP_CSV"  # Replace first column (userId) with actual ID
-            
+
             PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "\COPY \"$table\" FROM '$TEMP_CSV' WITH CSV HEADER;"
             rm "$TEMP_CSV"  # Clean up temp file
+        elif [[ "$table" == "resources" || "$table" == "targets" || "$table" == "roleResources" ]]; then
+            # Check if this table needs filtering for deployment type
+            FILTERED_CSV="/tmp/${table}_filtered.csv"
+            if filter_csv_for_deployment "$CSV_FILE" "$FILTERED_CSV" "$table"; then
+                PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "\COPY \"$table\" FROM '$FILTERED_CSV' WITH CSV HEADER;"
+                rm -f "$FILTERED_CSV"  # Clean up filtered file
+            else
+                echo "Failed to filter $table, skipping import"
+            fi
         else
             # Normal import for other tables
             PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "\COPY \"$table\" FROM '$CSV_FILE' WITH CSV HEADER;"
