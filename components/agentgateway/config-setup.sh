@@ -20,6 +20,48 @@ mkdir -p "$ROOT_HOST_DIR/config/letsencrypt"
 mkdir -p "$ROOT_HOST_DIR/public_html"
 chmod 600 "$ROOT_HOST_DIR/config/letsencrypt"
 
+# Copy HTML templates
+echo "📄 Setting up AgentGateway HTML templates..."
+
+# Determine the correct path for templates
+TEMPLATE_FOUND=false
+if [ -f "${MANIDAE_ROOT:-$ROOT_HOST_DIR}/components/agentgateway/templates/html/index.html" ]; then
+    echo "Using AgentGateway template from components directory"
+    cp "${MANIDAE_ROOT:-$ROOT_HOST_DIR}/components/agentgateway/templates/html/index.html" "/tmp/index.html.template"
+    TEMPLATE_FOUND=true
+elif [ -f "/components/agentgateway/templates/html/index.html" ]; then
+    echo "Using AgentGateway template from container components directory"
+    cp "/components/agentgateway/templates/html/index.html" "/tmp/index.html.template"
+    TEMPLATE_FOUND=true
+elif [ -f "/host-setup/templates/html/index.html" ]; then
+    echo "Using template from host-setup templates directory"
+    cp "/host-setup/templates/html/index.html" "/tmp/index.html.template"
+    TEMPLATE_FOUND=true
+fi
+
+if [ "$TEMPLATE_FOUND" = false ]; then
+    echo "⚠️  No HTML template found, creating basic template"
+    cat > "/tmp/index.html.template" << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentGateway</title>
+</head>
+<body>
+    <h1>Welcome to AgentGateway</h1>
+    <p>Your AI-powered platform is ready!</p>
+    <a href="https://chat.yourdomain.com">Access Chatkit</a>
+</body>
+</html>
+EOF
+fi
+
+# Replace domain placeholders in the template
+sed "s/yourdomain\.com/${DOMAIN}/g" "/tmp/index.html.template" > "$ROOT_HOST_DIR/public_html/index.html"
+echo "✅ HTML template copied to public_html/index.html"
+
 # Secret
 SECRET_KEY=$(generate_secret)
 
