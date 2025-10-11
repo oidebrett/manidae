@@ -1,6 +1,6 @@
   # Main Pangolin application
   pangolin:
-    image:  docker.io/fosrl/pangolin:1.10.0
+    image:  docker.io/fosrl/pangolin:1.10.3
     #container_name: pangolin
     restart: unless-stopped
     volumes:
@@ -50,23 +50,6 @@
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./logs/traefik:/var/log/traefik
 
-  # PostgreSQL database
-  pangolin-postgres:
-    image: postgres:15-alpine
-    #container_name: pangolin-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: postgres
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   # Chatkit Embed Service (replaces nlweb)
   chatkit-embed:
     image: oideibrett/chatkit-embed:latest
@@ -84,6 +67,3 @@
       retries: 3
       start_period: 10s
 
-volumes:
-  postgres_data:
-    driver: local
