@@ -93,6 +93,34 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
   echo "[orchestrator] Auto-derived COMPONENTS: $COMPONENTS_RAW"
 fi
 
+# Handle explicit agentgateway specification by adding companion components
+if [[ "$COMPONENTS_RAW" == "agentgateway" || "$COMPONENTS_RAW" == *",agentgateway"* || "$COMPONENTS_RAW" == *"agentgateway,"* ]]; then
+  echo "[orchestrator] AgentGateway detected in explicit components - adding companion components"
+
+  # Add core companion components if not already present
+  if [[ "$COMPONENTS_RAW" != *"middleware-manager"* ]]; then
+    COMPONENTS_RAW="$COMPONENTS_RAW,middleware-manager"
+  fi
+  if [[ "$COMPONENTS_RAW" != *"crowdsec"* ]]; then
+    COMPONENTS_RAW="$COMPONENTS_RAW,crowdsec"
+  fi
+  if [[ "$COMPONENTS_RAW" != *"mcpauth"* ]]; then
+    COMPONENTS_RAW="$COMPONENTS_RAW,mcpauth"
+  fi
+
+  # Add conditional components based on environment variables
+  if [[ -n "${MAXMIND_LICENSE_KEY:-}" && "$COMPONENTS_RAW" != *"traefik-log-dashboard"* ]]; then
+    echo "[orchestrator] Adding traefik-log-dashboard (MAXMIND_LICENSE_KEY is set)"
+    COMPONENTS_RAW="$COMPONENTS_RAW,traefik-log-dashboard"
+  fi
+  if [[ -n "${STATIC_PAGE_SUBDOMAIN:-}" && "$COMPONENTS_RAW" != *"static-page"* ]]; then
+    echo "[orchestrator] Adding static-page (STATIC_PAGE_SUBDOMAIN is set)"
+    COMPONENTS_RAW="$COMPONENTS_RAW,static-page"
+  fi
+
+  echo "[orchestrator] Updated COMPONENTS for AgentGateway: $COMPONENTS_RAW"
+fi
+
 # Handle platform+ aliases by adding required components (applies to both auto-derived and explicit components)
 if [[ "$COMPONENTS_RAW" == *"pangolin+"* ]]; then
   echo "[orchestrator] pangolin+ detected - ensuring crowdsec and mcpauth are included"
