@@ -1,0 +1,30 @@
+  # Traefik reverse proxy for OpenAI Chatkit
+  traefik:
+    image: traefik:v3.5
+    #container_name: traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    command:
+      - --configFile=/etc/traefik/traefik_config.yml
+    volumes:
+      - ./config/traefik:/etc/traefik:ro
+      - ./config/letsencrypt:/letsencrypt
+      - ./config/traefik/rules:/rules
+
+  # OpenAI Chatkit Embed Service
+  chatkit-embed:
+    image: oideibrett/chatkit-embed:latest
+    #container_name: chatkit-embed
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - PORT=8000
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

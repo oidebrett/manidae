@@ -23,6 +23,12 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
   if [[ -n "${DB_USERNAME:-}" || -n "${REDIS_PASSWORD:-}" || -n "${PUSHER_APP_ID:-}" || -n "${PUSHER_APP_KEY:-}" || -n "${PUSHER_APP_SECRET:-}" ]]; then
     echo "[orchestrator] Detected Coolify platform (Coolify environment variables are set)"
     COMPONENTS_RAW="coolify"
+  elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -n "${ADMIN_USERNAME:-}" && -n "${ADMIN_PASSWORD:-}" ]]; then
+    echo "[orchestrator] Detected AgentGateway platform (OPENAI_API_KEY, WORKFLOW_ID, and admin credentials are set)"
+    COMPONENTS_RAW="agentgateway,middleware-manager,logs,crowdsec,mcpauth"
+  elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -z "${ADMIN_USERNAME:-}" ]]; then
+    echo "[orchestrator] Detected OpenAI Chatkit platform (OPENAI_API_KEY and WORKFLOW_ID are set, no Pangolin admin)"
+    COMPONENTS_RAW="openai-chatkit"
   elif [[ -n "${DOMAIN:-}" && -n "${EMAIL:-}" ]]; then
     echo "[orchestrator] Detected Pangolin platform (DOMAIN and EMAIL are set)"
     COMPONENTS_RAW="pangolin,middleware-manager"
@@ -30,6 +36,7 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
     echo "[orchestrator] ERROR: Could not detect platform. Please provide either:"
     echo "  - For Pangolin: DOMAIN and EMAIL"
     echo "  - For Coolify: Any Coolify environment variables (or COMPONENTS=coolify)"
+    echo "  - For OpenAI Chatkit: DOMAIN, EMAIL, OPENAI_API_KEY, and WORKFLOW_ID"
     echo "  - Or specify COMPONENTS explicitly"
     exit 1
   fi
@@ -47,9 +54,12 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
       COMPONENTS_RAW="$COMPONENTS_RAW,mcpauth"
     fi
   fi
+  # Only add nlweb if we're not in openai-chatkit or agentgateway mode
   if [[ -n "${OPENAI_API_KEY:-}" || -n "${AZURE_OPENAI_API_KEY:-}" || -n "${ANTHROPIC_API_KEY:-}" || -n "${GEMINI_API_KEY:-}" ]]; then
-    echo "[orchestrator] Adding nlweb (AI_API_KEY is set)"
-    COMPONENTS_RAW="$COMPONENTS_RAW,nlweb"
+    if [[ "$COMPONENTS_RAW" != "openai-chatkit" && "$COMPONENTS_RAW" != *"agentgateway"* ]]; then
+      echo "[orchestrator] Adding nlweb (AI_API_KEY is set)"
+      COMPONENTS_RAW="$COMPONENTS_RAW,nlweb"
+    fi
   fi
   if [[ -n "${KOMODO_HOST_IP:-}" ]]; then
     echo "[orchestrator] Adding komodo (KOMODO_HOST_IP is set)"
@@ -107,12 +117,20 @@ has_component() {
 detect_base_platform() {
   if has_component "coolify"; then
     echo "coolify"
+  elif has_component "agentgateway"; then
+    echo "agentgateway"
   elif has_component "pangolin"; then
     echo "pangolin"
+  elif has_component "openai-chatkit"; then
+    echo "openai-chatkit"
   else
     # Auto-detect based on environment variables
     if [[ -n "${DB_USERNAME:-}" && -n "${REDIS_PASSWORD:-}" && -n "${PUSHER_APP_ID:-}" ]]; then
       echo "coolify"
+    elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -n "${ADMIN_USERNAME:-}" && -n "${ADMIN_PASSWORD:-}" ]]; then
+      echo "agentgateway"
+    elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -z "${ADMIN_USERNAME:-}" ]]; then
+      echo "openai-chatkit"
     elif [[ -n "${DOMAIN:-}" && -n "${EMAIL:-}" ]]; then
       echo "pangolin"
     else
@@ -129,7 +147,7 @@ echo "[orchestrator] Output dir: ${OUTPUT_DIR}"
 
 # Validate base platform
 if [[ "$BASE_PLATFORM" == "unknown" ]]; then
-  echo "[orchestrator] ERROR: Could not detect base platform. Please specify COMPONENTS with 'pangolin' or 'coolify', or provide appropriate environment variables."
+  echo "[orchestrator] ERROR: Could not detect base platform. Please specify COMPONENTS with 'pangolin', 'agentgateway', 'coolify', or 'openai-chatkit', or provide appropriate environment variables."
   exit 1
 fi
 
@@ -180,9 +198,15 @@ EOF
   if [[ "$BASE_PLATFORM" == "pangolin" ]]; then
     # Pangolin platform (includes pangolin + gerbil + traefik)
     sed -n '1,9999p' "$ROOT_DIR/components/pangolin/compose.yaml"
+  elif [[ "$BASE_PLATFORM" == "agentgateway" ]]; then
+    # AgentGateway platform (Pangolin-based with chatkit-embed)
+    sed -n '1,9999p' "$ROOT_DIR/components/agentgateway/compose.yaml"
   elif [[ "$BASE_PLATFORM" == "coolify" ]]; then
     # Coolify platform
     sed -n '1,9999p' "$ROOT_DIR/components/coolify/compose.yaml"
+  elif [[ "$BASE_PLATFORM" == "openai-chatkit" ]]; then
+    # OpenAI Chatkit platform (standalone with traefik)
+    sed -n '1,9999p' "$ROOT_DIR/components/openai-chatkit/compose.yaml"
   fi
 
   # Optional components (platform-agnostic)
@@ -297,6 +321,15 @@ networks:
     name: manidae
     enable_ipv6: true
 EOF
+  elif [[ "$BASE_PLATFORM" == "agentgateway" ]]; then
+    cat <<'EOF'
+networks:
+  default:
+    driver: bridge
+    #external: true
+    name: agentgateway
+    enable_ipv6: true
+EOF
   elif [[ "$BASE_PLATFORM" == "coolify" ]]; then
     cat <<'EOF'
 networks:
@@ -304,6 +337,13 @@ networks:
     name: coolify
     driver: bridge
     external: true
+EOF
+  elif [[ "$BASE_PLATFORM" == "openai-chatkit" ]]; then
+    cat <<'EOF'
+networks:
+  default:
+    driver: bridge
+    name: chatkit
 EOF
   fi
 } > "$compose_out"
@@ -399,8 +439,12 @@ info_out="$OUTPUT_DIR/DEPLOYMENT_INFO.txt"
   # Base platform deployment info
   if [[ "$BASE_PLATFORM" == "pangolin" ]]; then
     sed -n '1,9999p' "$ROOT_DIR/components/pangolin/deployment-info.txt"
+  elif [[ "$BASE_PLATFORM" == "agentgateway" ]]; then
+    sed -n '1,9999p' "$ROOT_DIR/components/agentgateway/deployment-info.txt"
   elif [[ "$BASE_PLATFORM" == "coolify" ]]; then
     sed -n '1,9999p' "$ROOT_DIR/components/coolify/deployment-info.txt"
+  elif [[ "$BASE_PLATFORM" == "openai-chatkit" ]]; then
+    sed -n '1,9999p' "$ROOT_DIR/components/openai-chatkit/deployment-info.txt"
   fi
 
   # Component-specific deployment info
