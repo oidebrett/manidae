@@ -25,7 +25,19 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
     COMPONENTS_RAW="coolify"
   elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -n "${ADMIN_USERNAME:-}" && -n "${ADMIN_PASSWORD:-}" ]]; then
     echo "[orchestrator] Detected AgentGateway platform (OPENAI_API_KEY, WORKFLOW_ID, and admin credentials are set)"
-    COMPONENTS_RAW="agentgateway,middleware-manager,logs,crowdsec,mcpauth"
+    COMPONENTS_RAW="agentgateway,middleware-manager,crowdsec,mcpauth"
+
+    # Add traefik-log-dashboard if MAXMIND_LICENSE_KEY is provided
+    if [[ -n "${MAXMIND_LICENSE_KEY:-}" ]]; then
+      echo "[orchestrator] Adding traefik-log-dashboard (MAXMIND_LICENSE_KEY is set)"
+      COMPONENTS_RAW="$COMPONENTS_RAW,traefik-log-dashboard"
+    fi
+
+    # Add static-page if STATIC_PAGE_SUBDOMAIN is provided
+    if [[ -n "${STATIC_PAGE_SUBDOMAIN:-}" ]]; then
+      echo "[orchestrator] Adding static-page (STATIC_PAGE_SUBDOMAIN is set)"
+      COMPONENTS_RAW="$COMPONENTS_RAW,static-page"
+    fi
   elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -z "${ADMIN_USERNAME:-}" ]]; then
     echo "[orchestrator] Detected OpenAI Chatkit platform (OPENAI_API_KEY and WORKFLOW_ID are set, no Pangolin admin)"
     COMPONENTS_RAW="openai-chatkit"
@@ -65,13 +77,17 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
     echo "[orchestrator] Adding komodo (KOMODO_HOST_IP is set)"
     COMPONENTS_RAW="$COMPONENTS_RAW,komodo"
   fi
-  if [[ -n "${STATIC_PAGE_SUBDOMAIN:-}" ]]; then
-    echo "[orchestrator] Adding static-page (STATIC_PAGE_SUBDOMAIN is set)"
-    COMPONENTS_RAW="$COMPONENTS_RAW,static-page"
-  fi
-  if [[ -n "${MAXMIND_LICENSE_KEY:-}" ]]; then
-    echo "[orchestrator] Adding traefik-log-dashboard (MAXMIND_LICENSE_KEY is set)"
-    COMPONENTS_RAW="$COMPONENTS_RAW,traefik-log-dashboard"
+
+  # Only add these components if not already handled by AgentGateway auto-detection
+  if [[ "$COMPONENTS_RAW" != *"agentgateway"* ]]; then
+    if [[ -n "${STATIC_PAGE_SUBDOMAIN:-}" ]]; then
+      echo "[orchestrator] Adding static-page (STATIC_PAGE_SUBDOMAIN is set)"
+      COMPONENTS_RAW="$COMPONENTS_RAW,static-page"
+    fi
+    if [[ -n "${MAXMIND_LICENSE_KEY:-}" ]]; then
+      echo "[orchestrator] Adding traefik-log-dashboard (MAXMIND_LICENSE_KEY is set)"
+      COMPONENTS_RAW="$COMPONENTS_RAW,traefik-log-dashboard"
+    fi
   fi
 
   echo "[orchestrator] Auto-derived COMPONENTS: $COMPONENTS_RAW"
