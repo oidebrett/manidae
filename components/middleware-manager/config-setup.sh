@@ -15,11 +15,16 @@ fi
 echo "📁 Updating the middleware-manager templates for mcp auth..."
 
 TEMPLATES_FILE="/host-setup/config/middleware-manager/templates.yml"
+# Ensure parent directory exists
+mkdir -p "$(dirname "$TEMPLATES_FILE")"
 
-# Ensure file exists
+# If file doesn't exist, create it with header
 if [ ! -f "$TEMPLATES_FILE" ]; then
-  echo "❌ Error: $TEMPLATES_FILE not found!"
-  exit 1
+  echo "🆕 Creating $TEMPLATES_FILE with default headers..."
+  cat > "$TEMPLATES_FILE" <<'YAML'
+# Default middleware templates
+middlewares:
+YAML
 fi
 
 # Function to append a middleware block if not already present
@@ -27,10 +32,12 @@ add_middleware_if_missing() {
   local id="$1"
   local yaml_block="$2"
 
+  # Check if middleware id already exists in file
   if grep -q "^[[:space:]]*- id: ${id}\b" "$TEMPLATES_FILE"; then
     echo "✅ Middleware '${id}' already exists. Skipping."
   else
     echo "➕ Adding middleware '${id}'..."
+    # Ensure proper newline and indentation
     printf "\n%s\n" "$yaml_block" >> "$TEMPLATES_FILE"
   fi
 }
@@ -98,6 +105,6 @@ add_middleware_if_missing "mcp-cors-headers" "$mcp_cors_headers"
 add_middleware_if_missing "mcp-redirect-regex" "$mcp_redirect_regex"
 add_middleware_if_missing "mcp-security-chain" "$mcp_security_chain"
 
-echo "✅ Done updating $TEMPLATES_FILE"
+echo "✅ Finished updating $TEMPLATES_FILE"
 
 echo "✅ Middleware Manager setup complete"
