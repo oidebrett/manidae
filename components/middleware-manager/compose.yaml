@@ -8,6 +8,7 @@
       - ./config/traefik/rules:/conf
       - ./config/middleware-manager:/app/config
       - ./config/traefik:/etc/traefik
+      #- ./config/middleware-manager/templates.yaml:/app/config/templates.yaml
     environment:
       - PANGOLIN_API_URL=http://pangolin:3001/api/v1
       - TRAEFIK_CONF_DIR=/conf

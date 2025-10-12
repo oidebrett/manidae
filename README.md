@@ -189,6 +189,25 @@ REDIS_PASSWORD=redis123 \
 docker compose -f docker-compose-setup.yml up
 ```
 
+### **OpenAI chatkit (openai hosted workflows)
+
+```bash
+COMPONENTS=openai-chatkit DOMAIN=yourdomain.com EMAIL=admin@yourdomain.com OPENAI_API_KEY=sk-proj-your-key WORKFLOW_ID=wf_your-workflow docker compose -f docker-compose-setup.yml up
+```
+
+### **AgentGateway (self hosted workflows)
+
+```bash
+COMPONENTS=agentgateway \
+DOMAIN=yourdomain.com \
+EMAIL=admin@yourdomain.com \
+ADMIN_USERNAME=admin@yourdomain.com \
+ADMIN_PASSWORD=your-secure-password \
+OPENAI_API_KEY=sk-proj-your-key \
+WORKFLOW_ID=wf_your-workflow \
+docker compose -f docker-compose-setup.yml up
+```
+
 ---
 
 ## 📚 Need More Details?

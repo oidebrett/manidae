@@ -1,0 +1,37 @@
+{
+  "name": "agentgateway",
+  "required_env": [
+    "DOMAIN", 
+    "EMAIL", 
+    "ADMIN_USERNAME", 
+    "ADMIN_PASSWORD",
+    "OPENAI_API_KEY",
+    "WORKFLOW_ID"
+  ],
+  "optional_env": [
+    "ADMIN_SUBDOMAIN", 
+    "POSTGRES_USER", 
+    "POSTGRES_PASSWORD", 
+    "POSTGRES_HOST",
+    "TRAEFIK_SUBDOMAIN",
+    "CHATKIT_SUBDOMAIN",
+    "CROWDSEC_ENROLLMENT_KEY",
+    "CLIENT_ID",
+    "CLIENT_SECRET",
+    "OAUTH_DOMAIN",
+    "LOGS_SUBDOMAIN",
+    "MIDDLEWARE_MANAGER_SUBDOMAIN",
+    "VITE_CHATKIT_API_DOMAIN_KEY",
+    "GITHUB_REPO_URL",
+    "SSH_KEY_PATH",
+    "CHATKIT_THEME_JSON",
+    "CHATKIT_GREETING",
+    "CHATKIT_PLACEHOLDER",
+    "CHATKIT_PROMPTS_JSON",
+    "EMBED_MODE",
+    "SHOW_EMBED_CODE",
+    "VITE_CHATKIT_API_URL",
+    "BACKEND_HOST"
+  ],
+  "description": "AgentGateway platform - Pangolin-based platform with integrated chatkit-embed, security, and management tools"
+}

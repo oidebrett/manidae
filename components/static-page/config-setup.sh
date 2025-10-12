@@ -9,22 +9,43 @@ create_static_page_html() {
     echo "📄 Creating static page HTML..."
     mkdir -p /host-setup/public_html
     
+    # Check if we're in an AgentGateway deployment (index.html already exists and has chatkit)
+    if [ -f "/host-setup/public_html/index.html" ] && grep -q "chatkit" "/host-setup/public_html/index.html"; then
+        echo "AgentGateway index.html detected - skipping static page HTML generation to preserve AgentGateway template"
+        return 0
+    fi
+
     # Check if template exists in the templates html directory
     if [ -f "/host-setup/templates/html/index.html" ]; then
         echo "Using template from templates directory"
-        
+
         # Copy template to a temporary file
         cp "/host-setup/templates/html/index.html" "/tmp/index.html.template"
 
-        # If OPENAI_API_KEY is not set, remove the NLWeb section from the template
-        if [ -z "${OPENAI_API_KEY:-}" ]; then
-            echo "Removing Nlweb section from template as OPENAI_API_KEY is not set"
-            
-            # Use sed to remove everything between the start and end Nlweb comments
+        # Determine if this is an AgentGateway deployment
+        IS_AGENTGATEWAY=false
+        if echo "${COMPONENTS_CSV:-}" | grep -q "agentgateway"; then
+            IS_AGENTGATEWAY=true
+        fi
+
+        # Handle AI components based on deployment type
+        if [ "$IS_AGENTGATEWAY" = true ]; then
+            echo "AgentGateway deployment detected - removing nlweb sections and keeping chatkit sections"
+            # Remove nlweb sections for AgentGateway
             sed -i '/<!-- Start of Nlweb -->/,/<!-- End of Nlweb -->/d' "/tmp/index.html.template"
-            
-            # Also remove Nlweb from the welcome screen grid
             sed -i 's/Pangolin • Nlweb/Pangolin/g' "/tmp/index.html.template"
+        else
+            # For non-AgentGateway deployments
+            if [ -z "${OPENAI_API_KEY:-}" ]; then
+                echo "Removing Nlweb section from template as OPENAI_API_KEY is not set"
+                sed -i '/<!-- Start of Nlweb -->/,/<!-- End of Nlweb -->/d' "/tmp/index.html.template"
+                sed -i 's/Pangolin • Nlweb/Pangolin/g' "/tmp/index.html.template"
+            fi
+
+            # Remove chatkit sections for non-AgentGateway deployments
+            echo "Removing Chatkit sections from template (not AgentGateway deployment)"
+            sed -i '/<!-- Start of Chatkit -->/,/<!-- End of Chatkit -->/d' "/tmp/index.html.template"
+            sed -i '/<!-- Start of Chatkit Admin -->/,/<!-- End of Chatkit Admin -->/d' "/tmp/index.html.template"
         fi
 
         # If KOMODO_HOST_IP is not set, remove the Komodo section from the template

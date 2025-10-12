@@ -51,3 +51,21 @@
       - ./config/traefik/rules:/rules
       - ./config/traefik/logs:/var/log/traefik
       - ./public_html:/var/www/html:ro
+
+  # Chatkit Embed Service (replaces nlweb)
+  chatkit-embed:
+    image: oideibrett/chatkit-embed:latest
+    #container_name: chatkit-embed
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - PORT=8000
+      - BACKEND_HOST=${BACKEND_HOST:-0.0.0.0}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+

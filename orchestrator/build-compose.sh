@@ -23,6 +23,24 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
   if [[ -n "${DB_USERNAME:-}" || -n "${REDIS_PASSWORD:-}" || -n "${PUSHER_APP_ID:-}" || -n "${PUSHER_APP_KEY:-}" || -n "${PUSHER_APP_SECRET:-}" ]]; then
     echo "[orchestrator] Detected Coolify platform (Coolify environment variables are set)"
     COMPONENTS_RAW="coolify"
+  elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -n "${ADMIN_USERNAME:-}" && -n "${ADMIN_PASSWORD:-}" ]]; then
+    echo "[orchestrator] Detected AgentGateway platform (OPENAI_API_KEY, WORKFLOW_ID, and admin credentials are set)"
+    COMPONENTS_RAW="agentgateway,middleware-manager,crowdsec,mcpauth"
+
+    # Add traefik-log-dashboard if MAXMIND_LICENSE_KEY is provided
+    if [[ -n "${MAXMIND_LICENSE_KEY:-}" ]]; then
+      echo "[orchestrator] Adding traefik-log-dashboard (MAXMIND_LICENSE_KEY is set)"
+      COMPONENTS_RAW="$COMPONENTS_RAW,traefik-log-dashboard"
+    fi
+
+    # Add static-page if STATIC_PAGE_SUBDOMAIN is provided
+    if [[ -n "${STATIC_PAGE_SUBDOMAIN:-}" ]]; then
+      echo "[orchestrator] Adding static-page (STATIC_PAGE_SUBDOMAIN is set)"
+      COMPONENTS_RAW="$COMPONENTS_RAW,static-page"
+    fi
+  elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -z "${ADMIN_USERNAME:-}" ]]; then
+    echo "[orchestrator] Detected OpenAI Chatkit platform (OPENAI_API_KEY and WORKFLOW_ID are set, no Pangolin admin)"
+    COMPONENTS_RAW="openai-chatkit"
   elif [[ -n "${DOMAIN:-}" && -n "${EMAIL:-}" ]]; then
     echo "[orchestrator] Detected Pangolin platform (DOMAIN and EMAIL are set)"
     COMPONENTS_RAW="pangolin,middleware-manager"
@@ -30,6 +48,7 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
     echo "[orchestrator] ERROR: Could not detect platform. Please provide either:"
     echo "  - For Pangolin: DOMAIN and EMAIL"
     echo "  - For Coolify: Any Coolify environment variables (or COMPONENTS=coolify)"
+    echo "  - For OpenAI Chatkit: DOMAIN, EMAIL, OPENAI_API_KEY, and WORKFLOW_ID"
     echo "  - Or specify COMPONENTS explicitly"
     exit 1
   fi
@@ -47,24 +66,80 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
       COMPONENTS_RAW="$COMPONENTS_RAW,mcpauth"
     fi
   fi
+  # Only add nlweb if we're not in openai-chatkit or agentgateway mode
   if [[ -n "${OPENAI_API_KEY:-}" || -n "${AZURE_OPENAI_API_KEY:-}" || -n "${ANTHROPIC_API_KEY:-}" || -n "${GEMINI_API_KEY:-}" ]]; then
-    echo "[orchestrator] Adding nlweb (AI_API_KEY is set)"
-    COMPONENTS_RAW="$COMPONENTS_RAW,nlweb"
+    if [[ "$COMPONENTS_RAW" != "openai-chatkit" && "$COMPONENTS_RAW" != *"agentgateway"* ]]; then
+      echo "[orchestrator] Adding nlweb (AI_API_KEY is set)"
+      COMPONENTS_RAW="$COMPONENTS_RAW,nlweb"
+    fi
   fi
   if [[ -n "${KOMODO_HOST_IP:-}" ]]; then
     echo "[orchestrator] Adding komodo (KOMODO_HOST_IP is set)"
     COMPONENTS_RAW="$COMPONENTS_RAW,komodo"
   fi
-  if [[ -n "${STATIC_PAGE_SUBDOMAIN:-}" ]]; then
-    echo "[orchestrator] Adding static-page (STATIC_PAGE_SUBDOMAIN is set)"
-    COMPONENTS_RAW="$COMPONENTS_RAW,static-page"
-  fi
-  if [[ -n "${MAXMIND_LICENSE_KEY:-}" ]]; then
-    echo "[orchestrator] Adding traefik-log-dashboard (MAXMIND_LICENSE_KEY is set)"
-    COMPONENTS_RAW="$COMPONENTS_RAW,traefik-log-dashboard"
+
+  # Only add these components if not already handled by AgentGateway auto-detection
+  if [[ "$COMPONENTS_RAW" != *"agentgateway"* ]]; then
+    if [[ -n "${STATIC_PAGE_SUBDOMAIN:-}" ]]; then
+      echo "[orchestrator] Adding static-page (STATIC_PAGE_SUBDOMAIN is set)"
+      COMPONENTS_RAW="$COMPONENTS_RAW,static-page"
+    fi
+    if [[ -n "${MAXMIND_LICENSE_KEY:-}" ]]; then
+      echo "[orchestrator] Adding traefik-log-dashboard (MAXMIND_LICENSE_KEY is set)"
+      COMPONENTS_RAW="$COMPONENTS_RAW,traefik-log-dashboard"
+    fi
   fi
 
   echo "[orchestrator] Auto-derived COMPONENTS: $COMPONENTS_RAW"
+fi
+
+# Handle explicit agentgateway specification by adding companion components
+if [[ "$COMPONENTS_RAW" == "agentgateway" || "$COMPONENTS_RAW" == *",agentgateway"* || "$COMPONENTS_RAW" == *"agentgateway,"* ]]; then
+  echo "[orchestrator] AgentGateway detected in explicit components - adding companion components"
+
+  # Add core companion components if not already present
+  if [[ "$COMPONENTS_RAW" != *"middleware-manager"* ]]; then
+    COMPONENTS_RAW="$COMPONENTS_RAW,middleware-manager"
+  fi
+  if [[ "$COMPONENTS_RAW" != *"crowdsec"* ]]; then
+    COMPONENTS_RAW="$COMPONENTS_RAW,crowdsec"
+  fi
+  if [[ "$COMPONENTS_RAW" != *"mcpauth"* ]]; then
+    COMPONENTS_RAW="$COMPONENTS_RAW,mcpauth"
+  fi
+
+  # Add conditional components based on environment variables
+  if [[ -n "${MAXMIND_LICENSE_KEY:-}" && "$COMPONENTS_RAW" != *"traefik-log-dashboard"* ]]; then
+    echo "[orchestrator] Adding traefik-log-dashboard (MAXMIND_LICENSE_KEY is set)"
+    COMPONENTS_RAW="$COMPONENTS_RAW,traefik-log-dashboard"
+  fi
+  if [[ -n "${STATIC_PAGE_SUBDOMAIN:-}" && "$COMPONENTS_RAW" != *"static-page"* ]]; then
+    echo "[orchestrator] Adding static-page (STATIC_PAGE_SUBDOMAIN is set)"
+    COMPONENTS_RAW="$COMPONENTS_RAW,static-page"
+  fi
+
+  echo "[orchestrator] Updated COMPONENTS for AgentGateway: $COMPONENTS_RAW"
+fi
+
+# Handle openai-chatkit + pangolin combinations by converting to agentgateway
+if [[ "$COMPONENTS_RAW" == *"openai-chatkit"* && ("$COMPONENTS_RAW" == *"pangolin"* || "$COMPONENTS_RAW" == *"middleware-manager"*) ]]; then
+  echo "[orchestrator] openai-chatkit detected with pangolin components - converting to agentgateway mode"
+
+  # Replace openai-chatkit with agentgateway in the components list
+  COMPONENTS_RAW=$(echo "$COMPONENTS_RAW" | sed 's/openai-chatkit/agentgateway/')
+
+  # Ensure core companion components are present
+  if [[ "$COMPONENTS_RAW" != *"middleware-manager"* ]]; then
+    COMPONENTS_RAW="$COMPONENTS_RAW,middleware-manager"
+  fi
+  if [[ "$COMPONENTS_RAW" != *"crowdsec"* ]]; then
+    COMPONENTS_RAW="$COMPONENTS_RAW,crowdsec"
+  fi
+  if [[ "$COMPONENTS_RAW" != *"mcpauth"* ]]; then
+    COMPONENTS_RAW="$COMPONENTS_RAW,mcpauth"
+  fi
+
+  echo "[orchestrator] Updated COMPONENTS for AgentGateway (from openai-chatkit): $COMPONENTS_RAW"
 fi
 
 # Handle platform+ aliases by adding required components (applies to both auto-derived and explicit components)
@@ -107,12 +182,23 @@ has_component() {
 detect_base_platform() {
   if has_component "coolify"; then
     echo "coolify"
+  elif has_component "agentgateway"; then
+    echo "agentgateway"
+  elif has_component "openai-chatkit" && (has_component "pangolin" || has_component "middleware-manager"); then
+    # If openai-chatkit is specified alongside pangolin components, use agentgateway
+    echo "agentgateway"
   elif has_component "pangolin"; then
     echo "pangolin"
+  elif has_component "openai-chatkit"; then
+    echo "openai-chatkit"
   else
     # Auto-detect based on environment variables
     if [[ -n "${DB_USERNAME:-}" && -n "${REDIS_PASSWORD:-}" && -n "${PUSHER_APP_ID:-}" ]]; then
       echo "coolify"
+    elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -n "${ADMIN_USERNAME:-}" && -n "${ADMIN_PASSWORD:-}" ]]; then
+      echo "agentgateway"
+    elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -z "${ADMIN_USERNAME:-}" ]]; then
+      echo "openai-chatkit"
     elif [[ -n "${DOMAIN:-}" && -n "${EMAIL:-}" ]]; then
       echo "pangolin"
     else
@@ -129,7 +215,7 @@ echo "[orchestrator] Output dir: ${OUTPUT_DIR}"
 
 # Validate base platform
 if [[ "$BASE_PLATFORM" == "unknown" ]]; then
-  echo "[orchestrator] ERROR: Could not detect base platform. Please specify COMPONENTS with 'pangolin' or 'coolify', or provide appropriate environment variables."
+  echo "[orchestrator] ERROR: Could not detect base platform. Please specify COMPONENTS with 'pangolin', 'agentgateway', 'coolify', or 'openai-chatkit', or provide appropriate environment variables."
   exit 1
 fi
 
@@ -180,9 +266,15 @@ EOF
   if [[ "$BASE_PLATFORM" == "pangolin" ]]; then
     # Pangolin platform (includes pangolin + gerbil + traefik)
     sed -n '1,9999p' "$ROOT_DIR/components/pangolin/compose.yaml"
+  elif [[ "$BASE_PLATFORM" == "agentgateway" ]]; then
+    # AgentGateway platform (Pangolin-based with chatkit-embed)
+    sed -n '1,9999p' "$ROOT_DIR/components/agentgateway/compose.yaml"
   elif [[ "$BASE_PLATFORM" == "coolify" ]]; then
     # Coolify platform
     sed -n '1,9999p' "$ROOT_DIR/components/coolify/compose.yaml"
+  elif [[ "$BASE_PLATFORM" == "openai-chatkit" ]]; then
+    # OpenAI Chatkit platform (standalone with traefik)
+    sed -n '1,9999p' "$ROOT_DIR/components/openai-chatkit/compose.yaml"
   fi
 
   # Optional components (platform-agnostic)
@@ -297,6 +389,15 @@ networks:
     name: manidae
     enable_ipv6: true
 EOF
+  elif [[ "$BASE_PLATFORM" == "agentgateway" ]]; then
+    cat <<'EOF'
+networks:
+  default:
+    driver: bridge
+    #external: true
+    name: agentgateway
+    enable_ipv6: true
+EOF
   elif [[ "$BASE_PLATFORM" == "coolify" ]]; then
     cat <<'EOF'
 networks:
@@ -304,6 +405,13 @@ networks:
     name: coolify
     driver: bridge
     external: true
+EOF
+  elif [[ "$BASE_PLATFORM" == "openai-chatkit" ]]; then
+    cat <<'EOF'
+networks:
+  default:
+    driver: bridge
+    name: chatkit
 EOF
   fi
 } > "$compose_out"
@@ -323,6 +431,23 @@ set -e
 ROOT_HOST_DIR="\${ROOT_HOST_DIR:-/host-setup}"
 COMPONENTS_CSV="$COMPONENTS_RAW"
 export COMPONENTS_CSV
+
+# Export environment variables for component scripts
+export DOMAIN="\${DOMAIN:-}"
+export EMAIL="\${EMAIL:-}"
+export OPENAI_API_KEY="\${OPENAI_API_KEY:-}"
+export WORKFLOW_ID="\${WORKFLOW_ID:-}"
+export ADMIN_USERNAME="\${ADMIN_USERNAME:-}"
+export ADMIN_PASSWORD="\${ADMIN_PASSWORD:-}"
+export CHATKIT_SUBDOMAIN="\${CHATKIT_SUBDOMAIN:-}"
+export TRAEFIK_SUBDOMAIN="\${TRAEFIK_SUBDOMAIN:-}"
+export LOGS_SUBDOMAIN="\${LOGS_SUBDOMAIN:-}"
+export STATIC_PAGE_SUBDOMAIN="\${STATIC_PAGE_SUBDOMAIN:-}"
+export MAXMIND_LICENSE_KEY="\${MAXMIND_LICENSE_KEY:-}"
+export CLIENT_ID="\${CLIENT_ID:-}"
+export CLIENT_SECRET="\${CLIENT_SECRET:-}"
+export OAUTH_DOMAIN="\${OAUTH_DOMAIN:-}"
+
 log() { printf "%s\n" "\$*"; }
 run_component_hooks() {
   comps_csv="\${COMPONENTS_CSV}"
@@ -366,6 +491,23 @@ set -e
 ROOT_HOST_DIR="\${ROOT_HOST_DIR:-/host-setup}"
 COMPONENTS_CSV="$COMPONENTS_RAW"
 export COMPONENTS_CSV
+
+# Export environment variables for component scripts
+export DOMAIN="\${DOMAIN:-}"
+export EMAIL="\${EMAIL:-}"
+export OPENAI_API_KEY="\${OPENAI_API_KEY:-}"
+export WORKFLOW_ID="\${WORKFLOW_ID:-}"
+export ADMIN_USERNAME="\${ADMIN_USERNAME:-}"
+export ADMIN_PASSWORD="\${ADMIN_PASSWORD:-}"
+export CHATKIT_SUBDOMAIN="\${CHATKIT_SUBDOMAIN:-}"
+export TRAEFIK_SUBDOMAIN="\${TRAEFIK_SUBDOMAIN:-}"
+export LOGS_SUBDOMAIN="\${LOGS_SUBDOMAIN:-}"
+export STATIC_PAGE_SUBDOMAIN="\${STATIC_PAGE_SUBDOMAIN:-}"
+export MAXMIND_LICENSE_KEY="\${MAXMIND_LICENSE_KEY:-}"
+export CLIENT_ID="\${CLIENT_ID:-}"
+export CLIENT_SECRET="\${CLIENT_SECRET:-}"
+export OAUTH_DOMAIN="\${OAUTH_DOMAIN:-}"
+
 log() { printf "%s\n" "\$*"; }
 run_component_hooks() {
   comps_csv="\${COMPONENTS_CSV}"
@@ -399,8 +541,12 @@ info_out="$OUTPUT_DIR/DEPLOYMENT_INFO.txt"
   # Base platform deployment info
   if [[ "$BASE_PLATFORM" == "pangolin" ]]; then
     sed -n '1,9999p' "$ROOT_DIR/components/pangolin/deployment-info.txt"
+  elif [[ "$BASE_PLATFORM" == "agentgateway" ]]; then
+    sed -n '1,9999p' "$ROOT_DIR/components/agentgateway/deployment-info.txt"
   elif [[ "$BASE_PLATFORM" == "coolify" ]]; then
     sed -n '1,9999p' "$ROOT_DIR/components/coolify/deployment-info.txt"
+  elif [[ "$BASE_PLATFORM" == "openai-chatkit" ]]; then
+    sed -n '1,9999p' "$ROOT_DIR/components/openai-chatkit/deployment-info.txt"
   fi
 
   # Component-specific deployment info

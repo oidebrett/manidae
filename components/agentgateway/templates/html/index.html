@@ -61,18 +61,6 @@
                 </div>
                 <!-- End of Pangolin -->
 
-                <!-- Start of Nlweb -->
-                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://nlweb.yourdomain.com', 'NLWeb', this)">
-                    <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
-                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/webgazer.webp" alt="Pangolin Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">P</div>
-                    </div>
-                    <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div class="text-lg font-semibold text-cyan-400 truncate">NLWeb</div>
-                    </div>
-                </div>
-                <!-- End of Nlweb -->
-
                 <!-- Start of Chatkit -->
                 <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://chat.yourdomain.com', 'AI Chat', this)">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
@@ -97,7 +85,7 @@
                 </div>
                 <!-- End of Chatkit Admin -->
 
-                <!-- Start of Komodo 
+                <!-- Start of Komodo -->
                 <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://komodo.yourdomain.com', 'Komodo', this)">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
                         <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/komodo.webp" alt="Komodo Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
@@ -107,7 +95,7 @@
                         <div class="text-lg font-semibold text-cyan-400 truncate">Komodo</div>
                     </div>                    
                 </div>
-                End of Komodo -->
+                <!-- End of Komodo -->
 
                 <!-- Start of Middleware Manager -->
                 <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://middleware-manager.yourdomain.com', 'Middleware Manager', this)">
@@ -166,7 +154,7 @@
             <!-- Header -->
             <div class="bg-gray-800 p-4 border-b border-gray-700 shadow-lg">
                 <div class="flex items-center justify-between">
-                    <h2 id="current-app-title" class="text-xl font-semibold text-cyan-400 hidden md:block">Welcome</h2>
+                    <h2 id="current-app-title" class="text-xl font-semibold text-cyan-400">Welcome</h2>
                     <div class="flex items-center space-x-4">
                         <div id="loading-indicator" class="hidden">
                             <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-cyan-400"></div>
@@ -181,20 +169,20 @@
             </div>
 
             <!-- Content Area -->
-            <div class="flex-1 relative">
+            <div class="flex-1 relative md:ml-0 ml-0">
                 <!-- Welcome Screen -->
                 <div id="welcome-screen" class="flex items-center justify-center h-full bg-gray-900">
                     <div class="text-center max-w-2xl px-8">
-                        <!-- Main Title: Welcomes the user to the MCP Gateway -->
+                        <!-- Main Title: Welcomes the user to the Agent Gateway -->
                         <h1 class="text-6xl font-bold mb-6 text-cyan-400 animate-pulse">
-                            Security Gateway
-                        </h1>                        
+                            Agent Gateway
+                        </h1>
                         <h2 class="text-3xl font-semibold mb-4 text-cyan-500">
-                            Hosted Reverse Proxy
+                            AI-Powered Infrastructure Platform
                         </h2>
                         <!-- Subtitle: Directs the user to the left-hand navigation -->
                         <p class="text-xl text-gray-400 mb-8">
-                            The unified entry point for all your infrastructure and network services.
+                            Secure infrastructure management with integrated AI assistance and comprehensive monitoring.
                         </p>
                         <!-- Informational Cards: Provides high-level overview of the gateway's functions -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm text-gray-500">
@@ -235,16 +223,16 @@
             const welcomeScreen = document.getElementById('welcome-screen');
             welcomeScreen.innerHTML = `
                     <div class="text-center max-w-2xl px-8">
-                        <!-- Main Title: Welcomes the user to the MCP Gateway -->
+                        <!-- Main Title: Welcomes the user to the Agent Gateway -->
                         <h1 class="text-6xl font-bold mb-6 text-cyan-400 animate-pulse">
-                            Security Gateway
-                        </h1>                        
+                            Agent Gateway
+                        </h1>
                         <h2 class="text-3xl font-semibold mb-4 text-cyan-500">
-                            Hosted Reverse Proxy
+                            AI-Powered Infrastructure Platform
                         </h2>
                         <!-- Subtitle: Directs the user to the left-hand navigation -->
                         <p class="text-xl text-gray-400 mb-8">
-                            The unified entry point for all your infrastructure and network services.
+                            Secure infrastructure management with integrated AI assistance and comprehensive monitoring.
                         </p>
                         <!-- Informational Cards: Provides high-level overview of the gateway's functions -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm text-gray-500">
@@ -470,10 +458,27 @@
             item.addEventListener('click', () => {
                 if (window.innerWidth < 768) { // md breakpoint
                     setTimeout(() => {
-                        toggleMobileMenu();
-                    }, 100); // Small delay to allow the click to register
+                        sidebar.classList.add('-translate-x-full');
+                        mobileOverlay.classList.add('hidden');
+                        document.body.classList.remove('overflow-hidden');
+                    }, 100); // Small delay to allow the app to load
                 }
             });
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 768) { // md breakpoint
+                // Desktop view - ensure sidebar is visible and overlay is hidden
+                sidebar.classList.remove('-translate-x-full');
+                mobileOverlay.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
+            } else {
+                // Mobile view - ensure sidebar is hidden initially
+                sidebar.classList.add('-translate-x-full');
+                mobileOverlay.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
+            }
         });
 
         // Initialize with welcome screen active

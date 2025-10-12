@@ -1,0 +1,9 @@
+{
+  "name": "openai-chatkit",
+  "required_env": ["OPENAI_API_KEY", "WORKFLOW_ID"],
+  "optional_env": [
+    "DOMAIN", "CHATKIT_SUBDOMAIN", "CHATKIT_THEME_JSON", "CHATKIT_GREETING", 
+    "CHATKIT_PLACEHOLDER", "CHATKIT_PROMPTS_JSON", "EMBED_MODE", "SHOW_EMBED_CODE"
+  ],
+  "description": "OpenAI Chatkit embed component for conversational AI interfaces"
+}

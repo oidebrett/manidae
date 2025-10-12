@@ -66,6 +66,36 @@ EXPORT_DIR="${1:-./postgres_export}"
 
 echo "SQLite database path: $DB_PATH"
 
+# Function to detect if pangolin+ is being used
+is_pangolin_plus() {
+    # Check if COMPONENTS_CSV contains pangolin+
+    case "${COMPONENTS_CSV:-}" in
+        *"pangolin+"*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Function to detect if AI components (nlweb/komodo/agentgateway) are being used
+is_pangolin_plus_ai() {
+    # First check COMPONENTS_CSV if available
+    case "${COMPONENTS_CSV:-}" in
+        *"nlweb"*|*"komodo"*|*"agentgateway"*) return 0 ;;
+    esac
+
+    # If COMPONENTS_CSV is not set, try to detect from CSV files
+    if [ -z "${COMPONENTS_CSV:-}" ]; then
+        # Check if resources.csv contains AI-specific resources
+        if [ -f "${EXPORT_DIR:-./postgres_export}/resources.csv" ]; then
+            # Look for chatkit-embed (AgentGateway), nlweb, or komodo resources
+            if grep -q "chatkit-embed\|nlweb\|komodo-core" "${EXPORT_DIR:-./postgres_export}/resources.csv"; then
+                return 0
+            fi
+        fi
+    fi
+
+    return 1
+}
+
 # Detect and display deployment type
 echo "Detecting deployment type..."
 echo "COMPONENTS_CSV: ${COMPONENTS_CSV:-not set}"
@@ -95,23 +125,7 @@ create_sqlite_structure() {
     # For now, we assume the schema already exists from the application
 }
 
-# Function to detect if pangolin+ is being used
-is_pangolin_plus() {
-    # Check if COMPONENTS_CSV contains pangolin+
-    case "${COMPONENTS_CSV:-}" in
-        *"pangolin+"*) return 0 ;;
-        *) return 1 ;;
-    esac
-}
 
-# Function to detect if AI components (nlweb/komodo) are being used
-is_pangolin_plus_ai() {
-    # Check if COMPONENTS_CSV contains nlweb or komodo components
-    case "${COMPONENTS_CSV:-}" in
-        *"nlweb"*|*"komodo"*) return 0 ;;
-        *) return 1 ;;
-    esac
-}
 
 # Function to filter CSV data based on deployment type
 filter_csv_for_deployment() {
@@ -131,8 +145,14 @@ filter_csv_for_deployment() {
         return 0
     fi
 
-    # For pangolin+ without AI, filter to core resources only
-    echo "Pangolin+ core deployment detected - filtering to core resources only"
+    # Only filter for pangolin+ deployments without AI
+    if is_pangolin_plus; then
+        echo "Pangolin+ core deployment detected - filtering to core resources only"
+    else
+        echo "Standard deployment detected - including all resources"
+        cp "$input_csv" "$output_csv"
+        return 0
+    fi
 
     case "$table_name" in
         "resources")

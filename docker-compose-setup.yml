@@ -49,6 +49,22 @@ services:
       - KOMODO_HOST_IP=${KOMODO_HOST_IP:-} # if set you must use komodo-postgres-1 as the POSTGRES_HOST
       # OpenAI API Key for nlweb (if needed)
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      # OpenAI Chatkit configuration
+      - WORKFLOW_ID=${WORKFLOW_ID:-}
+      - CHATKIT_SUBDOMAIN=${CHATKIT_SUBDOMAIN:-chat}
+      - CHATKIT_THEME_JSON=${CHATKIT_THEME_JSON:-}
+      - CHATKIT_GREETING=${CHATKIT_GREETING:-}
+      - CHATKIT_PLACEHOLDER=${CHATKIT_PLACEHOLDER:-}
+      - CHATKIT_PROMPTS_JSON=${CHATKIT_PROMPTS_JSON:-}
+      - EMBED_MODE=${EMBED_MODE:-}
+      - SHOW_EMBED_CODE=${SHOW_EMBED_CODE:-}
+
+      # AgentGateway configuration
+      - VITE_CHATKIT_API_DOMAIN_KEY=${VITE_CHATKIT_API_DOMAIN_KEY:-}
+      - GITHUB_REPO_URL=${GITHUB_REPO_URL:-}
+      - SSH_KEY_PATH=${SSH_KEY_PATH:-}
+      - VITE_CHATKIT_API_URL=${VITE_CHATKIT_API_URL:-/api/chatkit}
+      - BACKEND_HOST=${BACKEND_HOST:-0.0.0.0}
       # Orchestrator selection (optional). If unset, it will be auto-derived from provided env vars.
       - COMPONENTS=${COMPONENTS:-}
       # Additional optional variables used by components

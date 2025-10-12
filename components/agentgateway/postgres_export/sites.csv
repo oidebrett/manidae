@@ -1,0 +1,2 @@
+siteId,orgId,niceId,exitNode,name,pubKey,subnet,bytesIn,bytesOut,lastBandwidthUpdate,type,online,address,endpoint,publicKey,lastHolePunch,listenPort,dockerSocketEnabled
+1,admin,dependent-texas-leafcutter-ant,,Local,,0.0.0.0/0,,,,local,f,,,,,,f
