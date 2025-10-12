@@ -126,25 +126,25 @@ postgres:
 
 EOF
 
-# Copy postgres_export files
+# Copy postgres_export files (AgentGateway always overwrites to ensure correct schema)
 echo "📊 Setting up database export files..."
-if [ -d "$ROOT_HOST_DIR/postgres_export" ]; then
-    echo "✅ postgres_export directory already exists"
-else
-    # Find the correct path to the agentgateway component
-    COMPONENT_PATH=""
-    if [ -d "${MANIDAE_ROOT:-$ROOT_HOST_DIR}/components/agentgateway/postgres_export" ]; then
-        COMPONENT_PATH="${MANIDAE_ROOT:-$ROOT_HOST_DIR}/components/agentgateway/postgres_export"
-    elif [ -d "/components/agentgateway/postgres_export" ]; then
-        COMPONENT_PATH="/components/agentgateway/postgres_export"
-    fi
 
-    if [ -n "$COMPONENT_PATH" ]; then
-        cp -r "$COMPONENT_PATH" "$ROOT_HOST_DIR/"
-        echo "✅ Copied postgres_export files from $COMPONENT_PATH"
-    else
-        echo "⚠️ postgres_export directory not found, skipping copy"
-    fi
+# Find the correct path to the agentgateway component
+COMPONENT_PATH=""
+if [ -d "${MANIDAE_ROOT:-$ROOT_HOST_DIR}/components/agentgateway/postgres_export" ]; then
+    COMPONENT_PATH="${MANIDAE_ROOT:-$ROOT_HOST_DIR}/components/agentgateway/postgres_export"
+elif [ -d "/components/agentgateway/postgres_export" ]; then
+    COMPONENT_PATH="/components/agentgateway/postgres_export"
+fi
+
+if [ -n "$COMPONENT_PATH" ]; then
+    # Create postgres_export directory if it doesn't exist
+    mkdir -p "$ROOT_HOST_DIR/postgres_export"
+    # Copy AgentGateway postgres_export files, overwriting any existing files
+    cp -r "$COMPONENT_PATH"/* "$ROOT_HOST_DIR/postgres_export/"
+    echo "✅ Copied AgentGateway postgres_export files from $COMPONENT_PATH"
+else
+    echo "⚠️ AgentGateway postgres_export directory not found, skipping copy"
 fi
 
 # Update domains in CSV files

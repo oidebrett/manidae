@@ -121,6 +121,27 @@ if [[ "$COMPONENTS_RAW" == "agentgateway" || "$COMPONENTS_RAW" == *",agentgatewa
   echo "[orchestrator] Updated COMPONENTS for AgentGateway: $COMPONENTS_RAW"
 fi
 
+# Handle openai-chatkit + pangolin combinations by converting to agentgateway
+if [[ "$COMPONENTS_RAW" == *"openai-chatkit"* && ("$COMPONENTS_RAW" == *"pangolin"* || "$COMPONENTS_RAW" == *"middleware-manager"*) ]]; then
+  echo "[orchestrator] openai-chatkit detected with pangolin components - converting to agentgateway mode"
+
+  # Replace openai-chatkit with agentgateway in the components list
+  COMPONENTS_RAW=$(echo "$COMPONENTS_RAW" | sed 's/openai-chatkit/agentgateway/')
+
+  # Ensure core companion components are present
+  if [[ "$COMPONENTS_RAW" != *"middleware-manager"* ]]; then
+    COMPONENTS_RAW="$COMPONENTS_RAW,middleware-manager"
+  fi
+  if [[ "$COMPONENTS_RAW" != *"crowdsec"* ]]; then
+    COMPONENTS_RAW="$COMPONENTS_RAW,crowdsec"
+  fi
+  if [[ "$COMPONENTS_RAW" != *"mcpauth"* ]]; then
+    COMPONENTS_RAW="$COMPONENTS_RAW,mcpauth"
+  fi
+
+  echo "[orchestrator] Updated COMPONENTS for AgentGateway (from openai-chatkit): $COMPONENTS_RAW"
+fi
+
 # Handle platform+ aliases by adding required components (applies to both auto-derived and explicit components)
 if [[ "$COMPONENTS_RAW" == *"pangolin+"* ]]; then
   echo "[orchestrator] pangolin+ detected - ensuring crowdsec and mcpauth are included"
@@ -162,6 +183,9 @@ detect_base_platform() {
   if has_component "coolify"; then
     echo "coolify"
   elif has_component "agentgateway"; then
+    echo "agentgateway"
+  elif has_component "openai-chatkit" && (has_component "pangolin" || has_component "middleware-manager"); then
+    # If openai-chatkit is specified alongside pangolin components, use agentgateway
     echo "agentgateway"
   elif has_component "pangolin"; then
     echo "pangolin"
@@ -407,6 +431,23 @@ set -e
 ROOT_HOST_DIR="\${ROOT_HOST_DIR:-/host-setup}"
 COMPONENTS_CSV="$COMPONENTS_RAW"
 export COMPONENTS_CSV
+
+# Export environment variables for component scripts
+export DOMAIN="\${DOMAIN:-}"
+export EMAIL="\${EMAIL:-}"
+export OPENAI_API_KEY="\${OPENAI_API_KEY:-}"
+export WORKFLOW_ID="\${WORKFLOW_ID:-}"
+export ADMIN_USERNAME="\${ADMIN_USERNAME:-}"
+export ADMIN_PASSWORD="\${ADMIN_PASSWORD:-}"
+export CHATKIT_SUBDOMAIN="\${CHATKIT_SUBDOMAIN:-}"
+export TRAEFIK_SUBDOMAIN="\${TRAEFIK_SUBDOMAIN:-}"
+export LOGS_SUBDOMAIN="\${LOGS_SUBDOMAIN:-}"
+export STATIC_PAGE_SUBDOMAIN="\${STATIC_PAGE_SUBDOMAIN:-}"
+export MAXMIND_LICENSE_KEY="\${MAXMIND_LICENSE_KEY:-}"
+export CLIENT_ID="\${CLIENT_ID:-}"
+export CLIENT_SECRET="\${CLIENT_SECRET:-}"
+export OAUTH_DOMAIN="\${OAUTH_DOMAIN:-}"
+
 log() { printf "%s\n" "\$*"; }
 run_component_hooks() {
   comps_csv="\${COMPONENTS_CSV}"
@@ -450,6 +491,23 @@ set -e
 ROOT_HOST_DIR="\${ROOT_HOST_DIR:-/host-setup}"
 COMPONENTS_CSV="$COMPONENTS_RAW"
 export COMPONENTS_CSV
+
+# Export environment variables for component scripts
+export DOMAIN="\${DOMAIN:-}"
+export EMAIL="\${EMAIL:-}"
+export OPENAI_API_KEY="\${OPENAI_API_KEY:-}"
+export WORKFLOW_ID="\${WORKFLOW_ID:-}"
+export ADMIN_USERNAME="\${ADMIN_USERNAME:-}"
+export ADMIN_PASSWORD="\${ADMIN_PASSWORD:-}"
+export CHATKIT_SUBDOMAIN="\${CHATKIT_SUBDOMAIN:-}"
+export TRAEFIK_SUBDOMAIN="\${TRAEFIK_SUBDOMAIN:-}"
+export LOGS_SUBDOMAIN="\${LOGS_SUBDOMAIN:-}"
+export STATIC_PAGE_SUBDOMAIN="\${STATIC_PAGE_SUBDOMAIN:-}"
+export MAXMIND_LICENSE_KEY="\${MAXMIND_LICENSE_KEY:-}"
+export CLIENT_ID="\${CLIENT_ID:-}"
+export CLIENT_SECRET="\${CLIENT_SECRET:-}"
+export OAUTH_DOMAIN="\${OAUTH_DOMAIN:-}"
+
 log() { printf "%s\n" "\$*"; }
 run_component_hooks() {
   comps_csv="\${COMPONENTS_CSV}"
