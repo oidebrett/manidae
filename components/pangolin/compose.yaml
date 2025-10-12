@@ -1,6 +1,6 @@
   # Main Pangolin application
   pangolin:
-    image:  docker.io/fosrl/pangolin:1.10.0
+    image:  docker.io/fosrl/pangolin:1.10.3
     #container_name: pangolin
     restart: unless-stopped
     volumes:
