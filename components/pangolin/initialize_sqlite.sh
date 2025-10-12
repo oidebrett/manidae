@@ -66,6 +66,24 @@ EXPORT_DIR="${1:-./postgres_export}"
 
 echo "SQLite database path: $DB_PATH"
 
+# Function to detect if pangolin+ is being used
+is_pangolin_plus() {
+    # Check if COMPONENTS_CSV contains pangolin+
+    case "${COMPONENTS_CSV:-}" in
+        *"pangolin+"*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Function to detect if AI components (nlweb/komodo/agentgateway) are being used
+is_pangolin_plus_ai() {
+    # Check if COMPONENTS_CSV contains nlweb, komodo, or agentgateway components
+    case "${COMPONENTS_CSV:-}" in
+        *"nlweb"*|*"komodo"*|*"agentgateway"*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
 # Detect and display deployment type
 echo "Detecting deployment type..."
 echo "COMPONENTS_CSV: ${COMPONENTS_CSV:-not set}"
@@ -95,23 +113,7 @@ create_sqlite_structure() {
     # For now, we assume the schema already exists from the application
 }
 
-# Function to detect if pangolin+ is being used
-is_pangolin_plus() {
-    # Check if COMPONENTS_CSV contains pangolin+
-    case "${COMPONENTS_CSV:-}" in
-        *"pangolin+"*) return 0 ;;
-        *) return 1 ;;
-    esac
-}
 
-# Function to detect if AI components (nlweb/komodo) are being used
-is_pangolin_plus_ai() {
-    # Check if COMPONENTS_CSV contains nlweb or komodo components
-    case "${COMPONENTS_CSV:-}" in
-        *"nlweb"*|*"komodo"*) return 0 ;;
-        *) return 1 ;;
-    esac
-}
 
 # Function to filter CSV data based on deployment type
 filter_csv_for_deployment() {
