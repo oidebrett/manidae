@@ -91,6 +91,8 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
   fi
 
   echo "[orchestrator] Auto-derived COMPONENTS: $COMPONENTS_RAW"
+else
+  echo "[orchestrator] Using explicitly provided COMPONENTS: $COMPONENTS_RAW"
 fi
 
 # Handle explicit agentgateway specification by adding companion components
@@ -144,12 +146,9 @@ fi
 
 # Handle platform+ aliases by adding required components (applies to both auto-derived and explicit components)
 if [[ "$COMPONENTS_RAW" == *"pangolin+"* ]]; then
-  echo "[orchestrator] pangolin+ detected - ensuring crowdsec and mcpauth are included"
+  echo "[orchestrator] pangolin+ detected - ensuring crowdsec is included"
   if [[ "$COMPONENTS_RAW" != *"crowdsec"* ]]; then
     COMPONENTS_RAW="$COMPONENTS_RAW,crowdsec"
-  fi
-  if [[ "$COMPONENTS_RAW" != *"mcpauth"* ]]; then
-    COMPONENTS_RAW="$COMPONENTS_RAW,mcpauth"
   fi
 fi
 if [[ "$COMPONENTS_RAW" == *"coolify+"* ]]; then
