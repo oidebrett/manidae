@@ -639,8 +639,9 @@ create_postgres_structure "$PG_HOST" "$PG_PORT" "$PG_USER" "$PG_PASS" "$PG_DB"
 
 # Function to detect if pangolin+ is being used
 is_pangolin_plus() {
-    # Check if COMPONENTS_CSV contains pangolin+
-    case "${COMPONENTS_CSV:-}" in
+    # Check COMPONENTS_CSV first, then fall back to COMPONENTS
+    local components_list="${COMPONENTS_CSV:-${COMPONENTS:-}}"
+    case "$components_list" in
         *"pangolin+"*) return 0 ;;
         *) return 1 ;;
     esac
@@ -648,13 +649,14 @@ is_pangolin_plus() {
 
 # Function to detect if AI components (nlweb/komodo/agentgateway) are being used
 is_pangolin_plus_ai() {
-    # First check COMPONENTS_CSV if available
-    case "${COMPONENTS_CSV:-}" in
+    # Check COMPONENTS_CSV first, then fall back to COMPONENTS
+    local components_list="${COMPONENTS_CSV:-${COMPONENTS:-}}"
+    case "$components_list" in
         *"nlweb"*|*"komodo"*|*"agentgateway"*) return 0 ;;
     esac
 
-    # If COMPONENTS_CSV is not set, try to detect from CSV files
-    if [ -z "${COMPONENTS_CSV:-}" ]; then
+    # If neither COMPONENTS_CSV nor COMPONENTS is set, try to detect from CSV files
+    if [ -z "$components_list" ]; then
         # Check if resources.csv contains AI-specific resources
         if [ -f "${EXPORT_DIR:-./postgres_export}/resources.csv" ]; then
             # Look for chatkit-embed (AgentGateway), nlweb, or komodo resources
@@ -670,7 +672,9 @@ is_pangolin_plus_ai() {
 # Function to check if a specific component is included
 has_component() {
     local component="$1"
-    case "${COMPONENTS_CSV:-}" in
+    # Check COMPONENTS_CSV first, then fall back to COMPONENTS
+    local components_list="${COMPONENTS_CSV:-${COMPONENTS:-}}"
+    case "$components_list" in
         *"$component"*) return 0 ;;
         *) return 1 ;;
     esac
@@ -747,6 +751,8 @@ filter_csv_for_deployment() {
 # Detect and display deployment type
 echo "Detecting deployment type..."
 echo "COMPONENTS_CSV: ${COMPONENTS_CSV:-not set}"
+echo "COMPONENTS: ${COMPONENTS:-not set}"
+echo "Using components: ${COMPONENTS_CSV:-${COMPONENTS:-none}}"
 
 # Display which components are detected
 echo "🔍 Component analysis:"
