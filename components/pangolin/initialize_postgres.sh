@@ -697,6 +697,11 @@ get_included_resource_ids() {
         resource_ids="$resource_ids,4,7"
     fi
 
+    # Include chatkit-embed (4) if agentgateway component is present
+    if has_component "agentgateway"; then
+        resource_ids="$resource_ids,4"
+    fi
+
     # Include idp (6) if mcpauth component is present
     if has_component "mcpauth"; then
         resource_ids="$resource_ids,6"
