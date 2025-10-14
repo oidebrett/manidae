@@ -75,6 +75,27 @@ is_pangolin_plus() {
     esac
 }
 
+# Function to detect if AI components (nlweb/komodo/agentgateway) are being used
+is_pangolin_plus_ai() {
+    # First check COMPONENTS_CSV if available
+    case "${COMPONENTS_CSV:-}" in
+        *"nlweb"*|*"komodo"*|*"agentgateway"*) return 0 ;;
+    esac
+
+    # If COMPONENTS_CSV is not set, try to detect from CSV files
+    if [ -z "${COMPONENTS_CSV:-}" ]; then
+        # Check if resources.csv contains AI-specific resources
+        if [ -f "${EXPORT_DIR:-./postgres_export}/resources.csv" ]; then
+            # Look for chatkit-embed (AgentGateway), nlweb, or komodo resources
+            if grep -q "chatkit-embed\|nlweb\|komodo-core" "${EXPORT_DIR:-./postgres_export}/resources.csv"; then
+                return 0
+            fi
+        fi
+    fi
+
+    return 1
+}
+
 # Function to check if a specific component is included
 has_component() {
     local component="$1"
