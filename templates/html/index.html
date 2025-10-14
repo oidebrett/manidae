@@ -61,6 +61,7 @@
                 </div>
                 <!-- End of Pangolin -->
 
+                <!-- COMPONENT_CONDITIONAL_NLWEB_START -->
                 <!-- Start of Nlweb -->
                 <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://nlweb.yourdomain.com', 'NLWeb', this)">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
@@ -72,7 +73,9 @@
                     </div>
                 </div>
                 <!-- End of Nlweb -->
+                <!-- COMPONENT_CONDITIONAL_NLWEB_END -->
 
+                <!-- COMPONENT_CONDITIONAL_CHATKIT_START -->
                 <!-- Start of Chatkit -->
                 <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://chat.yourdomain.com', 'AI Chat', this)">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
@@ -96,18 +99,21 @@
                     </div>
                 </div>
                 <!-- End of Chatkit Admin -->
+                <!-- COMPONENT_CONDITIONAL_CHATKIT_END -->
 
-                <!-- Start of Komodo 
-                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://komodo.yourdomain.com', 'Komodo', this)">
+                <!-- COMPONENT_CONDITIONAL_IDP_START -->
+                <!-- Start of IDP -->
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://idp.yourdomain.com/admin', 'Identity Provider', this)">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
-                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/komodo.webp" alt="Komodo Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">K</div>
+                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/auth.webp" alt="IDP Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">ID</div>
                     </div>
                     <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div class="text-lg font-semibold text-cyan-400 truncate">Komodo</div>
-                    </div>                    
+                        <div class="text-lg font-semibold text-cyan-400 truncate">Identity Provider</div>
+                    </div>
                 </div>
-                End of Komodo -->
+                <!-- End of IDP -->
+                <!-- COMPONENT_CONDITIONAL_IDP_END -->
 
                 <!-- Start of Middleware Manager -->
                 <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://middleware-manager.yourdomain.com', 'Middleware Manager', this)">

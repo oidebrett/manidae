@@ -294,7 +294,7 @@ EOF
 
   if has_component crowdsec; then sed -n '1,9999p' "$ROOT_DIR/components/crowdsec/compose.yaml"; fi
   if has_component nlweb; then sed -n '1,9999p' "$ROOT_DIR/components/nlweb/compose.yaml"; fi
-  if has_component komodo; then sed -n '1,9999p' "$ROOT_DIR/components/komodo/compose.yaml"; fi
+  # Note: komodo component has been removed from all deployments
 
   # Add backup service if MAX_BACKUPS is set and greater than 0
   if [[ -n "${MAX_BACKUPS:-}" && "${MAX_BACKUPS:-0}" -gt 0 ]]; then
@@ -368,14 +368,13 @@ EOF
   # Volumes (platform and component specific)
   volumes_needed=false
   if [[ "$BASE_PLATFORM" == "coolify" ]]; then volumes_needed=true; fi
-  if has_component komodo; then volumes_needed=true; fi
   if has_component nlweb; then volumes_needed=true; fi
 
   if [[ "$volumes_needed" == "true" ]]; then
     echo "volumes:"
     if [[ "$BASE_PLATFORM" == "coolify" ]]; then sed -n '1,9999p' "$ROOT_DIR/components/coolify/volumes.yaml"; fi
-    if has_component komodo; then sed -n '1,9999p' "$ROOT_DIR/components/komodo/volumes.yaml"; fi
     if has_component nlweb; then sed -n '1,9999p' "$ROOT_DIR/components/nlweb/volumes.yaml"; fi
+    # Note: komodo volumes have been removed from all deployments
   fi
 
   # Networks (generic for all platforms)

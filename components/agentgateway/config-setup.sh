@@ -175,6 +175,63 @@ update_domains_in_csv() {
 # Update domains in CSV if present
 update_domains_in_csv
 
+# Function to check if a specific component is included
+has_component() {
+    local component="$1"
+    case "${COMPONENTS_CSV:-}" in
+        *"$component"*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Function to process HTML template based on components
+process_html_template() {
+    echo "🌐 Processing HTML template based on components..."
+
+    # Create public_html directory if it doesn't exist
+    mkdir -p "$ROOT_HOST_DIR/public_html"
+
+    # Copy the HTML template
+    if [ -f "${MANIDAE_ROOT:-$ROOT_HOST_DIR}/templates/html/index.html" ]; then
+        cp "${MANIDAE_ROOT:-$ROOT_HOST_DIR}/templates/html/index.html" "$ROOT_HOST_DIR/public_html/index.html"
+
+        # Replace domain placeholders
+        sed -i "s/yourdomain\.com/${DOMAIN}/g" "$ROOT_HOST_DIR/public_html/index.html"
+
+        # Process conditional sections based on components
+        local temp_file="$ROOT_HOST_DIR/public_html/index.html.tmp"
+
+        # Process NLWeb section (AgentGateway doesn't include nlweb)
+        echo "❌ Excluding NLWeb section from HTML (AgentGateway mode)"
+        sed '/<!-- COMPONENT_CONDITIONAL_NLWEB_START -->/,/<!-- COMPONENT_CONDITIONAL_NLWEB_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
+        mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
+
+        # Process Chatkit section (AgentGateway always includes chatkit)
+        echo "✅ Including Chatkit section in HTML (AgentGateway mode)"
+        sed '/<!-- COMPONENT_CONDITIONAL_CHATKIT_START -->/d; /<!-- COMPONENT_CONDITIONAL_CHATKIT_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
+        mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
+
+        # Process IDP section
+        if has_component "mcpauth"; then
+            echo "✅ Including IDP section in HTML"
+            # Keep the IDP section - remove the conditional markers
+            sed '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/d; /<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
+        else
+            echo "❌ Excluding IDP section from HTML"
+            # Remove the entire IDP section
+            sed '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/,/<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
+        fi
+        mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
+
+        echo "✅ HTML template processed successfully"
+    else
+        echo "⚠️ HTML template not found, skipping HTML processing"
+    fi
+}
+
+# Process HTML template based on components
+process_html_template
+
 # Function to detect if agentgateway+ is being used (always true for agentgateway)
 is_agentgateway_plus() {
     return 0  # AgentGateway always includes enhanced features
