@@ -81,7 +81,7 @@ is_pangolin_plus_ai() {
     # Check COMPONENTS_CSV first, then fall back to COMPONENTS
     local components_list="${COMPONENTS_CSV:-${COMPONENTS:-}}"
     case "$components_list" in
-        *"nlweb"*|*"komodo"*|*"agentgateway"*) return 0 ;;
+        *"nlweb"*|*"komodo"*|*"agentgateway"*|*"openai-chatkit"*) return 0 ;;
     esac
 
     # If neither COMPONENTS_CSV nor COMPONENTS is set, try to detect from CSV files
@@ -126,8 +126,8 @@ get_included_resource_ids() {
         resource_ids="$resource_ids,4,7"
     fi
 
-    # Include chatkit-embed (4) if agentgateway component is present
-    if has_component "agentgateway"; then
+    # Include chatkit-embed (4) if agentgateway or openai-chatkit component is present
+    if has_component "agentgateway" || has_component "openai-chatkit"; then
         resource_ids="$resource_ids,4"
     fi
 
