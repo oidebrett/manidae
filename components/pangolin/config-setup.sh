@@ -245,16 +245,12 @@ process_html_template() {
         else
             echo "❌ Excluding Idp section from HTML"
             temp_file="${ROOT_HOST_DIR}/public_html/index.html.tmp"
-
             echo "🔍 Removing any CRLF..."
             sed -i 's/\r$//' "$ROOT_HOST_DIR/public_html/index.html"
-
             echo "🔍 Before removal (show relevant lines):"
             grep -n "COMPONENT_CONDITIONAL_IDP" "$ROOT_HOST_DIR/public_html/index.html" || echo "(markers not found)"
-
             sed '/<!--[[:space:]]*COMPONENT_CONDITIONAL_IDP_START[[:space:]]*-->/,/[[:space:]]*COMPONENT_CONDITIONAL_IDP_END[[:space:]]*-->/d' \
                 "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
-
             echo "🔍 After sed, check if Identity Provider still exists:"
             grep -n "Identity Provider" "$temp_file" || echo "(section removed ✅)"
         fi
