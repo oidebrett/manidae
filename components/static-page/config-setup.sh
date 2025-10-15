@@ -4,6 +4,12 @@ set -e
 
 echo "📄 Setting up static page component..."
 
+echo "Checking for existing index.html..."
+if [ -f "/host-setup/public_html/index.html" ]; then
+    echo "🚫 Skipping static page HTML creation — existing index.html found"
+    exit 0
+fi
+
 # Function to create static page HTML
 create_static_page_html() {
     echo "📄 Creating static page HTML..."
