@@ -268,6 +268,8 @@ process_html_template() {
             sed '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/d; /<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
         else
             echo "❌ Excluding McpAuth section from HTML"
+            echo "🧾 Full HTML file contents:"
+            nl -ba "$ROOT_HOST_DIR/public_html/index.html" | cat -A            
             grep -n "COMPONENT_CONDITIONAL_IDP" "$ROOT_HOST_DIR/public_html/index.html" | cat -A
 
             # Remove the entire Mcpauth section
