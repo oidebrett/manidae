@@ -262,7 +262,7 @@ process_html_template() {
         mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
 
         # Process Idp section
-        if has_component "mcpauth; then
+        if has_component "mcpauth"; then
             echo "✅ Including McpAuth section in HTML"
             # Keep the Mcpauth section - remove the conditional markers
             sed '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/d; /<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
