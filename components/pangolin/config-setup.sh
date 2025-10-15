@@ -211,6 +211,15 @@ update_domains_in_csv() {
     fi
 }
 
+echo "🐛 DEBUG: COMPONENTS='${COMPONENTS:-}'"
+echo "🐛 DEBUG: COMPONENTS_CSV='${COMPONENTS_CSV:-}'"
+echo "🐛 DEBUG: Checking if mcpauth is included..."
+if has_component "mcpauth"; then
+    echo "🐛 mcpauth IS PRESENT according to has_component()"
+else
+    echo "🐛 mcpauth is NOT present"
+fi
+
 # Function to process HTML template based on components
 process_html_template() {
     echo "🌐 Processing HTML template based on components..."
