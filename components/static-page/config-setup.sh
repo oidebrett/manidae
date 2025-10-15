@@ -4,12 +4,6 @@ set -e
 
 echo "📄 Setting up static page component..."
 
-echo "Checking for existing index.html..."
-if [ -f "/host-setup/public_html/index.html" ]; then
-    echo "🚫 Skipping static page HTML creation — existing index.html found"
-    exit 0
-fi
-
 # Function to create static page HTML
 create_static_page_html() {
     echo "📄 Creating static page HTML..."
@@ -48,6 +42,14 @@ create_static_page_html() {
                 sed -i 's/Pangolin • Nlweb/Pangolin/g' "/tmp/index.html.template"
             fi
 
+            # Remove IdP section if not in component list
+            if ! echo "${COMPONENTS_CSV:-}" | grep -q "idp"; then
+                echo "Removing IdP section from template as 'idp' is not in COMPONENTS_CSV"
+                sed -i '/<!-- Start of IDP -->/,/<!-- End of IDP -->/d' "/tmp/index.html.template"
+                sed -i '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/,/<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "/tmp/index.html.template"
+                sed -i 's/Pangolin • Idp/Pangolin/g' "/tmp/index.html.template"
+            fi
+            
             # Remove chatkit sections for non-AgentGateway deployments
             echo "Removing Chatkit sections from template (not AgentGateway deployment)"
             sed -i '/<!-- Start of Chatkit -->/,/<!-- End of Chatkit -->/d' "/tmp/index.html.template"
