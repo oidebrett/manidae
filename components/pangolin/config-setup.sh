@@ -272,7 +272,7 @@ process_html_template() {
             sed '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/,/<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
         fi
         mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
-
+        echo "$temp_file"
         echo "✅ HTML template processed successfully"
     else
         echo "⚠️ HTML template not found, skipping HTML processing"
