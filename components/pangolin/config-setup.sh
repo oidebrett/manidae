@@ -236,24 +236,39 @@ process_html_template() {
         echo "🧾 Initial component list: ${COMPONENTS:-<undefined>}"
 
         ### IDP SECTION ###
+        # Process Idp section
         if has_component "mcpauth"; then
             echo "✅ Including Idp section in HTML"
-            sed -i '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/d; /<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$html_file"
+            # Keep the Idp section - remove the conditional markers only
+            sed '/<!--[[:space:]]*COMPONENT_CONDITIONAL_IDP_START[[:space:]]*-->/d; /<!--[[:space:]]*COMPONENT_CONDITIONAL_IDP_END[[:space:]]*-->/d' \
+                "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
         else
             echo "❌ Excluding Idp section from HTML"
-            echo "🔍 Before removal (show markers):"
-            grep -n "COMPONENT_CONDITIONAL_IDP" "$html_file" || echo "(no markers found)"
+            echo "🔍 Checking line endings..."
+            file "$ROOT_HOST_DIR/public_html/index.html"
 
-            # Remove both possible marker types
-            sed -i '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/,/<!-- COMPONENT_CONDITIONAL_IDP_END -->/d; \
-                    /<!-- Start of IDP -->/,/<!-- End of IDP -->/d' "$html_file"
+            echo "🔍 Removing any CRLF..."
+            sed -i 's/\r$//' "$ROOT_HOST_DIR/public_html/index.html"
 
-            echo "🔍 After removal (confirm markers gone):"
-            grep -n "COMPONENT_CONDITIONAL_IDP" "$html_file" || echo "(markers removed)"
-            echo "🔍 Checking if 'Identity Provider' still exists:"
-            grep -n "Identity Provider" "$html_file" || echo "(section removed ✅)"
+            echo "🔍 Before removal (show relevant lines):"
+            grep -n "COMPONENT_CONDITIONAL_IDP" "$ROOT_HOST_DIR/public_html/index.html" || echo "(markers not found)"
+
+            # Remove the IDP section including the conditional markers
+            sed '/<!--[[:space:]]*COMPONENT_CONDITIONAL_IDP_START[[:space:]]*-->/,/[[:space:]]*COMPONENT_CONDITIONAL_IDP_END[[:space:]]*-->/d' \
+                "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
+
+            echo "🔍 After sed, check if Identity Provider still exists:"
+            grep -n "Identity Provider" "$temp_file" || echo "(section removed ✅)"
         fi
 
+        # Double-check temp file exists and has content
+        if [ -s "$temp_file" ]; then
+            echo "💾 Moving updated file..."
+            mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
+        else
+            echo "⚠️ Temp file missing or empty! Sed may have failed."
+            ls -l "$temp_file" || echo "No temp file found."
+        fi
         ### NLWEB SECTION ###
         if has_component "nlweb"; then
             echo "✅ Including NLWeb section in HTML"
