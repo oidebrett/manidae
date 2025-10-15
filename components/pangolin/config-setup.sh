@@ -261,28 +261,33 @@ process_html_template() {
         fi
         mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
 
-        # Process Idp section
         if has_component "mcpauth"; then
             echo "✅ Including McpAuth section in HTML"
-            # Keep the Mcpauth section - remove the conditional markers
-            sed '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/d; /<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/d; /<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html"
         else
             echo "❌ Excluding McpAuth section from HTML"
-            nl -ba "$ROOT_HOST_DIR/public_html/index.html" | sed -n '/<!-- Start of IDP -->/,/<!-- End of IDP -->/p'
-
-       
-            grep -n "COMPONENT_CONDITIONAL_IDP" "$ROOT_HOST_DIR/public_html/index.html" | cat -A
-
-            # Remove the entire Mcpauth section
-            sed '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/,/<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/,/<!-- COMPONENT_CONDITIONAL_IDP_END -->/d; /<!-- Start of IDP -->/,/<!-- End of IDP -->/d' "$ROOT_HOST_DIR/public_html/index.html"
         fi
-        mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
 
-        echo "✅ HTML template processed successfully"
-    else
-        echo "⚠️ HTML template not found, skipping HTML processing"
-    fi
-}
+        # Process Idp section
+#        if has_component "mcpauth"; then
+#            echo "✅ Including McpAuth section in HTML"
+#            # Keep the Mcpauth section - remove the conditional markers
+#            sed '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/d; /<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
+#        else
+#            echo "❌ Excluding McpAuth section from HTML"
+#            nl -ba "$ROOT_HOST_DIR/public_html/index.html" | sed -n '/<!-- Start of IDP -->/,/<!-- End of IDP -->/p'
+#
+#                   # Remove the entire Mcpauth section
+#            sed '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/,/<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
+#        fi
+#        mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
+#
+#        echo "✅ HTML template processed successfully"
+#    else
+#        echo "⚠️ HTML template not found, skipping HTML processing"
+#    fi
+#}
 
 # Update domains in CSV if present
 update_domains_in_csv
