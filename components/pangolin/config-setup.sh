@@ -239,13 +239,12 @@ process_html_template() {
         # Process Idp section
         if has_component "mcpauth"; then
             echo "✅ Including Idp section in HTML"
-            # Keep the Idp section - remove the conditional markers only
+            temp_file="${ROOT_HOST_DIR}/public_html/index.html.tmp"
             sed '/<!--[[:space:]]*COMPONENT_CONDITIONAL_IDP_START[[:space:]]*-->/d; /<!--[[:space:]]*COMPONENT_CONDITIONAL_IDP_END[[:space:]]*-->/d' \
                 "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
         else
             echo "❌ Excluding Idp section from HTML"
-            echo "🔍 Checking line endings..."
-            file "$ROOT_HOST_DIR/public_html/index.html"
+            temp_file="${ROOT_HOST_DIR}/public_html/index.html.tmp"
 
             echo "🔍 Removing any CRLF..."
             sed -i 's/\r$//' "$ROOT_HOST_DIR/public_html/index.html"
@@ -253,7 +252,6 @@ process_html_template() {
             echo "🔍 Before removal (show relevant lines):"
             grep -n "COMPONENT_CONDITIONAL_IDP" "$ROOT_HOST_DIR/public_html/index.html" || echo "(markers not found)"
 
-            # Remove the IDP section including the conditional markers
             sed '/<!--[[:space:]]*COMPONENT_CONDITIONAL_IDP_START[[:space:]]*-->/,/[[:space:]]*COMPONENT_CONDITIONAL_IDP_END[[:space:]]*-->/d' \
                 "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
 
@@ -261,23 +259,14 @@ process_html_template() {
             grep -n "Identity Provider" "$temp_file" || echo "(section removed ✅)"
         fi
 
-        # Double-check temp file exists and has content
+        # Move the result only if sed succeeded
         if [ -s "$temp_file" ]; then
             echo "💾 Moving updated file..."
             mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
         else
             echo "⚠️ Temp file missing or empty! Sed may have failed."
-            ls -l "$temp_file" || echo "No temp file found."
+            ls -l "$ROOT_HOST_DIR/public_html" || echo "No public_html directory?"
         fi
-        ### NLWEB SECTION ###
-        if has_component "nlweb"; then
-            echo "✅ Including NLWeb section in HTML"
-            sed -i '/<!-- COMPONENT_CONDITIONAL_NLWEB_START -->/d; /<!-- COMPONENT_CONDITIONAL_NLWEB_END -->/d' "$html_file"
-        else
-            echo "❌ Excluding NLWeb section from HTML"
-            sed -i '/<!-- COMPONENT_CONDITIONAL_NLWEB_START -->/,/<!-- COMPONENT_CONDITIONAL_NLWEB_END -->/d' "$html_file"
-        fi
-
         ### CHATKIT SECTION ###
         if has_component "openai-chatkit"; then
             echo "✅ Including Chatkit section in HTML"
