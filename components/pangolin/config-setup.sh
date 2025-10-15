@@ -287,7 +287,7 @@ process_html_template() {
 #    else
 #        echo "⚠️ HTML template not found, skipping HTML processing"
 #    fi
-#}
+}
 
 # Update domains in CSV if present
 update_domains_in_csv
