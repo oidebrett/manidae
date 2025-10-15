@@ -237,16 +237,6 @@ process_html_template() {
         # Process conditional sections based on components
         local temp_file="$ROOT_HOST_DIR/public_html/index.html.tmp"
 
-        if has_component "mcpauth"; then
-            echo "✅ Including McpAuth section in HTML"
-            sed -i '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/d; /<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html"
-        else
-            echo "❌ Excluding McpAuth section from HTML"
-            nl -ba "$ROOT_HOST_DIR/public_html/index.html" | sed -n '/<!-- Start of IDP -->/,/<!-- End of IDP -->/p'
-            sed -i '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/,/<!-- COMPONENT_CONDITIONAL_IDP_END -->/d; /<!-- Start of IDP -->/,/<!-- End of IDP -->/d' "$ROOT_HOST_DIR/public_html/index.html"
-        fi
-        mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
-
         # Process NLWeb section
         if has_component "nlweb"; then
             echo "✅ Including NLWeb section in HTML"
@@ -268,6 +258,15 @@ process_html_template() {
             echo "❌ Excluding Chatkit section from HTML"
             # Remove the entire Chatkit section
             sed '/<!-- COMPONENT_CONDITIONAL_CHATKIT_START -->/,/<!-- COMPONENT_CONDITIONAL_CHATKIT_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
+        fi
+        mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
+
+        if has_component "mcpauth"; then
+            echo "✅ Including McpAuth section in HTML"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/d; /<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html"
+        else
+            echo "❌ Excluding McpAuth section from HTML"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/,/<!-- COMPONENT_CONDITIONAL_IDP_END -->/d; /<!-- Start of IDP -->/,/<!-- End of IDP -->/d' "$ROOT_HOST_DIR/public_html/index.html"
         fi
         mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
 
