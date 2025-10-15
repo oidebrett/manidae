@@ -237,6 +237,18 @@ process_html_template() {
         # Process conditional sections based on components
         local temp_file="$ROOT_HOST_DIR/public_html/index.html.tmp"
 
+        # Process Idp section
+        if has_component "mcpauth"; then
+            echo "✅ Including Idp section in HTML"
+            # Keep the Idp section - remove the conditional markers
+            sed '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/d; /<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
+        else
+            echo "❌ Excluding Idp section from HTML"
+            # Remove the entire Idp section
+            sed '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/,/<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
+        fi
+        mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
+
         # Process NLWeb section
         if has_component "nlweb"; then
             echo "✅ Including NLWeb section in HTML"
@@ -261,14 +273,14 @@ process_html_template() {
         fi
         mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
 
-        if has_component "mcpauth"; then
-            echo "✅ Including McpAuth section in HTML"
-            sed -i '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/d; /<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html"
-        else
-            echo "❌ Excluding McpAuth section from HTML"
-            sed -i '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/,/<!-- COMPONENT_CONDITIONAL_IDP_END -->/d; /<!-- Start of IDP -->/,/<!-- End of IDP -->/d' "$ROOT_HOST_DIR/public_html/index.html"
-        fi
-        mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
+#        if has_component "mcpauth"; then
+#            echo "✅ Including McpAuth section in HTML"
+#            sed -i '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/d; /<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html"
+#        else
+#            echo "❌ Excluding McpAuth section from HTML"
+#            sed -i '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/,/<!-- COMPONENT_CONDITIONAL_IDP_END -->/d; /<!-- Start of IDP -->/,/<!-- End of IDP -->/d' "$ROOT_HOST_DIR/public_html/index.html"
+#        fi
+#        mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
 
         # Process Idp section
 #        if has_component "mcpauth"; then
