@@ -261,23 +261,20 @@ process_html_template() {
         fi
         mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
 
-        # Process IDP section
+        # --- IDP (mcpauth) ---
+        echo "🐛 Checking mcpauth inclusion..."
         if has_component "mcpauth"; then
             echo "✅ Including IDP section in HTML"
-            # Keep the IDP section - remove the conditional markers
-            sed '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/d; /<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/d; /<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$html_file"
         else
-
             echo "❌ Excluding IDP section from HTML"
-
             echo "Before removing IDP section:"
-            grep -n "COMPONENT_CONDITIONAL_IDP" "$ROOT_HOST_DIR/public_html/index.html" || echo "(no markers found)"
-
-            # …sed command here…
-            # Remove the entire IDP section
-            sed '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/,/<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
-
+            grep -n "COMPONENT_CONDITIONAL_IDP" "$html_file" || echo "(no markers found)"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/,/<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$html_file"
+            echo "After removing IDP section:"
+            grep -n "COMPONENT_CONDITIONAL_IDP" "$html_file" || echo "(no markers found)"
         fi
+
         mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
 
         echo "✅ HTML template processed successfully"
