@@ -224,78 +224,54 @@ fi
 process_html_template() {
     echo "🌐 Processing HTML template based on components..."
 
-    # Create public_html directory if it doesn't exist
     mkdir -p "$ROOT_HOST_DIR/public_html"
 
-    # Copy the HTML template
-    if [ -f "${MANIDAE_ROOT:-$ROOT_HOST_DIR}/templates/html/index.html" ]; then
-        cp "${MANIDAE_ROOT:-$ROOT_HOST_DIR}/templates/html/index.html" "$ROOT_HOST_DIR/public_html/index.html"
+    local html_file="$ROOT_HOST_DIR/public_html/index.html"
+    local template="${MANIDAE_ROOT:-$ROOT_HOST_DIR}/templates/html/index.html"
 
-        # Replace domain placeholders
-        sed -i "s/yourdomain\.com/${DOMAIN}/g" "$ROOT_HOST_DIR/public_html/index.html"
+    if [ -f "$template" ]; then
+        cp "$template" "$html_file"
+        sed -i "s/yourdomain\.com/${DOMAIN}/g" "$html_file"
 
-        # Process conditional sections based on components
-        local temp_file="$ROOT_HOST_DIR/public_html/index.html.tmp"
+        echo "🧾 Initial component list: ${COMPONENTS:-<undefined>}"
 
-        # Process Idp section
+        ### IDP SECTION ###
         if has_component "mcpauth"; then
             echo "✅ Including Idp section in HTML"
-            # Keep the Idp section - remove the conditional markers
-            sed '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/d; /<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/d; /<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$html_file"
         else
             echo "❌ Excluding Idp section from HTML"
-            # Remove the entire Idp section
-            sed '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/,/<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
-        fi
-        mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
+            echo "🔍 Before removal (show markers):"
+            grep -n "COMPONENT_CONDITIONAL_IDP" "$html_file" || echo "(no markers found)"
 
-        # Process NLWeb section
+            # Remove both possible marker types
+            sed -i '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/,/<!-- COMPONENT_CONDITIONAL_IDP_END -->/d; \
+                    /<!-- Start of IDP -->/,/<!-- End of IDP -->/d' "$html_file"
+
+            echo "🔍 After removal (confirm markers gone):"
+            grep -n "COMPONENT_CONDITIONAL_IDP" "$html_file" || echo "(markers removed)"
+            echo "🔍 Checking if 'Identity Provider' still exists:"
+            grep -n "Identity Provider" "$html_file" || echo "(section removed ✅)"
+        fi
+
+        ### NLWEB SECTION ###
         if has_component "nlweb"; then
             echo "✅ Including NLWeb section in HTML"
-            # Keep the NLWeb section - remove the conditional markers
-            sed '/<!-- COMPONENT_CONDITIONAL_NLWEB_START -->/d; /<!-- COMPONENT_CONDITIONAL_NLWEB_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_NLWEB_START -->/d; /<!-- COMPONENT_CONDITIONAL_NLWEB_END -->/d' "$html_file"
         else
             echo "❌ Excluding NLWeb section from HTML"
-            # Remove the entire NLWeb section
-            sed '/<!-- COMPONENT_CONDITIONAL_NLWEB_START -->/,/<!-- COMPONENT_CONDITIONAL_NLWEB_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_NLWEB_START -->/,/<!-- COMPONENT_CONDITIONAL_NLWEB_END -->/d' "$html_file"
         fi
-        mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
 
-        # Process Chatkit section
+        ### CHATKIT SECTION ###
         if has_component "openai-chatkit"; then
             echo "✅ Including Chatkit section in HTML"
-            # Keep the Chatkit section - remove the conditional markers
-            sed '/<!-- COMPONENT_CONDITIONAL_CHATKIT_START -->/d; /<!-- COMPONENT_CONDITIONAL_CHATKIT_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_CHATKIT_START -->/d; /<!-- COMPONENT_CONDITIONAL_CHATKIT_END -->/d' "$html_file"
         else
             echo "❌ Excluding Chatkit section from HTML"
-            # Remove the entire Chatkit section
-            sed '/<!-- COMPONENT_CONDITIONAL_CHATKIT_START -->/,/<!-- COMPONENT_CONDITIONAL_CHATKIT_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_CHATKIT_START -->/,/<!-- COMPONENT_CONDITIONAL_CHATKIT_END -->/d' "$html_file"
         fi
-        mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
 
-#        if has_component "mcpauth"; then
-#            echo "✅ Including McpAuth section in HTML"
-#            sed -i '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/d; /<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html"
-#        else
-#            echo "❌ Excluding McpAuth section from HTML"
-#            sed -i '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/,/<!-- COMPONENT_CONDITIONAL_IDP_END -->/d; /<!-- Start of IDP -->/,/<!-- End of IDP -->/d' "$ROOT_HOST_DIR/public_html/index.html"
-#        fi
-#        mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
-
-        # Process Idp section
-#        if has_component "mcpauth"; then
-#            echo "✅ Including McpAuth section in HTML"
-#            # Keep the Mcpauth section - remove the conditional markers
-#            sed '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/d; /<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
-#        else
-#            echo "❌ Excluding McpAuth section from HTML"
-#            nl -ba "$ROOT_HOST_DIR/public_html/index.html" | sed -n '/<!-- Start of IDP -->/,/<!-- End of IDP -->/p'
-#
-#                   # Remove the entire Mcpauth section
-#            sed '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/,/<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
-#        fi
-#        mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
-#
         echo "✅ HTML template processed successfully"
     else
         echo "⚠️ HTML template not found, skipping HTML processing"
