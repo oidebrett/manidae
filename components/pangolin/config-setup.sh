@@ -267,9 +267,16 @@ process_html_template() {
             # Keep the IDP section - remove the conditional markers
             sed '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/d; /<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
         else
+
             echo "❌ Excluding IDP section from HTML"
+
+            echo "Before removing IDP section:"
+            grep -n "COMPONENT_CONDITIONAL_IDP" "$ROOT_HOST_DIR/public_html/index.html" || echo "(no markers found)"
+
+            # …sed command here…
             # Remove the entire IDP section
             sed '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/,/<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
+
         fi
         mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
 
