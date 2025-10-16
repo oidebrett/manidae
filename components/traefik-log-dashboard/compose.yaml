@@ -68,14 +68,22 @@
       sh -c "
         apk add --no-cache wget tar &&
         cd /data &&
-        if [ ! -f GeoLite2-City.mmdb ] || [ $$(find . -name 'GeoLite2-City.mmdb' -mtime +7) ]; then
-          echo 'Downloading/updating MaxMind database...' &&
-          wget -O GeoLite2-City.tar.gz 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=$MAXMIND_LICENSE_KEY&suffix=tar.gz' &&
+        if [ ! -f GeoLite2-City.mmdb ] || [ "$(find . -name 'GeoLite2-City.mmdb' -mtime +7)" ]; then
+          echo 'Downloading/updating GeoLite2-City database...'
+          wget -O GeoLite2-City.tar.gz "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=${LICENSE_KEY}&suffix=tar.gz" &&
           tar --wildcards -xzf GeoLite2-City.tar.gz --strip-components=1 '*/GeoLite2-City.mmdb' &&
           rm -f GeoLite2-City.tar.gz &&
-          echo 'MaxMind database updated successfully'
+          echo 'GeoLite2-City database updated successfully'
+
+        elif [ ! -f GeoLite2-Country.mmdb ] || [ "$(find . -name 'GeoLite2-Country.mmdb' -mtime +7)" ]; then
+          echo 'Downloading/updating GeoLite2-Country database...'
+          wget -O GeoLite2-Country.tar.gz "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=${LICENSE_KEY}&suffix=tar.gz" &&
+          tar --wildcards -xzf GeoLite2-Country.tar.gz --strip-components=1 '*/GeoLite2-Country.mmdb' &&
+          rm -f GeoLite2-Country.tar.gz &&
+          echo 'GeoLite2-Country database updated successfully'
+
         else
-          echo 'MaxMind database is up to date'
+          echo 'Both MaxMind databases are up to date.'
         fi
       "
 
@@ -95,7 +103,7 @@
       - TRAEFIK_LOG_DASHBOARD_ACCESS_PATH=/logs/access.log
       - TRAEFIK_LOG_DASHBOARD_ERROR_PATH=/logs/access.log
       # Authentication
-      - TRAEFIK_LOG_DASHBOARD_AUTH_TOKEN=d41d8cd98f00b204e9800998ecf8427e
+      - TRAEFIK_LOG_DASHBOARD_AUTH_TOKEN=${MAXMIND_LICENSE_KEY:-your-license-key-here}  #lets use the maxmind license key for now
       # System Monitoring
       - TRAEFIK_LOG_DASHBOARD_SYSTEM_MONITORING=true
       # GeoIP Configuration (NEW)
@@ -123,7 +131,7 @@
     environment:
       # Agent Configuration
       - AGENT_API_URL=http://traefik-agent:5000
-      - AGENT_API_TOKEN=d41d8cd98f00b204e9800998ecf8427e 
+      - AGENT_API_TOKEN=${MAXMIND_LICENSE_KEY:-your-license-key-here} #lets use the maxmind license key for now
       # Node Environment
       - NODE_ENV=production
       - PORT=3000
