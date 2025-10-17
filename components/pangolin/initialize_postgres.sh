@@ -74,7 +74,8 @@ CREATE TABLE IF NOT EXISTS domains (
 CREATE TABLE IF NOT EXISTS orgs (
     "orgId" TEXT PRIMARY KEY,
     name TEXT NOT NULL,
-    subnet TEXT
+    subnet TEXT,
+    settings TEXT
 );
 
 -- Organization domains table
@@ -141,7 +142,8 @@ CREATE TABLE IF NOT EXISTS resources (
     "setHostHeader" TEXT,
     "enableProxy" BOOLEAN DEFAULT TRUE,
     "skipToIdpId" INTEGER REFERENCES idp("idpId") ON DELETE CASCADE,
-    headers TEXT
+    headers TEXT,
+    "resourceGuid" TEXT NOT NULL DEFAULT 'PLACEHOLDER'
 );
 
 -- Site Resources table (new in v1.9)

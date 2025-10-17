@@ -412,7 +412,8 @@ CREATE TEMP TABLE temp_resources (
     setHostHeader TEXT,
     enableProxy TEXT,
     skipToIdpId TEXT,
-    headers TEXT
+    headers TEXT,
+    resourceGuid TEXT
 );
 
 .mode csv
@@ -421,7 +422,7 @@ CREATE TEMP TABLE temp_resources (
 INSERT INTO resources (
     resourceId, orgId, niceId, name, subdomain, fullDomain, domainId,
     ssl, blockAccess, sso, http, protocol, proxyPort, emailWhitelistEnabled,
-    applyRules, enabled, stickySession, tlsServerName, setHostHeader, enableProxy, skipToIdpId, headers
+    applyRules, enabled, stickySession, tlsServerName, setHostHeader, enableProxy, skipToIdpId, headers, resourceGuid
 )
 SELECT
     CASE WHEN resourceId = '' THEN NULL ELSE CAST(resourceId AS INTEGER) END,
@@ -446,6 +447,7 @@ SELECT
     CASE WHEN enableProxy = 't' THEN 1 WHEN enableProxy = 'f' THEN 0 WHEN enableProxy = '' THEN 1 ELSE CAST(enableProxy AS INTEGER) END,
     CASE WHEN skipToIdpId = '' THEN NULL ELSE CAST(skipToIdpId AS INTEGER) END,
     CASE WHEN headers = '' THEN NULL ELSE headers END
+    CASE WHEN resourceGuid = '' THEN 'PLACEHOLDER' ELSE resourceGuid END
 FROM temp_resources;
 
 DROP TABLE temp_resources;
