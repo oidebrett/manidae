@@ -68,8 +68,9 @@ echo "SQLite database path: $DB_PATH"
 
 # Function to detect if pangolin+ is being used
 is_pangolin_plus() {
-    # Check if COMPONENTS_CSV contains pangolin+
-    case "${COMPONENTS_CSV:-}" in
+    # Check COMPONENTS_CSV first, then fall back to COMPONENTS
+    local components_list="${COMPONENTS_CSV:-${COMPONENTS:-}}"
+    case "$components_list" in
         *"pangolin+"*) return 0 ;;
         *) return 1 ;;
     esac
@@ -77,13 +78,14 @@ is_pangolin_plus() {
 
 # Function to detect if AI components (nlweb/komodo/agentgateway) are being used
 is_pangolin_plus_ai() {
-    # First check COMPONENTS_CSV if available
-    case "${COMPONENTS_CSV:-}" in
-        *"nlweb"*|*"komodo"*|*"agentgateway"*) return 0 ;;
+    # Check COMPONENTS_CSV first, then fall back to COMPONENTS
+    local components_list="${COMPONENTS_CSV:-${COMPONENTS:-}}"
+    case "$components_list" in
+        *"nlweb"*|*"komodo"*|*"agentgateway"*|*"openai-chatkit"*) return 0 ;;
     esac
 
-    # If COMPONENTS_CSV is not set, try to detect from CSV files
-    if [ -z "${COMPONENTS_CSV:-}" ]; then
+    # If neither COMPONENTS_CSV nor COMPONENTS is set, try to detect from CSV files
+    if [ -z "$components_list" ]; then
         # Check if resources.csv contains AI-specific resources
         if [ -f "${EXPORT_DIR:-./postgres_export}/resources.csv" ]; then
             # Look for chatkit-embed (AgentGateway), nlweb, or komodo resources
@@ -96,9 +98,54 @@ is_pangolin_plus_ai() {
     return 1
 }
 
+# Function to check if a specific component is included
+has_component() {
+    local component="$1"
+    # Check COMPONENTS_CSV first, then fall back to COMPONENTS
+    local components_list="${COMPONENTS_CSV:-${COMPONENTS:-}}"
+    case "$components_list" in
+        *"$component"*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Function to get resource IDs that should be included based on components
+get_included_resource_ids() {
+    local resource_ids=""
+
+    # Always include middleware-manager (1) for pangolin deployments
+    resource_ids="1"
+
+    # Include traefik-dashboard (2) and logs-viewer (5) if traefik-log-dashboard component is present
+    if has_component "traefik-log-dashboard"; then
+        resource_ids="$resource_ids,2,5"
+    fi
+
+    # Include nlweb-app (4) and nlweb-crawler (7) if nlweb component is present
+    if has_component "nlweb"; then
+        resource_ids="$resource_ids,4,7"
+    fi
+
+    # Include chatkit-embed (4) if agentgateway or openai-chatkit component is present
+    if has_component "agentgateway" || has_component "openai-chatkit"; then
+        resource_ids="$resource_ids,4"
+    fi
+
+    # Include idp (6) if mcpauth component is present
+    if has_component "mcpauth"; then
+        resource_ids="$resource_ids,6"
+    fi
+
+    # Note: komodo-core (3) is intentionally excluded from all deployments
+
+    echo "$resource_ids"
+}
+
 # Detect and display deployment type
 echo "Detecting deployment type..."
 echo "COMPONENTS_CSV: ${COMPONENTS_CSV:-not set}"
+echo "COMPONENTS: ${COMPONENTS:-not set}"
+echo "Using components: ${COMPONENTS_CSV:-${COMPONENTS:-none}}"
 
 if is_pangolin_plus_ai; then
     echo "🤖 Deployment type: Pangolin+AI (includes all resources)"
@@ -127,7 +174,7 @@ create_sqlite_structure() {
 
 
 
-# Function to filter CSV data based on deployment type
+# Function to filter CSV data based on deployment type and components
 filter_csv_for_deployment() {
     local input_csv="$1"
     local output_csv="$2"
@@ -138,37 +185,28 @@ filter_csv_for_deployment() {
         return 1
     fi
 
-    # If AI components are present, use all resources
-    if is_pangolin_plus_ai; then
-        echo "AI components detected - including all resources"
-        cp "$input_csv" "$output_csv"
-        return 0
-    fi
+    # Get the list of resource IDs that should be included based on components
+    local included_ids=$(get_included_resource_ids)
+    echo "Including resources based on components: $included_ids"
 
-    # Only filter for pangolin+ deployments without AI
-    if is_pangolin_plus; then
-        echo "Pangolin+ core deployment detected - filtering to core resources only"
-    else
-        echo "Standard deployment detected - including all resources"
-        cp "$input_csv" "$output_csv"
-        return 0
-    fi
+    # Convert comma-separated list to regex pattern
+    local id_pattern=$(echo "$included_ids" | sed 's/,/|/g')
 
     case "$table_name" in
         "resources")
-            # Core resources: middleware-manager(1), traefik-dashboard(2), logs-viewer(5)
+            # Include only resources that match the component selection
             head -n 1 "$input_csv" > "$output_csv"  # Copy header
-            grep -E "^(1|2|5)," "$input_csv" >> "$output_csv" 2>/dev/null || true
+            grep -E "^($id_pattern)," "$input_csv" >> "$output_csv" 2>/dev/null || true
             ;;
         "targets")
-            # Core targets: those linked to core resources (1, 2, 5)
+            # Include only targets that link to included resources
             head -n 1 "$input_csv" > "$output_csv"  # Copy header
-            grep -E "^[0-9]+,(1|2|5)," "$input_csv" >> "$output_csv" 2>/dev/null || true
+            grep -E "^[0-9]+,($id_pattern)," "$input_csv" >> "$output_csv" 2>/dev/null || true
             ;;
         "roleResources")
-            # Core roleResources: those linked to core resources (1, 2, 5)
+            # Include only roleResources that link to included resources
             head -n 1 "$input_csv" > "$output_csv"  # Copy header
-            grep -E "^[0-9]+,(1|2|5)$" "$input_csv" >> "$output_csv" 2>/dev/null || true
+            grep -E "^[0-9]+,($id_pattern)$" "$input_csv" >> "$output_csv" 2>/dev/null || true
             ;;
         *)
             # For other tables, copy as-is

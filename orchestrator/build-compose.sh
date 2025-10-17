@@ -91,6 +91,8 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
   fi
 
   echo "[orchestrator] Auto-derived COMPONENTS: $COMPONENTS_RAW"
+else
+  echo "[orchestrator] Using explicitly provided COMPONENTS: $COMPONENTS_RAW"
 fi
 
 # Handle explicit agentgateway specification by adding companion components
@@ -144,12 +146,9 @@ fi
 
 # Handle platform+ aliases by adding required components (applies to both auto-derived and explicit components)
 if [[ "$COMPONENTS_RAW" == *"pangolin+"* ]]; then
-  echo "[orchestrator] pangolin+ detected - ensuring crowdsec and mcpauth are included"
+  echo "[orchestrator] pangolin+ detected - ensuring crowdsec is included"
   if [[ "$COMPONENTS_RAW" != *"crowdsec"* ]]; then
     COMPONENTS_RAW="$COMPONENTS_RAW,crowdsec"
-  fi
-  if [[ "$COMPONENTS_RAW" != *"mcpauth"* ]]; then
-    COMPONENTS_RAW="$COMPONENTS_RAW,mcpauth"
   fi
 fi
 if [[ "$COMPONENTS_RAW" == *"coolify+"* ]]; then
@@ -295,7 +294,7 @@ EOF
 
   if has_component crowdsec; then sed -n '1,9999p' "$ROOT_DIR/components/crowdsec/compose.yaml"; fi
   if has_component nlweb; then sed -n '1,9999p' "$ROOT_DIR/components/nlweb/compose.yaml"; fi
-  if has_component komodo; then sed -n '1,9999p' "$ROOT_DIR/components/komodo/compose.yaml"; fi
+  # Note: komodo component has been removed from all deployments
 
   # Add backup service if MAX_BACKUPS is set and greater than 0
   if [[ -n "${MAX_BACKUPS:-}" && "${MAX_BACKUPS:-0}" -gt 0 ]]; then
@@ -369,14 +368,13 @@ EOF
   # Volumes (platform and component specific)
   volumes_needed=false
   if [[ "$BASE_PLATFORM" == "coolify" ]]; then volumes_needed=true; fi
-  if has_component komodo; then volumes_needed=true; fi
   if has_component nlweb; then volumes_needed=true; fi
 
   if [[ "$volumes_needed" == "true" ]]; then
     echo "volumes:"
     if [[ "$BASE_PLATFORM" == "coolify" ]]; then sed -n '1,9999p' "$ROOT_DIR/components/coolify/volumes.yaml"; fi
-    if has_component komodo; then sed -n '1,9999p' "$ROOT_DIR/components/komodo/volumes.yaml"; fi
     if has_component nlweb; then sed -n '1,9999p' "$ROOT_DIR/components/nlweb/volumes.yaml"; fi
+    # Note: komodo volumes have been removed from all deployments
   fi
 
   # Networks (generic for all platforms)

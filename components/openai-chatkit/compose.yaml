@@ -1,6 +1,6 @@
   # Traefik reverse proxy for OpenAI Chatkit
   traefik:
-    image: traefik:v3.5
+    image: traefik:v3.5.3
     #container_name: traefik
     restart: unless-stopped
     ports:

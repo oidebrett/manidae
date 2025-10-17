@@ -1,6 +1,6 @@
   # Auth management
   mcpauth:
-    image: oideibrett/mcpauth:olp
+    image: oideibrett/mcpauth:latest
     volumes:
       - ./config/data:/app/data
     environment:

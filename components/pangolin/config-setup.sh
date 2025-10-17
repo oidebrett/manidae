@@ -78,6 +78,88 @@ postgres:
 
 EOF
 
+# Function to check if a specific component is included
+has_component() {
+    local component="$1"
+    case "${COMPONENTS_CSV:-}" in
+        *"$component"*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Function to get resource IDs that should be included based on components
+get_included_resource_ids() {
+    local resource_ids=""
+
+    # Always include middleware-manager (1) for pangolin deployments
+    resource_ids="1"
+
+    # Include traefik-dashboard (2) and logs-viewer (5) if traefik-log-dashboard component is present
+    if has_component "traefik-log-dashboard"; then
+        resource_ids="$resource_ids,2,5"
+    fi
+
+    # Include nlweb-app (4) and nlweb-crawler (7) if nlweb component is present
+    if has_component "nlweb"; then
+        resource_ids="$resource_ids,4,7"
+    fi
+
+    # Include chatkit-embed (4) if agentgateway component is present
+    if has_component "agentgateway"; then
+        resource_ids="$resource_ids,4"
+    fi
+
+    # Include idp (6) if mcpauth component is present
+    if has_component "mcpauth"; then
+        resource_ids="$resource_ids,6"
+    fi
+
+    # Note: komodo-core (3) is intentionally excluded from all deployments
+
+    echo "$resource_ids"
+}
+
+# Function to filter CSV data based on components
+filter_csv_for_components() {
+    local input_csv="$1"
+    local output_csv="$2"
+    local table_name="$3"
+
+    if [ ! -f "$input_csv" ]; then
+        echo "Input CSV file not found: $input_csv"
+        return 1
+    fi
+
+    # Get the list of resource IDs that should be included based on components
+    local included_ids=$(get_included_resource_ids)
+    echo "🔍 Including resources based on components: $included_ids"
+
+    # Convert comma-separated list to regex pattern
+    local id_pattern=$(echo "$included_ids" | sed 's/,/|/g')
+
+    case "$table_name" in
+        "resources")
+            # Include only resources that match the component selection
+            head -n 1 "$input_csv" > "$output_csv"  # Copy header
+            grep -E "^($id_pattern)," "$input_csv" >> "$output_csv" 2>/dev/null || true
+            ;;
+        "targets")
+            # Include only targets that link to included resources
+            head -n 1 "$input_csv" > "$output_csv"  # Copy header
+            grep -E "^[0-9]+,($id_pattern)," "$input_csv" >> "$output_csv" 2>/dev/null || true
+            ;;
+        "roleResources")
+            # Include only roleResources that link to included resources
+            head -n 1 "$input_csv" > "$output_csv"  # Copy header
+            grep -E "^[0-9]+,($id_pattern)$" "$input_csv" >> "$output_csv" 2>/dev/null || true
+            ;;
+        *)
+            # For other tables, copy as-is
+            cp "$input_csv" "$output_csv"
+            ;;
+    esac
+}
+
 # Function to update domain in CSV files
 update_domains_in_csv() {
     echo "🔄 Updating domain references in CSV files..."
@@ -86,9 +168,30 @@ update_domains_in_csv() {
     mkdir -p "$ROOT_HOST_DIR/postgres_export"
 
     # Copy postgres_export data from component to host setup directory
-    if [ -d "$ROOT_HOST_DIR/components/pangolin/postgres_export" ]; then
-        cp -r "$ROOT_HOST_DIR/components/pangolin/postgres_export"/* "$ROOT_HOST_DIR/postgres_export/"
+    if [ -d "${MANIDAE_ROOT:-$ROOT_HOST_DIR}/components/pangolin/postgres_export" ]; then
+        cp -r "${MANIDAE_ROOT:-$ROOT_HOST_DIR}/components/pangolin/postgres_export"/* "$ROOT_HOST_DIR/postgres_export/"
         echo "✅ Copied postgres_export data from pangolin component"
+    fi
+
+    # Filter CSV files based on components if COMPONENTS_CSV is set
+    if [ -n "${COMPONENTS_CSV:-}" ]; then
+        echo "🔧 Filtering CSV files based on components: ${COMPONENTS_CSV}"
+
+        # Filter each CSV file
+        for table in resources targets roleResources; do
+            if [ -f "$ROOT_HOST_DIR/postgres_export/$table.csv" ]; then
+                # Create a backup
+                cp "$ROOT_HOST_DIR/postgres_export/$table.csv" "$ROOT_HOST_DIR/postgres_export/$table.csv.backup"
+
+                # Filter the CSV
+                filter_csv_for_components "$ROOT_HOST_DIR/postgres_export/$table.csv.backup" "$ROOT_HOST_DIR/postgres_export/$table.csv" "$table"
+
+                # Remove backup
+                rm -f "$ROOT_HOST_DIR/postgres_export/$table.csv.backup"
+
+                echo "✅ Filtered $table.csv based on components"
+            fi
+        done
     fi
 
     # Check if resources.csv exists
@@ -108,8 +211,78 @@ update_domains_in_csv() {
     fi
 }
 
+echo "🐛 DEBUG: COMPONENTS='${COMPONENTS:-}'"
+echo "🐛 DEBUG: COMPONENTS_CSV='${COMPONENTS_CSV:-}'"
+echo "🐛 DEBUG: Checking if mcpauth is included..."
+if has_component "mcpauth"; then
+    echo "🐛 mcpauth IS PRESENT according to has_component()"
+else
+    echo "🐛 mcpauth is NOT present"
+fi
+
+# Function to process HTML template based on components
+process_html_template() {
+    echo "🌐 Processing HTML template based on components..."
+
+    mkdir -p "$ROOT_HOST_DIR/public_html"
+
+    local html_file="$ROOT_HOST_DIR/public_html/index.html"
+    local template="${MANIDAE_ROOT:-$ROOT_HOST_DIR}/templates/html/index.html"
+
+    if [ -f "$template" ]; then
+        cp "$template" "$html_file"
+        sed -i "s/yourdomain\.com/${DOMAIN}/g" "$html_file"
+
+        echo "🧾 Initial component list: ${COMPONENTS:-<undefined>}"
+
+        ### IDP SECTION ###
+        # Process Idp section
+        if has_component "mcpauth"; then
+            echo "✅ Including Idp section in HTML"
+            temp_file="${ROOT_HOST_DIR}/public_html/index.html.tmp"
+            sed '/<!--[[:space:]]*COMPONENT_CONDITIONAL_IDP_START[[:space:]]*-->/d; /<!--[[:space:]]*COMPONENT_CONDITIONAL_IDP_END[[:space:]]*-->/d' \
+                "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
+        else
+            echo "❌ Excluding Idp section from HTML"
+            temp_file="${ROOT_HOST_DIR}/public_html/index.html.tmp"
+            echo "🔍 Removing any CRLF..."
+            sed -i 's/\r$//' "$ROOT_HOST_DIR/public_html/index.html"
+            echo "🔍 Before removal (show relevant lines):"
+            grep -n "COMPONENT_CONDITIONAL_IDP" "$ROOT_HOST_DIR/public_html/index.html" || echo "(markers not found)"
+            sed '/<!--[[:space:]]*COMPONENT_CONDITIONAL_IDP_START[[:space:]]*-->/,/[[:space:]]*COMPONENT_CONDITIONAL_IDP_END[[:space:]]*-->/d' \
+                "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
+            echo "🔍 After sed, check if Identity Provider still exists:"
+            grep -n "Identity Provider" "$temp_file" || echo "(section removed ✅)"
+        fi
+
+        # Move the result only if sed succeeded
+        if [ -s "$temp_file" ]; then
+            echo "💾 Moving updated file..."
+            mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
+        else
+            echo "⚠️ Temp file missing or empty! Sed may have failed."
+            ls -l "$ROOT_HOST_DIR/public_html" || echo "No public_html directory?"
+        fi
+        ### CHATKIT SECTION ###
+        if has_component "openai-chatkit"; then
+            echo "✅ Including Chatkit section in HTML"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_CHATKIT_START -->/d; /<!-- COMPONENT_CONDITIONAL_CHATKIT_END -->/d' "$html_file"
+        else
+            echo "❌ Excluding Chatkit section from HTML"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_CHATKIT_START -->/,/<!-- COMPONENT_CONDITIONAL_CHATKIT_END -->/d' "$html_file"
+        fi
+
+        echo "✅ HTML template processed successfully"
+    else
+        echo "⚠️ HTML template not found, skipping HTML processing"
+    fi
+}
+
 # Update domains in CSV if present
 update_domains_in_csv
+
+# Process HTML template based on components
+process_html_template
 
 # Function to detect if pangolin+ is being used
 is_pangolin_plus() {
