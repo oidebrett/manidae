@@ -210,6 +210,22 @@ docker compose -f docker-compose-setup.yml up
 
 ---
 
+## 📚 Post-Installation Steps
+
+If you want Pangolin to be prepopulated with the resources/targets for your deployment, you use the contents of the `postgres_export` directory. You can run this automatically but first you will need an initial admin user. 
+
+```bash
+docker exec PANGOLIN_CONTAINER_NAME pangctl set-admin-credentials --email "admin@yourdomain.com" --password "YourPassword"
+
+ 
+chmod +x ./components/pangolin/initialize_sqlite.sh
+./components/pangolin/initialize_sqlite.sh
+chmod +x ./components/crowdsec/update-bouncer-post-install.sh
+./components/crowdsec/update-bouncer-post-install.sh CROWDSEC_CONTAINER_NAME
+```
+
+---
+
 ## 📚 Need More Details?
 
 - **📋 [Complete Configuration Guide](docs/CONFIGURATION.md)** - All options and advanced features
