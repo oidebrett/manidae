@@ -427,13 +427,13 @@ INSERT INTO resources (
 SELECT
     CASE WHEN resourceId = '' THEN NULL ELSE CAST(resourceId AS INTEGER) END,
     CASE
-        WHEN resourceGuid = '' OR resourceGuid IS NULL THEN
+        WHEN trim(resourceGuid) = '' OR resourceGuid IS NULL THEN
             lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-' ||
             '4' || substr(hex(randomblob(2)),2) || '-' ||
             substr('AB89',abs(random()) % 4 + 1,1) ||
             substr(hex(randomblob(2)),2) || '-' || hex(randomblob(6)))
         ELSE resourceGuid
-    END,
+    END
     orgId,
     CASE WHEN niceId = '' OR niceId IS NULL THEN 'resource-' || resourceId ELSE niceId END,
     name,
