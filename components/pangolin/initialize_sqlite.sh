@@ -392,6 +392,7 @@ import_resources_csv() {
     sqlite3 "$DB_PATH" <<EOF
 CREATE TEMP TABLE temp_resources (
     resourceId TEXT,
+    resourceGuid TEXT,
     orgId TEXT,
     niceId TEXT,
     name TEXT,
@@ -412,8 +413,7 @@ CREATE TEMP TABLE temp_resources (
     setHostHeader TEXT,
     enableProxy TEXT,
     skipToIdpId TEXT,
-    headers TEXT,
-    resourceGuid TEXT
+    headers TEXT
 );
 
 .mode csv
