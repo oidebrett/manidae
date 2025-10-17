@@ -74,7 +74,8 @@ CREATE TABLE IF NOT EXISTS domains (
 CREATE TABLE IF NOT EXISTS orgs (
     "orgId" TEXT PRIMARY KEY,
     name TEXT NOT NULL,
-    subnet TEXT
+    subnet TEXT,
+    settings TEXT
 );
 
 -- Organization domains table
@@ -121,6 +122,7 @@ CREATE TABLE IF NOT EXISTS sites (
 -- Resources table
 CREATE TABLE IF NOT EXISTS resources (
     "resourceId" SERIAL PRIMARY KEY,
+    "resourceGuid" TEXT NOT NULL DEFAULT 'PLACEHOLDER',
     "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE,
     "niceId" TEXT NOT NULL,
     name TEXT NOT NULL,
