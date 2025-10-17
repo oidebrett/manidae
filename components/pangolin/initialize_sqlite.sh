@@ -420,12 +420,20 @@ CREATE TEMP TABLE temp_resources (
 .import "$TEMP_CSV" temp_resources
 
 INSERT INTO resources (
-    resourceId, orgId, niceId, name, subdomain, fullDomain, domainId,
+    resourceId, resourceGuid, orgId, niceId, name, subdomain, fullDomain, domainId,
     ssl, blockAccess, sso, http, protocol, proxyPort, emailWhitelistEnabled,
-    applyRules, enabled, stickySession, tlsServerName, setHostHeader, enableProxy, skipToIdpId, headers, resourceGuid
+    applyRules, enabled, stickySession, tlsServerName, setHostHeader, enableProxy, skipToIdpId, headers
 )
 SELECT
     CASE WHEN resourceId = '' THEN NULL ELSE CAST(resourceId AS INTEGER) END,
+    CASE
+        WHEN resourceGuid = '' OR resourceGuid IS NULL THEN
+            lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-' ||
+            '4' || substr(hex(randomblob(2)),2) || '-' ||
+            substr('AB89',abs(random()) % 4 + 1,1) ||
+            substr(hex(randomblob(2)),2) || '-' || hex(randomblob(6)))
+        ELSE resourceGuid
+    END,
     orgId,
     CASE WHEN niceId = '' OR niceId IS NULL THEN 'resource-' || resourceId ELSE niceId END,
     name,
@@ -446,15 +454,7 @@ SELECT
     CASE WHEN setHostHeader = '' THEN NULL ELSE setHostHeader END,
     CASE WHEN enableProxy = 't' THEN 1 WHEN enableProxy = 'f' THEN 0 WHEN enableProxy = '' THEN 1 ELSE CAST(enableProxy AS INTEGER) END,
     CASE WHEN skipToIdpId = '' THEN NULL ELSE CAST(skipToIdpId AS INTEGER) END,
-    CASE WHEN headers = '' THEN NULL ELSE headers END,
-    CASE
-        WHEN resourceGuid = '' OR resourceGuid IS NULL THEN
-            lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-' ||
-            '4' || substr(hex(randomblob(2)),2) || '-' ||
-            substr('AB89',abs(random()) % 4 + 1,1) ||
-            substr(hex(randomblob(2)),2) || '-' || hex(randomblob(6)))
-        ELSE resourceGuid
-    END
+    CASE WHEN headers = '' THEN NULL ELSE headers END
 FROM temp_resources;
 
 DROP TABLE temp_resources;

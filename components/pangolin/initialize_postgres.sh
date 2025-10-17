@@ -122,6 +122,7 @@ CREATE TABLE IF NOT EXISTS sites (
 -- Resources table
 CREATE TABLE IF NOT EXISTS resources (
     "resourceId" SERIAL PRIMARY KEY,
+    "resourceGuid" TEXT NOT NULL DEFAULT 'PLACEHOLDER',
     "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE,
     "niceId" TEXT NOT NULL,
     name TEXT NOT NULL,
@@ -142,8 +143,7 @@ CREATE TABLE IF NOT EXISTS resources (
     "setHostHeader" TEXT,
     "enableProxy" BOOLEAN DEFAULT TRUE,
     "skipToIdpId" INTEGER REFERENCES idp("idpId") ON DELETE CASCADE,
-    headers TEXT,
-    "resourceGuid" TEXT NOT NULL DEFAULT 'PLACEHOLDER'
+    headers TEXT
 );
 
 -- Site Resources table (new in v1.9)
