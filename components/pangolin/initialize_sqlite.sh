@@ -447,7 +447,14 @@ SELECT
     CASE WHEN enableProxy = 't' THEN 1 WHEN enableProxy = 'f' THEN 0 WHEN enableProxy = '' THEN 1 ELSE CAST(enableProxy AS INTEGER) END,
     CASE WHEN skipToIdpId = '' THEN NULL ELSE CAST(skipToIdpId AS INTEGER) END,
     CASE WHEN headers = '' THEN NULL ELSE headers END,
-    CASE WHEN resourceGuid = '' THEN 'PLACEHOLDER' ELSE resourceGuid END
+    CASE
+        WHEN resourceGuid = '' OR resourceGuid IS NULL THEN
+            lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-' ||
+            '4' || substr(hex(randomblob(2)),2) || '-' ||
+            substr('AB89',abs(random()) % 4 + 1,1) ||
+            substr(hex(randomblob(2)),2) || '-' || hex(randomblob(6)))
+        ELSE resourceGuid
+    END
 FROM temp_resources;
 
 DROP TABLE temp_resources;
