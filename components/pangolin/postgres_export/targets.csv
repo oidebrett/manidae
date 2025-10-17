@@ -4,4 +4,4 @@ targetId,resourceId,siteId,ip,method,port,internalPort,enabled,path,pathMatchTyp
 4,4,1,nlweb,http,8000,,t,,
 5,5,1,traefik-dashboard,http,3000,,t,,
 6,6,1,mcpauth,http,11000,,t,,
-7,7,1,crawler,http,5001,,t,,
+7,7,1,crawler,http,5000,,t,,
