@@ -446,7 +446,7 @@ SELECT
     CASE WHEN setHostHeader = '' THEN NULL ELSE setHostHeader END,
     CASE WHEN enableProxy = 't' THEN 1 WHEN enableProxy = 'f' THEN 0 WHEN enableProxy = '' THEN 1 ELSE CAST(enableProxy AS INTEGER) END,
     CASE WHEN skipToIdpId = '' THEN NULL ELSE CAST(skipToIdpId AS INTEGER) END,
-    CASE WHEN headers = '' THEN NULL ELSE headers END
+    CASE WHEN headers = '' THEN NULL ELSE headers END,
     CASE WHEN resourceGuid = '' THEN 'PLACEHOLDER' ELSE resourceGuid END
 FROM temp_resources;
 
