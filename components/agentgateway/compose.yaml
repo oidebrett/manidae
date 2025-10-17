@@ -1,6 +1,6 @@
   # Main Pangolin application
   pangolin:
-    image:  docker.io/fosrl/pangolin:1.10.3
+    image:  docker.io/fosrl/pangolin:1.11.0
     #container_name: pangolin
     restart: unless-stopped
     volumes:
@@ -12,7 +12,7 @@
       retries: 15
   # Gerbil WireGuard management
   gerbil:
-    image: fosrl/gerbil:1.2.1
+    image: fosrl/gerbil:1.2.2
     #container_name: gerbil
     restart: unless-stopped
     depends_on:
@@ -36,7 +36,7 @@
 
   # Traefik reverse proxy
   traefik:
-    image: traefik:v3.5
+    image: traefik:v3.5.3
     #container_name: traefik
     restart: unless-stopped
     network_mode: service:gerbil # Ports appear on the gerbil service

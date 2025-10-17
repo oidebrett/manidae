@@ -47,36 +47,6 @@ modify_traefik_config() {
         echo "ℹ️ File logging configuration already exists in traefik_config.yml"
     fi
 
-    # Check if tracing is already configured
-    if grep -q "tracing:" "$config_file"; then
-        echo "ℹ️ Tracing configuration already exists in traefik_config.yml"
-        return 0
-    fi
-
-    # Add OTLP tracing configuration at the end of the file
-    cat >> "$config_file" << 'EOF'
-
-# OpenTelemetry Tracing Configuration
-tracing:
-  otlp:
-    http:
-      endpoint: "http://log-dashboard-backend:4318/v1/traces"
-    # Alternative: GRPC for better performance
-    # grpc:
-    #   endpoint: "log-dashboard-backend:4317"
-    #   insecure: true
-
-  # Sampling rate (adjust for your needs)
-  sampleRate: 0.1  # 100% for development, 0.1 (10%) for production
-
-  # Global attributes added to all traces
-  globalAttributes:
-    environment: "production"
-    service.version: "v3.0"
-    deployment.environment: "pangolin"
-EOF
-
-    echo "✅ OTLP tracing configuration added to traefik_config.yml"
 }
 
 # Function to update DEPLOYMENT_INFO.txt with log dashboard information

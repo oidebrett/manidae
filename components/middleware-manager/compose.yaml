@@ -1,6 +1,6 @@
   # Middleware Manager for Traefik / Pangolin
   middleware-manager:
-    image: oideibrett/middleware-manager:dev
+    image: hhftechnology/middleware-manager:latest
     #container_name: middleware-manager
     restart: unless-stopped
     volumes:
