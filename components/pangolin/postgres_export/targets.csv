@@ -1,7 +1,7 @@
-targetId,resourceId,siteId,ip,method,port,internalPort,enabled,path,pathMatchType
-1,1,1,middleware-manager,http,3456,,t,,
-2,2,1,localhost,http,8080,,t,,
-4,4,1,nlweb,http,8000,,t,,
-5,5,1,traefik-dashboard,http,3000,,t,,
-6,6,1,mcpauth,http,11000,,t,,
-7,7,1,crawler,http,5000,,t,,
+targetId,resourceId,siteId,ip,method,port,internalPort,enabled,path,pathMatchType,rewritePath,rewritePathType,priority
+1,1,1,middleware-manager,http,3456,,t,,,
+2,2,1,localhost,http,8080,,t,,,
+4,4,1,nlweb,http,8000,,t,,,
+5,5,1,traefik-dashboard,http,3000,,t,,,
+6,6,1,mcpauth,http,11000,,t,,,
+7,7,1,crawler,http,5000,,t,,,

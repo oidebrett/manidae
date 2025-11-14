@@ -160,7 +160,8 @@ create_sqlite_structure() {
     echo "Checking SQLite schema..."
 
     # Check if tables exist - if they do, we assume schema is already created
-    TABLE_COUNT=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '__drizzle_%';")
+    TABLE_COUNT=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'
+ AND name NOT LIKE '__drizzle_%';")
 
     if [ "$TABLE_COUNT" -gt 0 ]; then
         echo "Database schema already exists with $TABLE_COUNT tables."
@@ -242,6 +243,10 @@ import_csv_to_sqlite() {
     if [[ "$table_name" == "sites" ]]; then
         # sites table has an extra remoteSubnets column in SQLite
         import_sites_csv "$csv_file"
+    elif [[ "$table_name" == "orgs" ]]; then
+        import_orgs_csv "$csv_file"
+    elif [[ "$table_name" == "domains" ]]; then
+        import_domains_csv "$csv_file"
     elif [[ "$table_name" == "resources" ]]; then
         # resources table has an extra enableProxy column in SQLite
         import_resources_csv "$csv_file"
@@ -269,7 +274,8 @@ import_standard_csv() {
     TEMP_CSV="/tmp/${table_name}_temp.csv"
 
     # Convert PostgreSQL boolean values (t/f) to SQLite boolean values (1/0) and skip header
-    tail -n +2 "$csv_file" | sed 's/,t,/,1,/g; s/,f,/,0,/g; s/,t$/,1/g; s/,f$/,0/g; s/^t,/1,/g; s/^f,/0,/g' > "$TEMP_CSV"
+    tail -n +2 "$csv_file" | sed 's/,t,/,1,/g; s/,f,/,0,/g; s/,t$/,1/g; s/,f$/,0/g; s/^t,/1,/g; s/^f,/0,/g' > "$TEMP_CSV
+"
 
     # Import the converted CSV without headers
     sqlite3 "$DB_PATH" <<EOF
@@ -281,16 +287,79 @@ EOF
     rm -f "$TEMP_CSV"
 }
 
+# Special function for orgs table
+import_orgs_csv() {
+    local csv_file="$1"
+    echo "Importing orgs (schema aligned)..."
+
+    TEMP="/tmp/orgs_temp.csv"
+    tail -n +2 "$csv_file" > "$TEMP"
+
+    sqlite3 "$DB_PATH" <<EOF
+PRAGMA foreign_keys=OFF;
+
+DROP TABLE IF EXISTS temp_orgs;
+CREATE TEMP TABLE temp_orgs (
+    orgId TEXT,
+    name TEXT,
+    subnet TEXT,
+    createdAt TEXT
+);
+
+.mode csv
+.import "$TEMP" temp_orgs
+
+INSERT INTO orgs (orgId, name, subnet, createdAt)
+SELECT orgId, name, subnet, createdAt FROM temp_orgs;
+
+DROP TABLE temp_orgs;
+PRAGMA foreign_keys=ON;
+EOF
+
+    rm -f "$TEMP"
+}
+
+import_domains_csv() {
+    local csv_file="$1"
+    echo "Importing domains (schema aligned)..."
+
+    TEMP="/tmp/domains_temp.csv"
+    tail -n +2 "$csv_file" > "$TEMP"
+
+    sqlite3 "$DB_PATH" <<EOF
+PRAGMA foreign_keys=OFF;
+
+DROP TABLE IF EXISTS temp_domains;
+CREATE TEMP TABLE temp_domains (
+    domainId TEXT,
+    baseDomain TEXT
+);
+
+.mode csv
+.import "$TEMP" temp_domains
+
+INSERT INTO domains (domainId, baseDomain)
+SELECT domainId, baseDomain FROM temp_domains;
+
+DROP TABLE temp_domains;
+PRAGMA foreign_keys=ON;
+EOF
+
+    rm -f "$TEMP"
+}
+
 # Special function for sites table
 import_sites_csv() {
     local csv_file="$1"
+    echo "Importing sites..."
 
-    # Create a temporary CSV file without header
-    TEMP_CSV="/tmp/sites_temp.csv"
-    tail -n +2 "$csv_file" > "$TEMP_CSV"
+    TEMP="/tmp/sites_temp.csv"
+    tail -n +2 "$csv_file" > "$TEMP"
 
-    # Create a temporary table to import CSV data
     sqlite3 "$DB_PATH" <<EOF
+PRAGMA foreign_keys=OFF;
+
+DROP TABLE IF EXISTS temp_sites;
 CREATE TEMP TABLE temp_sites (
     siteId TEXT,
     orgId TEXT,
@@ -309,11 +378,12 @@ CREATE TEMP TABLE temp_sites (
     publicKey TEXT,
     lastHolePunch TEXT,
     listenPort TEXT,
-    dockerSocketEnabled TEXT
+    dockerSocketEnabled TEXT,
+    remoteSubnets TEXT
 );
 
 .mode csv
-.import "$TEMP_CSV" temp_sites
+.import "$TEMP" temp_sites
 
 INSERT INTO sites (
     siteId, orgId, niceId, exitNode, name, pubKey, subnet, bytesIn, bytesOut,
@@ -321,32 +391,32 @@ INSERT INTO sites (
     lastHolePunch, listenPort, dockerSocketEnabled, remoteSubnets
 )
 SELECT
-    CASE WHEN siteId = '' THEN NULL ELSE CAST(siteId AS INTEGER) END,
+    siteId,
     orgId,
-    CASE WHEN niceId = '' OR niceId IS NULL THEN 'site-' || siteId ELSE niceId END,
-    CASE WHEN exitNode = '' THEN NULL ELSE CAST(exitNode AS INTEGER) END,
+    niceId,
+    exitNode,
     name,
-    CASE WHEN pubKey = '' THEN NULL ELSE pubKey END,
-    CASE WHEN subnet = '' THEN NULL ELSE subnet END,
-    CASE WHEN bytesIn = '' THEN 0 ELSE CAST(bytesIn AS INTEGER) END,
-    CASE WHEN bytesOut = '' THEN 0 ELSE CAST(bytesOut AS INTEGER) END,
-    CASE WHEN lastBandwidthUpdate = '' THEN NULL ELSE lastBandwidthUpdate END,
+    pubKey,
+    subnet,
+    bytesIn,
+    bytesOut,
+    lastBandwidthUpdate,
     type,
-    CASE WHEN online = 't' THEN 1 WHEN online = 'f' THEN 0 ELSE CAST(online AS INTEGER) END,
-    CASE WHEN address = '' THEN NULL ELSE address END,
-    CASE WHEN endpoint = '' THEN NULL ELSE endpoint END,
-    CASE WHEN publicKey = '' THEN NULL ELSE publicKey END,
-    CASE WHEN lastHolePunch = '' THEN NULL ELSE CAST(lastHolePunch AS INTEGER) END,
-    CASE WHEN listenPort = '' THEN NULL ELSE CAST(listenPort AS INTEGER) END,
-    CASE WHEN dockerSocketEnabled = 't' THEN 1 WHEN dockerSocketEnabled = 'f' THEN 0 ELSE CAST(dockerSocketEnabled AS INTEGER) END,
-    NULL as remoteSubnets
+    online,
+    address,
+    endpoint,
+    publicKey,
+    lastHolePunch,
+    listenPort,
+    dockerSocketEnabled,
+    remoteSubnets
 FROM temp_sites;
 
 DROP TABLE temp_sites;
+PRAGMA foreign_keys=ON;
 EOF
 
-    # Clean up temp file
-    rm -f "$TEMP_CSV"
+    rm -f "$TEMP"
 }
 
 # Function to generate a unique niceId
@@ -381,15 +451,18 @@ generate_nice_id() {
 }
 
 # Special function for resources table
+# Special function for site resources table
 import_resources_csv() {
     local csv_file="$1"
+    echo "Importing resources..."
 
-    # Create a temporary CSV file without header
-    TEMP_CSV="/tmp/resources_temp.csv"
-    tail -n +2 "$csv_file" > "$TEMP_CSV"
+    TEMP="/tmp/resources_temp.csv"
+    tail -n +2 "$csv_file" > "$TEMP"
 
-    # Create a temporary table to import CSV data
     sqlite3 "$DB_PATH" <<EOF
+PRAGMA foreign_keys=OFF;
+
+DROP TABLE IF EXISTS temp_resources;
 CREATE TEMP TABLE temp_resources (
     resourceId TEXT,
     resourceGuid TEXT,
@@ -413,17 +486,19 @@ CREATE TEMP TABLE temp_resources (
     setHostHeader TEXT,
     enableProxy TEXT,
     skipToIdpId TEXT,
-    headers TEXT
+    headers TEXT,
+    proxyProtocol TEXT,
+    proxyProtocolVersion TEXT
 );
 
 .mode csv
-.import "$TEMP_CSV" temp_resources
+.import "$TEMP" temp_resources
 
 INSERT INTO resources (
-    resourceId, resourceGuid, orgId, niceId, name, subdomain, fullDomain, domainId,
-    ssl, blockAccess, sso, http, protocol, proxyPort, emailWhitelistEnabled,
-    applyRules, enabled, stickySession, tlsServerName, setHostHeader, enableProxy,
-    skipToIdpId, headers
+    resourceId, resourceGuid, orgId, niceId, name, subdomain, fullDomain, domainId, ssl,
+    blockAccess, sso, http, protocol, proxyPort, emailWhitelistEnabled, applyRules,
+    enabled, stickySession, tlsServerName, setHostHeader, enableProxy, skipToIdpId,
+    headers, proxyProtocol, proxyProtocolVersion
 )
 SELECT
     CASE WHEN resourceId = '' THEN NULL ELSE CAST(resourceId AS INTEGER) END,
@@ -447,89 +522,40 @@ SELECT
     CASE WHEN http = 't' THEN 1 WHEN http = 'f' THEN 0 ELSE CAST(http AS INTEGER) END,
     protocol,
     CASE WHEN proxyPort = '' THEN NULL ELSE CAST(proxyPort AS INTEGER) END,
-    CASE WHEN emailWhitelistEnabled = 't' THEN 1 WHEN emailWhitelistEnabled = 'f' THEN 0 ELSE CAST(emailWhitelistEnabled AS INTEGER) END,
+    CASE WHEN emailWhitelistEnabled = 't' THEN 1 WHEN emailWhitelistEnabled = 'f' THEN 0 ELSE CAST(emailWhitelistEnabled
+ AS INTEGER) END,
     CASE WHEN applyRules = 't' THEN 1 WHEN applyRules = 'f' THEN 0 ELSE CAST(applyRules AS INTEGER) END,
     CASE WHEN enabled = 't' THEN 1 WHEN enabled = 'f' THEN 0 ELSE CAST(enabled AS INTEGER) END,
     CASE WHEN stickySession = 't' THEN 1 WHEN stickySession = 'f' THEN 0 ELSE CAST(stickySession AS INTEGER) END,
     CASE WHEN tlsServerName = '' THEN NULL ELSE tlsServerName END,
     CASE WHEN setHostHeader = '' THEN NULL ELSE setHostHeader END,
-    CASE WHEN enableProxy = 't' THEN 1 WHEN enableProxy = 'f' THEN 0 WHEN enableProxy = '' THEN 1 ELSE CAST(enableProxy AS INTEGER) END,
+    CASE WHEN enableProxy = 't' THEN 1 WHEN enableProxy = 'f' THEN 0 WHEN enableProxy = '' THEN 1 ELSE CAST(enableProxy
+AS INTEGER) END,
     CASE WHEN skipToIdpId = '' THEN NULL ELSE CAST(skipToIdpId AS INTEGER) END,
-    CASE WHEN headers = '' THEN NULL ELSE headers END
+    CASE WHEN headers = '' THEN NULL ELSE headers END,
+    CASE WHEN proxyProtocol = '' THEN NULL ELSE proxyProtocol END,
+    CASE WHEN proxyProtocolVersion = '' THEN NULL ELSE proxyProtocolVersion END
 FROM temp_resources;
 
 DROP TABLE temp_resources;
+PRAGMA foreign_keys=ON;
 EOF
 
-    # Clean up temp file
-    rm -f "$TEMP_CSV"
-}
-
-# Special function for site resources table
-import_site_resources_csv() {
-    local csv_file="$1"
-
-    # Create a temporary CSV file without header
-    TEMP_CSV="/tmp/site_resources_temp.csv"
-    tail -n +2 "$csv_file" > "$TEMP_CSV"
-
-    # Create a temporary table to import CSV data
-    sqlite3 "$DB_PATH" <<EOF
-CREATE TEMP TABLE temp_site_resources (
-    siteResourceId TEXT,
-    siteId TEXT,
-    orgId TEXT,
-    niceId TEXT,
-    name TEXT,
-    protocol TEXT,
-    proxyPort TEXT,
-    destinationPort TEXT,
-    destinationIp TEXT,
-    enabled TEXT
-);
-
-.mode csv
-.import "$TEMP_CSV" temp_site_resources
-
-INSERT INTO siteResources (
-    siteResourceId, siteId, orgId, niceId, name, protocol, proxyPort, destinationPort, destinationIp, enabled
-)
-SELECT
-    CASE WHEN siteResourceId = '' THEN NULL ELSE CAST(siteResourceId AS INTEGER) END,
-    CASE WHEN siteId = '' THEN NULL ELSE CAST(siteId AS INTEGER) END,
-    orgId,
-    CASE WHEN niceId = '' OR niceId IS NULL THEN 'site-resource-' || siteResourceId ELSE niceId END,
-    name,
-    protocol,
-    CASE WHEN proxyPort = '' THEN NULL ELSE CAST(proxyPort AS INTEGER) END,
-    CASE WHEN destinationPort = '' THEN NULL ELSE CAST(destinationPort AS INTEGER) END,
-    destinationIp,
-    CASE WHEN enabled = 't' THEN 1 WHEN enabled = 'f' THEN 0 ELSE CAST(enabled AS INTEGER) END
-FROM temp_site_resources;
-
-DROP TABLE temp_site_resources;
-EOF
-
-    # Clean up temp file
-    rm -f "$TEMP_CSV"
+    rm -f "$TEMP"
 }
 
 # Special function for targets table
 import_targets_csv() {
     local csv_file="$1"
+    echo "Importing targets..."
 
-    # Create a temporary CSV file without header
-    TEMP_CSV="/tmp/targets_temp.csv"
-    tail -n +2 "$csv_file" > "$TEMP_CSV"
+    TEMP="/tmp/targets_temp.csv"
+    tail -n +2 "$csv_file" > "$TEMP"
 
-    # Get the first site ID to use as default for targets that don't have siteId
-    FIRST_SITE_ID=$(sqlite3 "$DB_PATH" "SELECT siteId FROM sites LIMIT 1;")
-    if [ -z "$FIRST_SITE_ID" ]; then
-        FIRST_SITE_ID=1
-    fi
-
-    # Create a temporary table to import CSV data
     sqlite3 "$DB_PATH" <<EOF
+PRAGMA foreign_keys=OFF;
+
+DROP TABLE IF EXISTS temp_targets;
 CREATE TEMP TABLE temp_targets (
     targetId TEXT,
     resourceId TEXT,
@@ -540,33 +566,29 @@ CREATE TEMP TABLE temp_targets (
     internalPort TEXT,
     enabled TEXT,
     path TEXT,
-    pathMatchType TEXT
+    pathMatchType TEXT,
+    rewritePath TEXT,
+    rewritePathType TEXT,
+    priority TEXT
 );
 
 .mode csv
-.import "$TEMP_CSV" temp_targets
+.import "$TEMP" temp_targets
 
 INSERT INTO targets (
-    targetId, resourceId, siteId, ip, method, port, internalPort, enabled, path, pathMatchType
+    targetId, resourceId, siteId, ip, method, port, internalPort, enabled,
+    path, pathMatchType, rewritePath, rewritePathType
 )
 SELECT
-    CASE WHEN targetId = '' THEN NULL ELSE CAST(targetId AS INTEGER) END,
-    CASE WHEN resourceId = '' THEN NULL ELSE CAST(resourceId AS INTEGER) END,
-    CASE WHEN siteId = '' OR siteId IS NULL THEN $FIRST_SITE_ID ELSE CAST(siteId AS INTEGER) END,
-    ip,
-    CASE WHEN method = '' THEN NULL ELSE method END,
-    CASE WHEN port = '' THEN NULL ELSE CAST(port AS INTEGER) END,
-    CASE WHEN internalPort = '' THEN NULL ELSE CAST(internalPort AS INTEGER) END,
-    CASE WHEN enabled = 't' THEN 1 WHEN enabled = 'f' THEN 0 ELSE CAST(enabled AS INTEGER) END,
-    CASE WHEN path = '' THEN NULL ELSE path END,
-    CASE WHEN pathMatchType = '' THEN NULL ELSE pathMatchType END
+    targetId, resourceId, siteId, ip, method, port, internalPort, enabled,
+    path, pathMatchType, rewritePath, rewritePathType
 FROM temp_targets;
 
 DROP TABLE temp_targets;
+PRAGMA foreign_keys=ON;
 EOF
 
-    # Clean up temp file
-    rm -f "$TEMP_CSV"
+    rm -f "$TEMP"
 }
 
 # Special function for roles table
@@ -596,7 +618,8 @@ INSERT INTO roles (
 SELECT
     CASE WHEN roleId = '' THEN NULL ELSE CAST(roleId AS INTEGER) END,
     orgId,
-    CASE WHEN isAdmin = 't' THEN 1 WHEN isAdmin = 'f' THEN 0 WHEN isAdmin = '' THEN NULL ELSE CAST(isAdmin AS INTEGER) END,
+    CASE WHEN isAdmin = 't' THEN 1 WHEN isAdmin = 'f' THEN 0 WHEN isAdmin = '' THEN NULL ELSE CAST(isAdmin AS INTEGER) E
+ND,
     name,
     CASE WHEN description = '' THEN NULL ELSE description END
 FROM temp_roles;
@@ -688,7 +711,8 @@ if [[ "$USER_COUNT" -gt 0 ]]; then
     fi
 else
     echo "No users found in database. Please create a user first using:"
-    echo "docker exec pangolin pangctl set-admin-credentials --email \"admin@mcpgateway.online\" --password \"Mcpgateway123q!\""
+    echo "docker exec pangolin pangctl set-admin-credentials --email \"admin@mcpgateway.online\" --password \"Mcpgateway
+123q!\""
     echo "Then run this script again."
 fi
 

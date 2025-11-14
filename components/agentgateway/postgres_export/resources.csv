@@ -1,6 +1,6 @@
-resourceId,resourceGuid,orgId,niceId,name,subdomain,fullDomain,domainId,ssl,blockAccess,sso,http,protocol,proxyPort,emailWhitelistEnabled,applyRules,enabled,stickySession,tlsServerName,setHostHeader,enableProxy,skipToIdpId,headers
-1,,admin,middleware-manager,middleware-manager,middleware-manager,middleware-manager.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,
-2,,admin,traefik-dashboard,traefik,traefik,traefik.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,
-4,,admin,chatkit-embed,chatkit,chat,chat.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,
-5,,admin,logs-viewer,logs,logs,logs.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,
-6,,admin,idp,idp,idp,idp.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,
+resourceId,resourceGuid,orgId,niceId,name,subdomain,fullDomain,domainId,ssl,blockAccess,sso,http,protocol,proxyPort,emailWhitelistEnabled,applyRules,enabled,stickySession,tlsServerName,setHostHeader,enableProxy,skipToIdpId,headers,proxyProtocol,proxyProtocolVersion
+1,,admin,middleware-manager,middleware-manager,middleware-manager,middleware-manager.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,
+2,,admin,traefik-dashboard,traefik,traefik,traefik.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,
+4,,admin,nlweb-app,nlweb,nlweb,nlweb.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,
+5,,admin,logs-viewer,logs,logs,logs.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,
+6,,admin,idp,idp,idp.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,

@@ -1,2 +1,2 @@
-orgId,name,subnet,createdAt,settings
-admin,admin,100.90.128.0/24,,
+orgId,name,subnet,createdAt
+admin,admin,100.90.128.0/24,
