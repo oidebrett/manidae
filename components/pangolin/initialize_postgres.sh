@@ -1,18 +1,24 @@
 #!/bin/bash
+# Updated initialize_postgres.sh
+# - Matches SQLite behavior for missing values and booleans (NULL conversion, t/f -> boolean)
+# - Auto-generates resourceGuid when blank (uuid_generate_v4())
+# - Uses staging temp tables (text columns) to accept raw CSV values, then inserts into typed tables with safe casts
+# - Keeps component-based filtering for resources/targets/roleResources
+# - Does NOT reshape CSV columns (user chose option B): CSV header must match DB column names
+set -euo pipefail
 
-# Import CSV data into PostgreSQL
-set -e
-
-# Load environment variables from .env file
+# Load environment variables from .env if present
 if [ -f .env ]; then
-  export $(grep -v '^#' .env | xargs)
+  set -a
+  source .env
+  set +a
 fi
 
-# Determine which psql to use
+# Determine psql location or install client
 if [[ -x /usr/bin/psql ]]; then
   PSQL="/usr/bin/psql"
 else
-  echo "psql executable not found, installing postgresql-client..."
+  echo "psql not found, installing postgresql-client..."
   apt-get update -qq && apt-get install -y postgresql-client -qq
   PSQL="/usr/bin/psql"
   if [[ ! -x $PSQL ]]; then
@@ -25,7 +31,7 @@ PG_CONTAINER_NAME=${POSTGRES_HOST:-pangolin-postgres}
 PG_IP=$(docker network inspect manidae 2>/dev/null | \
     awk "/\"Name\": \"$PG_CONTAINER_NAME\"/,/IPv4Address/" | \
     grep '"IPv4Address"' | \
-    sed -E 's/.*"IPv4Address": "([^/]+)\/.*",/\1/')
+    sed -E 's/.*"IPv4Address": "([^/]+)\/.*",/\1/' || true)
 
 if [ -z "$PG_IP" ]; then
     echo "Error: Could not find IP address for container '$PG_CONTAINER_NAME'"
@@ -35,28 +41,20 @@ fi
 echo "PostgreSQL container IP: $PG_IP"
 
 EXPORT_DIR="${1:-./postgres_export}"
-PG_HOST=$PG_IP
-PG_PORT="5432"
-PG_USER=$POSTGRES_USER
-PG_PASS=$POSTGRES_PASSWORD
-PG_DB="postgres"
+PG_HOST="$PG_IP"
+PG_PORT="${POSTGRES_PORT:-5432}"
+PG_USER="${POSTGRES_USER:-postgres}"
+PG_PASS="${POSTGRES_PASSWORD:-postgres}"
+PG_DB="${POSTGRES_DB:-postgres}"
 
-echo "Creating PostgreSQL schema..."
+echo "Using PG_HOST=$PG_HOST PG_PORT=$PG_PORT PG_USER=$PG_USER PG_DB=$PG_DB"
+echo "CSV export dir: $EXPORT_DIR"
 
-# Function to create PostgreSQL database structure
+# --- SQL to create the schema (adds proxyProtocol and proxyProtocolVersion fields) ---
 create_postgres_structure() {
-    local pg_host=$PG_HOST
-    local pg_port=$PG_PORT
-    local pg_user=$PG_USER
-    local pg_pass=$PG_PASS
-    local pg_db=$PG_DB
+  PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d postgres -c "CREATE DATABASE $PG_DB;" 2>/dev/null || true
 
-    # Create database if it doesn't exist
-    PGPASSWORD="$pg_pass" $PSQL -h "$pg_host" -p "$pg_port" -U "$pg_user" -d postgres -c "CREATE DATABASE $PG_DB;" 2>/dev/null || true
-
-    # Create Pangolin tables based on the actual schema
-    PGPASSWORD="$pg_pass" $PSQL -h "$pg_host" -p "$pg_port" -U "$pg_user" -d "$pg_db" <<'EOF'
--- Enable extensions
+  PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" <<'EOF'
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Domains table
@@ -119,7 +117,7 @@ CREATE TABLE IF NOT EXISTS sites (
     "remoteSubnets" TEXT
 );
 
--- Resources table
+-- Resources table (adds proxyProtocol and proxyProtocolVersion)
 CREATE TABLE IF NOT EXISTS resources (
     "resourceId" SERIAL PRIMARY KEY,
     "resourceGuid" TEXT NOT NULL DEFAULT 'PLACEHOLDER',
@@ -143,10 +141,12 @@ CREATE TABLE IF NOT EXISTS resources (
     "setHostHeader" TEXT,
     "enableProxy" BOOLEAN DEFAULT TRUE,
     "skipToIdpId" INTEGER REFERENCES idp("idpId") ON DELETE CASCADE,
-    headers TEXT
+    headers TEXT,
+    proxyProtocol TEXT,
+    proxyProtocolVersion TEXT
 );
 
--- Site Resources table (new in v1.9)
+-- Site Resources table
 CREATE TABLE IF NOT EXISTS "siteResources" (
     "siteResourceId" SERIAL PRIMARY KEY,
     "siteId" INTEGER NOT NULL REFERENCES sites("siteId") ON DELETE CASCADE,
@@ -171,7 +171,10 @@ CREATE TABLE IF NOT EXISTS targets (
     "internalPort" INTEGER,
     enabled BOOLEAN NOT NULL DEFAULT TRUE,
     path TEXT,
-    "pathMatchType" TEXT
+    "pathMatchType" TEXT,
+    "rewritePath" TEXT,
+    "rewritePathType" TEXT,
+    priority INTEGER
 );
 
 -- Identity providers table
@@ -233,7 +236,7 @@ CREATE TABLE IF NOT EXISTS "newtSession" (
     "expiresAt" BIGINT NOT NULL
 );
 
--- Setup tokens table (new in v1.9)
+-- Setup tokens table
 CREATE TABLE IF NOT EXISTS "setupTokens" (
     "tokenId" TEXT PRIMARY KEY NOT NULL,
     token TEXT NOT NULL,
@@ -566,7 +569,7 @@ CREATE TABLE IF NOT EXISTS "webauthnChallenge" (
     "expiresAt" bigint NOT NULL
 );
 
--- Create indexes for better performance
+-- Indexes
 CREATE INDEX IF NOT EXISTS idx_sites_org_id ON sites("orgId");
 CREATE INDEX IF NOT EXISTS idx_resources_org_id ON resources("orgId");
 CREATE INDEX IF NOT EXISTS idx_targets_resource_id ON targets("resourceId");
@@ -579,102 +582,21 @@ CREATE INDEX IF NOT EXISTS idx_newt_site_id ON newt("siteId");
 CREATE INDEX IF NOT EXISTS idx_user_orgs_user_id ON "userOrgs"("userId");
 CREATE INDEX IF NOT EXISTS idx_user_orgs_org_id ON "userOrgs"("orgId");
 EOF
-
 }
 
-# Start by delete all the tables that are there
+# Create schema
+create_postgres_structure
 
-#PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" <<EOF
-#DROP TABLE public."actions" CASCADE;
-#DROP TABLE public."apiKeyActions" CASCADE;
-#DROP TABLE public."apiKeyOrg" CASCADE;
-#DROP TABLE public."apiKeys" CASCADE;
-#DROP TABLE public."clientSession" CASCADE;
-#DROP TABLE public."clientSites" CASCADE;
-#DROP TABLE public."clients" CASCADE;
-#DROP TABLE public."domains" CASCADE;
-#DROP TABLE public."emailVerificationCodes" CASCADE;
-#DROP TABLE public."exitNodes" CASCADE;
-#DROP TABLE public."hostMeta" CASCADE;
-#DROP TABLE public."idp" CASCADE;
-#DROP TABLE public."idpOidcConfig" CASCADE;
-#DROP TABLE public."idpOrg" CASCADE;
-#DROP TABLE public."licenseKey" CASCADE;
-#DROP TABLE public."limits" CASCADE;
-#DROP TABLE public."newt" CASCADE;
-#DROP TABLE public."newtSession" CASCADE;
-#DROP TABLE public."olms" CASCADE;
-#DROP TABLE public."orgDomains" CASCADE;
-#DROP TABLE public."orgs" CASCADE;
-#DROP TABLE public."passwordResetTokens" CASCADE;
-#DROP TABLE public."resourceAccessToken" CASCADE;
-#DROP TABLE public."resourceOtp" CASCADE;
-#DROP TABLE public."resourcePassword" CASCADE;
-#DROP TABLE public."resourcePincode" CASCADE;
-#DROP TABLE public."resourceRules" CASCADE;
-#DROP TABLE public."resourceSessions" CASCADE;
-#DROP TABLE public."resourceWhitelist" CASCADE;
-#DROP TABLE public."resources" CASCADE;
-#DROP TABLE public."roleActions" CASCADE;
-#DROP TABLE public."roleClients" CASCADE;
-#DROP TABLE public."roleResources" CASCADE;
-#DROP TABLE public."roleSites" CASCADE;
-#DROP TABLE public."roles" CASCADE;
-#DROP TABLE public."session" CASCADE;
-#DROP TABLE public."sites" CASCADE;
-#DROP TABLE public."supporterKey" CASCADE;
-#DROP TABLE public."targets" CASCADE;
-#DROP TABLE public."twoFactorBackupCodes" CASCADE;
-#DROP TABLE public."user" CASCADE;
-#DROP TABLE public."userActions" CASCADE;
-#DROP TABLE public."userClients" CASCADE;
-#DROP TABLE public."userInvites" CASCADE;
-#DROP TABLE public."userOrgs" CASCADE;
-#DROP TABLE public."userResources" CASCADE;
-#DROP TABLE public."userSites" CASCADE;
-#DROP TABLE public."webauthnChallenge" CASCADE;
-#DROP TABLE public."webauthnCredentials" CASCADE;
-#EOF
-
-# Create PostgreSQL structure
-create_postgres_structure "$PG_HOST" "$PG_PORT" "$PG_USER" "$PG_PASS" "$PG_DB"
-
-# Function to detect if pangolin+ is being used
+# Helper: check if a component exists
 is_pangolin_plus() {
-    # Check COMPONENTS_CSV first, then fall back to COMPONENTS
     local components_list="${COMPONENTS_CSV:-${COMPONENTS:-}}"
     case "$components_list" in
         *"pangolin+"*) return 0 ;;
         *) return 1 ;;
     esac
 }
-
-# Function to detect if AI components (nlweb/komodo/agentgateway) are being used
-is_pangolin_plus_ai() {
-    # Check COMPONENTS_CSV first, then fall back to COMPONENTS
-    local components_list="${COMPONENTS_CSV:-${COMPONENTS:-}}"
-    case "$components_list" in
-        *"nlweb"*|*"komodo"*|*"agentgateway"*) return 0 ;;
-    esac
-
-    # If neither COMPONENTS_CSV nor COMPONENTS is set, try to detect from CSV files
-    if [ -z "$components_list" ]; then
-        # Check if resources.csv contains AI-specific resources
-        if [ -f "${EXPORT_DIR:-./postgres_export}/resources.csv" ]; then
-            # Look for chatkit-embed (AgentGateway), nlweb, or komodo resources
-            if grep -q "chatkit-embed\|nlweb\|komodo-core" "${EXPORT_DIR:-./postgres_export}/resources.csv"; then
-                return 0
-            fi
-        fi
-    fi
-
-    return 1
-}
-
-# Function to check if a specific component is included
 has_component() {
     local component="$1"
-    # Check COMPONENTS_CSV first, then fall back to COMPONENTS
     local components_list="${COMPONENTS_CSV:-${COMPONENTS:-}}"
     case "$components_list" in
         *"$component"*) return 0 ;;
@@ -682,39 +604,24 @@ has_component() {
     esac
 }
 
-# Function to get resource IDs that should be included based on components
+# Which resource IDs to include (same logic as sqlite script)
 get_included_resource_ids() {
-    local resource_ids=""
-
-    # Always include middleware-manager (1) for pangolin deployments
-    resource_ids="1"
-
-    # Include traefik-dashboard (2) and logs-viewer (5) if traefik-log-dashboard component is present
+    local resource_ids="1"
     if has_component "traefik-log-dashboard"; then
         resource_ids="$resource_ids,2,5"
     fi
-
-    # Include nlweb-app (4) and nlweb-crawler (7) if nlweb component is present
     if has_component "nlweb"; then
         resource_ids="$resource_ids,4,7"
     fi
-
-    # Include chatkit-embed (4) if agentgateway component is present
-    if has_component "agentgateway"; then
+    if has_component "agentgateway" || has_component "openai-chatkit"; then
         resource_ids="$resource_ids,4"
     fi
-
-    # Include idp (6) if mcpauth component is present
     if has_component "mcpauth"; then
         resource_ids="$resource_ids,6"
     fi
-
-    # Note: komodo-core (3) is intentionally excluded from all deployments
-
     echo "$resource_ids"
 }
 
-# Function to filter CSV data based on deployment type and components
 filter_csv_for_deployment() {
     local input_csv="$1"
     local output_csv="$2"
@@ -725,71 +632,199 @@ filter_csv_for_deployment() {
         return 1
     fi
 
-    # Get the list of resource IDs that should be included based on components
-    local included_ids=$(get_included_resource_ids)
+    local included_ids
+    included_ids="$(get_included_resource_ids)"
     echo "Including resources based on components: $included_ids"
-
-    # Convert comma-separated list to regex pattern
-    local id_pattern=$(echo "$included_ids" | sed 's/,/|/g')
+    local id_pattern
+    id_pattern=$(echo "$included_ids" | sed 's/,/|/g')
 
     case "$table_name" in
         "resources")
-            # Include only resources that match the component selection
-            head -n 1 "$input_csv" > "$output_csv"  # Copy header
+            head -n 1 "$input_csv" > "$output_csv"
             grep -E "^($id_pattern)," "$input_csv" >> "$output_csv" 2>/dev/null || true
             ;;
         "targets")
-            # Include only targets that link to included resources
-            head -n 1 "$input_csv" > "$output_csv"  # Copy header
+            head -n 1 "$input_csv" > "$output_csv"
             grep -E "^[0-9]+,($id_pattern)," "$input_csv" >> "$output_csv" 2>/dev/null || true
             ;;
         "roleResources")
-            # Include only roleResources that link to included resources
-            head -n 1 "$input_csv" > "$output_csv"  # Copy header
+            head -n 1 "$input_csv" > "$output_csv"
             grep -E "^[0-9]+,($id_pattern)$" "$input_csv" >> "$output_csv" 2>/dev/null || true
             ;;
         *)
-            # For other tables, copy as-is
             cp "$input_csv" "$output_csv"
             ;;
     esac
 }
 
-# Detect and display deployment type
-echo "Detecting deployment type..."
-echo "COMPONENTS_CSV: ${COMPONENTS_CSV:-not set}"
-echo "COMPONENTS: ${COMPONENTS:-not set}"
-echo "Using components: ${COMPONENTS_CSV:-${COMPONENTS:-none}}"
+# Build a function to import any CSV via staging-as-text then cast into typed table
+import_csv_with_casts() {
+    local table="$1"
+    local csv_file="$2"
 
-# Display which components are detected
-echo "🔍 Component analysis:"
-echo "  - middleware-manager: always included"
-if has_component "traefik-log-dashboard"; then
-    echo "  - traefik-log-dashboard: ✓ (includes traefik dashboard and logs viewer)"
-else
-    echo "  - traefik-log-dashboard: ✗"
-fi
-if has_component "nlweb"; then
-    echo "  - nlweb: ✓ (includes nlweb app and crawler)"
-else
-    echo "  - nlweb: ✗"
-fi
-if has_component "mcpauth"; then
-    echo "  - mcpauth: ✓ (includes identity provider)"
-else
-    echo "  - mcpauth: ✗"
-fi
-echo "  - komodo: ✗ (removed from all deployments)"
+    if [[ ! -f "$csv_file" ]]; then
+        echo "Skipped $table (file missing: $csv_file)"
+        return 0
+    fi
 
-# Display deployment type
-if has_component "nlweb" && has_component "mcpauth"; then
-    echo "🤖 Deployment type: Pangolin+AI (nlweb + mcpauth components)"
-elif is_pangolin_plus; then
-    echo "🛡️ Deployment type: Pangolin+ (enhanced security)"
-else
-    echo "📦 Deployment type: Standard Pangolin"
-fi
+    if [[ $(wc -l < "$csv_file") -le 1 ]]; then
+        echo "Skipped $table (file empty or header only)"
+        return 0
+    fi
 
+    echo "==> Importing $table from $csv_file"
+
+    # Read header and build temp table DDL
+    HEADER_LINE=$(head -n 1 "$csv_file")
+    # Split header into an array of column names while preserving quoted names
+    # Convert header into newline-separated, then iterate
+    IFS=',' read -r -a HEADER_ARR <<< "$HEADER_LINE"
+
+    # Build CREATE TEMP TABLE statement with each header column typed as text
+    TEMP_TABLE="temp_import_${table}"
+    CREATE_SQL="CREATE TEMP TABLE \"${TEMP_TABLE}\" ("
+    first=true
+    for rawcol in "${HEADER_ARR[@]}"; do
+        # Trim whitespace and any surrounding quotes
+        col=$(echo "$rawcol" | sed -e 's/^ *//;s/ *$//' -e 's/^"//;s/"$//')
+        # Escape double quotes in column name
+        col_esc=$(printf '%s' "$col" | sed 's/"/""/g')
+        if $first; then
+            CREATE_SQL="${CREATE_SQL}\"${col_esc}\" text"
+            first=false
+        else
+            CREATE_SQL="${CREATE_SQL}, \"${col_esc}\" text"
+        fi
+    done
+    CREATE_SQL="${CREATE_SQL});"
+
+    # Create temp table
+    PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -v ON_ERROR_STOP=1 -q -c "$CREATE_SQL"
+
+    # Copy CSV into temp table (text columns tolerate empty strings)
+    PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "\COPY \"${TEMP_TABLE}\" FROM '$csv_file' WITH CSV HEADER;"
+
+    # Now we need to build INSERT ... SELECT ... where we cast based on target table column types.
+    # Get target table's columns and types from information_schema
+    # Note: we query by table_name as-is (case sensitive), so this requires the table name to match exactly as created.
+    mapfile -t COLUMN_INFO < <(PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -t -A -c \
+        "SELECT column_name || '|' || data_type || '|' || ordinal_position
+         FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = '$table'
+         ORDER BY ordinal_position;")
+
+    if [[ ${#COLUMN_INFO[@]} -eq 0 ]]; then
+        # If we didn't find typed columns (maybe table doesn't exist or different case), do a fallback: direct copy
+        echo "  Warning: Could not find information_schema entry for table '$table'. Falling back to direct COPY (may fail on empty numeric/boolean fields)."
+        PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "\COPY \"$table\" FROM '$csv_file' WITH CSV HEADER;"
+        # Drop temp table
+        PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "DROP TABLE IF EXISTS \"${TEMP_TABLE}\";"
+        return 0
+    fi
+
+    # Build lists to use in INSERT
+    TARGET_COLS=()
+    SELECT_EXPR=()
+
+    # Build a map from header names -> typed expressions
+    # For each target column (positionally), if header present map header->type
+    # We'll assume CSV header columns and table columns are in the same order (user choice B)
+    # So we map by ordinal position.
+    for idx in "${!COLUMN_INFO[@]}"; do
+        row="${COLUMN_INFO[$idx]}"
+        colname=$(cut -d'|' -f1 <<< "$row")
+        dtype=$(cut -d'|' -f2 <<< "$row")
+        pos=$(cut -d'|' -f3 <<< "$row")
+        # Header column at same ordinal (pos) must exist in HEADER_ARR
+        # Note pos is 1-based index; bash array is 0-based
+        header_index=$((pos - 1))
+        if (( header_index < ${#HEADER_ARR[@]} )); then
+            raw_header="${HEADER_ARR[$header_index]}"
+            hdr=$(echo "$raw_header" | sed -e 's/^ *//;s/ *$//' -e 's/^"//;s/"$//')
+        else
+            echo "  Warning: CSV header has fewer columns than target table '$table'. Column $colname will be inserted as NULL."
+            hdr=""
+        fi
+
+        # Build select expression depending on dtype
+        expr=""
+        # The temp table column reference must be quoted the same as hdr
+        if [[ -z "$hdr" ]]; then
+            expr="NULL"
+        else
+            # escape double quotes in hdr for use in SQL
+            hdr_esc=$(printf '%s' "$hdr" | sed 's/"/""/g')
+            case "$dtype" in
+                integer|smallint|bigint)
+                    # cast to integer/bigint; use NULLIF to convert empty string to NULL
+                    if [[ "$dtype" == "bigint" ]]; then
+                        expr="NULLIF(\"$hdr_esc\", '')::bigint"
+                    else
+                        expr="NULLIF(\"$hdr_esc\", '')::integer"
+                    fi
+                    ;;
+                numeric|real|double\ precision|decimal)
+                    expr="NULLIF(\"$hdr_esc\", '')::double precision"
+                    ;;
+                boolean)
+                    # Normalize t/f/true/false/1/0 -> boolean, otherwise NULL
+                    expr="(CASE WHEN lower(NULLIF(\"$hdr_esc\", '')) IN ('t','true','1') THEN true WHEN lower(NULLIF(\"$hdr_esc\", '')) IN ('f','false','0') THEN false ELSE NULL END)"
+                    ;;
+                text|character varying|character|varchar)
+                    expr="NULLIF(\"$hdr_esc\", '')"
+                    ;;
+                bigint)
+                    expr="NULLIF(\"$hdr_esc\", '')::bigint"
+                    ;;
+                timestamp without time zone|timestamp with time zone)
+                    expr="NULLIF(\"$hdr_esc\", '')::text"
+                    ;;
+                json|jsonb)
+                    expr="NULLIF(\"$hdr_esc\", '')::jsonb"
+                    ;;
+                *)
+                    # Default fallback to text (NULL for empty)
+                    expr="NULLIF(\"$hdr_esc\", '')"
+                    ;;
+            esac
+        fi
+
+        TARGET_COLS+=("\"$colname\"")
+        SELECT_EXPR+=("$expr")
+    done
+
+    # If the target is resources and resourceGuid exists, ensure empty resourceGuid becomes a generated uuid
+    # Modify SELECT_EXPR where target column is resourceGuid
+    for i in "${!TARGET_COLS[@]}"; do
+        col=${TARGET_COLS[$i]}
+        # strip surrounding quotes
+        col_unq=$(echo "$col" | sed 's/^"//;s/"$//')
+        if [[ "$col_unq" == "resourceGuid" ]]; then
+            # replace SELECT_EXPR[i] with generation logic: CASE WHEN NULLIF(...) IS NULL OR '' THEN lower(uuid_generate_v4()::text) ELSE resourceGuid END
+            # But earlier expr is NULLIF("resourceGuid",'')
+            SELECT_EXPR[$i]="(CASE WHEN NULLIF(\"resourceGuid\",'') IS NULL THEN lower(uuid_generate_v4()::text) ELSE NULLIF(\"resourceGuid\",'') END)"
+        fi
+    done
+
+    # Build final INSERT SQL
+    TARGET_COLS_CSV=$(IFS=,; echo "${TARGET_COLS[*]}")
+    SELECT_EXPR_CSV=$(IFS=,; echo "${SELECT_EXPR[*]}")
+
+    INSERT_SQL="INSERT INTO \"$table\" ($TARGET_COLS_CSV) SELECT $SELECT_EXPR_CSV FROM \"$TEMP_TABLE\";"
+
+    # Execute insert inside a transaction (to fail fast)
+    PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -v ON_ERROR_STOP=1 -q -c "BEGIN; $INSERT_SQL; COMMIT;" || {
+        echo "  Error importing into $table (insert failed). Dropping temp table and aborting."
+        PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "DROP TABLE IF EXISTS \"${TEMP_TABLE}\";"
+        exit 1
+    }
+
+    # Drop temp table
+    PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "DROP TABLE IF EXISTS \"${TEMP_TABLE}\";"
+    echo "  Imported $table successfully."
+}
+
+# Table list (same as your script)
 TABLES=(
     "domains" "orgs" "orgDomains" "exitNodes" "sites" "resources" "targets"
     "idp" "user" "newt" "twoFactorBackupCodes" "session" "newtSession"
@@ -803,54 +838,63 @@ TABLES=(
     "webauthnChallenge" "webauthnCredentials" "setupTokens" "siteResources"
 )
 
-echo "Importing CSV data into PostgreSQL database: $PG_DB"
+echo "Importing CSV data into PostgreSQL database: $PG_DB (this may take a while)..."
 
 for table in "${TABLES[@]}"; do
     CSV_FILE="$EXPORT_DIR/$table.csv"
-    if [[ -f "$CSV_FILE" && $(wc -l < "$CSV_FILE") -gt 1 ]]; then
-        echo "Importing $table from $CSV_FILE"
-        PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "TRUNCATE TABLE \"$table\" RESTART IDENTITY CASCADE;"
-        
-        if [[ "$table" == "userOrgs" ]]; then
-            # Special handling for userOrgs - get the actual user ID and update CSV on the fly
-            echo "Special handling for userOrgs table - updating userId with actual system user ID"
-            ACTUAL_USER_ID=$(PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -t -c "SELECT id FROM \"user\" LIMIT 1;" | xargs)
 
-            # Create a temporary CSV with the correct userId
-            TEMP_CSV="/tmp/userOrgs_temp.csv"
-            head -n 1 "$CSV_FILE" > "$TEMP_CSV"  # Copy header
-            tail -n +2 "$CSV_FILE" | sed "s/^[^,]*/$ACTUAL_USER_ID/" >> "$TEMP_CSV"  # Replace first column (userId) with actual ID
-
-            PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "\COPY \"$table\" FROM '$TEMP_CSV' WITH CSV HEADER;"
-            rm "$TEMP_CSV"  # Clean up temp file
-        elif [[ "$table" == "resources" || "$table" == "targets" || "$table" == "roleResources" ]]; then
-            # Check if this table needs filtering for deployment type
-            FILTERED_CSV="/tmp/${table}_filtered.csv"
-            if filter_csv_for_deployment "$CSV_FILE" "$FILTERED_CSV" "$table"; then
-                PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "\COPY \"$table\" FROM '$FILTERED_CSV' WITH CSV HEADER;"
-                rm -f "$FILTERED_CSV"  # Clean up filtered file
-            else
-                echo "Failed to filter $table, skipping import"
+    if [[ "$table" == "userOrgs" ]]; then
+        # Special handling: replace userId column with actual single user id
+        if [[ -f "$CSV_FILE" && $(wc -l < "$CSV_FILE") -gt 1 ]]; then
+            echo "Special handling for userOrgs - adjusting userId to actual system user id"
+            ACTUAL_USER_ID=$(PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -t -A -c "SELECT id FROM \"user\" LIMIT 1;" | xargs || true)
+            if [[ -z "$ACTUAL_USER_ID" ]]; then
+                echo "  No user found in database; skipping userOrgs import. Create a user first."
+                continue
             fi
+            # Build temp CSV replacing first column value with actual user id (keep header)
+            TMP_USERORGS="/tmp/userOrgs_temp.csv"
+            head -n 1 "$CSV_FILE" > "$TMP_USERORGS"
+            tail -n +2 "$CSV_FILE" | sed "s/^[^,]*/$ACTUAL_USER_ID/" >> "$TMP_USERORGS"
+            # Truncate and import via staged method
+            PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "TRUNCATE TABLE \"$table\";"
+            import_csv_with_casts "$table" "$TMP_USERORGS"
+            rm -f "$TMP_USERORGS"
         else
-            # Normal import for other tables
-            PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "\COPY \"$table\" FROM '$CSV_FILE' WITH CSV HEADER;"
+            echo "Skipped $table (missing or empty)"
         fi
     else
-        echo "Skipped $table (file missing or empty)"
+        if [[ -f "$CSV_FILE" && $(wc -l < "$CSV_FILE") -gt 1 ]]; then
+            # For filterable tables, create filtered CSV first
+            if [[ "$table" == "resources" || "$table" == "targets" || "$table" == "roleResources" ]]; then
+                FILTERED_CSV="/tmp/${table}_filtered.csv"
+                if filter_csv_for_deployment "$CSV_FILE" "$FILTERED_CSV" "$table"; then
+                    PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "TRUNCATE TABLE \"$table\" RESTART IDENTITY CASCADE;"
+                    import_csv_with_casts "$table" "$FILTERED_CSV"
+                    rm -f "$FILTERED_CSV"
+                else
+                    echo "Failed to filter $table, skipping import"
+                fi
+            else
+                PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "TRUNCATE TABLE \"$table\" RESTART IDENTITY CASCADE;"
+                import_csv_with_casts "$table" "$CSV_FILE"
+            fi
+        else
+            echo "Skipped $table (file missing or empty)"
+        fi
     fi
 done
 
-echo "Updating userOrg mapping."
+echo "Updating userOrg mapping (ensure userId is consistent)..."
+PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "UPDATE \"userOrgs\" SET \"userId\" = (SELECT id FROM \"user\" LIMIT 1) WHERE (SELECT COUNT(*) FROM \"user\") > 0;"
 
-# Add this line to your script after the COPY commands:
-PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "UPDATE \"userOrgs\" SET \"userId\" = (SELECT id FROM \"user\" LIMIT 1);"
-
-#Reset Sequence After Import
-PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "SELECT setval(pg_get_serial_sequence('resources', 'resourceId'), COALESCE((SELECT MAX(\"resourceId\") FROM resources), 1), true);"
-PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "SELECT setval(pg_get_serial_sequence('targets', 'targetId'), COALESCE((SELECT MAX(\"targetId\") FROM targets), 1), true);"
-PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "SELECT setval(pg_get_serial_sequence('sites', 'siteId'), COALESCE((SELECT MAX(\"siteId\") FROM sites), 1), true);"
-PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "SELECT setval(pg_get_serial_sequence('roles', 'roleId'), COALESCE((SELECT MAX(\"roleId\") FROM roles), 1), true);"
-PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "SELECT setval(pg_get_serial_sequence('\"siteResources\"', 'siteResourceId'), COALESCE((SELECT MAX(\"siteResourceId\") FROM \"siteResources\"), 1), true);"
+echo "Resetting sequences (resources, targets, sites, roles, siteResources)..."
+PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -v ON_ERROR_STOP=1 -q <<'SQL'
+SELECT setval(pg_get_serial_sequence('resources', 'resourceId'), COALESCE((SELECT MAX("resourceId") FROM resources), 1), true);
+SELECT setval(pg_get_serial_sequence('targets', 'targetId'), COALESCE((SELECT MAX("targetId") FROM targets), 1), true);
+SELECT setval(pg_get_serial_sequence('sites', 'siteId'), COALESCE((SELECT MAX("siteId") FROM sites), 1), true);
+SELECT setval(pg_get_serial_sequence('roles', 'roleId'), COALESCE((SELECT MAX("roleId") FROM roles), 1), true);
+SELECT setval(pg_get_serial_sequence('siteResources','siteResourceId'), COALESCE((SELECT MAX("siteResourceId") FROM "siteResources"), 1), true);
+SQL
 
 echo "Import complete."

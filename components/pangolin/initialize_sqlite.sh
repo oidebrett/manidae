@@ -225,11 +225,28 @@ import_csv_to_sqlite() {
         return
     fi
 
-    if [[ $(wc -l < "$csv_file") -le 1 ]]; then
-        echo "Skipped $table_name (file empty or header only)"
+    # Debug: Inspect the file before decision
+    echo "[DEBUG] Inspecting $table_name at: $csv_file"
+    echo "[DEBUG] File size: $(stat -c%s "$csv_file" 2>/dev/null || echo 'unknown') bytes"
+    echo "[DEBUG] Line count: $(wc -l < "$csv_file" 2>/dev/null || echo 'unknown')"
+
+    echo "[DEBUG] First 5 lines (cat -A to show hidden chars):"
+    sed -n '1,5p' "$csv_file" | cat -A
+
+    # Count meaningful rows (ignores blank or comma-only rows)
+    meaningful_rows=$(awk -F',' 'NR>1 {
+        # trim whitespace from each field
+        for(i=1;i<=NF;i++){ gsub(/^[[:space:]]+|[[:space:]]+$/, "", $i) }
+        # check if any non-empty field exists
+        for(i=1;i<=NF;i++){ if($i!="") { print; exit } }
+    }' "$csv_file" | wc -l)
+
+    echo "[DEBUG] Meaningful data rows detected: $meaningful_rows"
+
+    if [[ "$meaningful_rows" -le 0 ]]; then
+        echo "[WARN] Skipping $table_name (no usable data rows detected)"
         return
     fi
-
     echo "Importing $table_name from $csv_file"
 
     # Clear existing data
@@ -309,7 +326,8 @@ CREATE TEMP TABLE temp_sites (
     publicKey TEXT,
     lastHolePunch TEXT,
     listenPort TEXT,
-    dockerSocketEnabled TEXT
+    dockerSocketEnabled TEXT,
+    remoteSubnets TEXT
 );
 
 .mode csv
@@ -413,7 +431,9 @@ CREATE TEMP TABLE temp_resources (
     setHostHeader TEXT,
     enableProxy TEXT,
     skipToIdpId TEXT,
-    headers TEXT
+    headers TEXT,
+    proxyProtocol TEXT,
+    proxyProtocolVersion TEXT
 );
 
 .mode csv
@@ -423,7 +443,7 @@ INSERT INTO resources (
     resourceId, resourceGuid, orgId, niceId, name, subdomain, fullDomain, domainId,
     ssl, blockAccess, sso, http, protocol, proxyPort, emailWhitelistEnabled,
     applyRules, enabled, stickySession, tlsServerName, setHostHeader, enableProxy,
-    skipToIdpId, headers
+    skipToIdpId, headers, proxyProtocol, proxyProtocolVersion
 )
 SELECT
     CASE WHEN resourceId = '' THEN NULL ELSE CAST(resourceId AS INTEGER) END,
@@ -455,7 +475,9 @@ SELECT
     CASE WHEN setHostHeader = '' THEN NULL ELSE setHostHeader END,
     CASE WHEN enableProxy = 't' THEN 1 WHEN enableProxy = 'f' THEN 0 WHEN enableProxy = '' THEN 1 ELSE CAST(enableProxy AS INTEGER) END,
     CASE WHEN skipToIdpId = '' THEN NULL ELSE CAST(skipToIdpId AS INTEGER) END,
-    CASE WHEN headers = '' THEN NULL ELSE headers END
+    CASE WHEN headers = '' THEN NULL ELSE headers END,
+    CASE WHEN proxyProtocol = '' THEN NULL ELSE proxyProtocol END,
+    CASE WHEN proxyProtocolVersion = '' THEN NULL ELSE proxyProtocolVersion END
 FROM temp_resources;
 
 DROP TABLE temp_resources;
@@ -518,18 +540,15 @@ EOF
 import_targets_csv() {
     local csv_file="$1"
 
-    # Create a temporary CSV file without header
-    TEMP_CSV="/tmp/targets_temp.csv"
-    tail -n +2 "$csv_file" > "$TEMP_CSV"
+    echo "Importing targets..."
 
-    # Get the first site ID to use as default for targets that don't have siteId
-    FIRST_SITE_ID=$(sqlite3 "$DB_PATH" "SELECT siteId FROM sites LIMIT 1;")
-    if [ -z "$FIRST_SITE_ID" ]; then
-        FIRST_SITE_ID=1
-    fi
+    TEMP="/tmp/targets_temp.csv"
+    tail -n +2 "$csv_file" > "$TEMP"
 
-    # Create a temporary table to import CSV data
     sqlite3 "$DB_PATH" <<EOF
+PRAGMA foreign_keys=OFF;
+
+DROP TABLE IF EXISTS temp_targets;
 CREATE TEMP TABLE temp_targets (
     targetId TEXT,
     resourceId TEXT,
@@ -540,33 +559,38 @@ CREATE TEMP TABLE temp_targets (
     internalPort TEXT,
     enabled TEXT,
     path TEXT,
-    pathMatchType TEXT
+    pathMatchType TEXT,
+    rewritePath TEXT,
+    rewritePathType TEXT
 );
 
 .mode csv
-.import "$TEMP_CSV" temp_targets
+.import "$TEMP" temp_targets
 
 INSERT INTO targets (
-    targetId, resourceId, siteId, ip, method, port, internalPort, enabled, path, pathMatchType
+    targetId, resourceId, siteId, ip, method, port, internalPort, enabled,
+    path, pathMatchType, rewritePath, rewritePathType
 )
 SELECT
     CASE WHEN targetId = '' THEN NULL ELSE CAST(targetId AS INTEGER) END,
     CASE WHEN resourceId = '' THEN NULL ELSE CAST(resourceId AS INTEGER) END,
-    CASE WHEN siteId = '' OR siteId IS NULL THEN $FIRST_SITE_ID ELSE CAST(siteId AS INTEGER) END,
+    CASE WHEN siteId = '' THEN NULL ELSE CAST(siteId AS INTEGER) END,
     ip,
     CASE WHEN method = '' THEN NULL ELSE method END,
     CASE WHEN port = '' THEN NULL ELSE CAST(port AS INTEGER) END,
     CASE WHEN internalPort = '' THEN NULL ELSE CAST(internalPort AS INTEGER) END,
     CASE WHEN enabled = 't' THEN 1 WHEN enabled = 'f' THEN 0 ELSE CAST(enabled AS INTEGER) END,
     CASE WHEN path = '' THEN NULL ELSE path END,
-    CASE WHEN pathMatchType = '' THEN NULL ELSE pathMatchType END
+    CASE WHEN pathMatchType = '' THEN NULL ELSE pathMatchType END,
+    CASE WHEN rewritePath = '' THEN NULL ELSE rewritePath END,
+    CASE WHEN rewritePathType = '' THEN NULL ELSE rewritePathType END
 FROM temp_targets;
 
 DROP TABLE temp_targets;
+PRAGMA foreign_keys=ON;
 EOF
 
-    # Clean up temp file
-    rm -f "$TEMP_CSV"
+    rm -f "$TEMP"
 }
 
 # Special function for roles table
@@ -626,6 +650,7 @@ TABLES=(
 )
 
 echo "Importing CSV data into SQLite database: $DB_PATH"
+
 
 # Import CSV data for each table
 for table in "${TABLES[@]}"; do
