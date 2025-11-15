@@ -281,24 +281,6 @@ EOF
     rm -f "$TEMP_CSV"
 }
 
-wait_for_csv() {
-    local f="$1"
-    local max_wait=30
-    local waited=0
-
-    while [[ (! -f "$f" || $(wc -l < "$f") -le 1) && $waited -lt $max_wait ]]; do
-        echo "[WAIT] Waiting for $f to be populated..."
-        sleep 1
-        waited=$((waited+1))
-    done
-
-    if [[ ! -f "$f" || $(wc -l < "$f") -le 1 ]]; then
-        echo "[WARN] $f still empty after $max_wait seconds — continuing anyway."
-    else
-        echo "[OK] $f ready after $waited seconds."
-    fi
-}
-
 # Special function for sites table
 import_sites_csv() {
     local csv_file="$1"
@@ -697,7 +679,6 @@ EOF
             fi
         else
             # Normal import for other tables
-            wait_for_csv "$CSV_FILE"
             import_csv_to_sqlite "$table" "$CSV_FILE"
         fi
     fi
