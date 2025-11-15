@@ -233,9 +233,6 @@ import_csv_to_sqlite() {
     echo "[DEBUG] First 5 lines (cat -A to show hidden chars):"
     sed -n '1,5p' "$csv_file" | cat -A
 
-    echo "[DEBUG] Hex preview:"
-    head -c 120 "$csv_file" | hexdump -C
-
     # Count meaningful rows (ignores blank or comma-only rows)
     meaningful_rows=$(awk -F',' 'NR>1 {
         # trim whitespace from each field
