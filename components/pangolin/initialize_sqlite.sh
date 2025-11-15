@@ -225,11 +225,31 @@ import_csv_to_sqlite() {
         return
     fi
 
-    if [[ $(wc -l < "$csv_file") -le 1 ]]; then
-        echo "Skipped $table_name (file empty or header only)"
+    # Debug: Inspect the file before decision
+    echo "[DEBUG] Inspecting $table_name at: $csv_file"
+    echo "[DEBUG] File size: $(stat -c%s "$csv_file" 2>/dev/null || echo 'unknown') bytes"
+    echo "[DEBUG] Line count: $(wc -l < "$csv_file" 2>/dev/null || echo 'unknown')"
+
+    echo "[DEBUG] First 5 lines (cat -A to show hidden chars):"
+    sed -n '1,5p' "$csv_file" | cat -A
+
+    echo "[DEBUG] Hex preview:"
+    head -c 120 "$csv_file" | hexdump -C
+
+    # Count meaningful rows (ignores blank or comma-only rows)
+    meaningful_rows=$(awk -F',' 'NR>1 {
+        # trim whitespace from each field
+        for(i=1;i<=NF;i++){ gsub(/^[[:space:]]+|[[:space:]]+$/, "", $i) }
+        # check if any non-empty field exists
+        for(i=1;i<=NF;i++){ if($i!="") { print; exit } }
+    }' "$csv_file" | wc -l)
+
+    echo "[DEBUG] Meaningful data rows detected: $meaningful_rows"
+
+    if [[ "$meaningful_rows" -le 0 ]]; then
+        echo "[WARN] Skipping $table_name (no usable data rows detected)"
         return
     fi
-
     echo "Importing $table_name from $csv_file"
 
     # Clear existing data
