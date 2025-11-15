@@ -3,4 +3,4 @@ resourceId,resourceGuid,orgId,niceId,name,subdomain,fullDomain,domainId,ssl,bloc
 2,,admin,traefik-dashboard,traefik,traefik,traefik.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,
 4,,admin,nlweb-app,nlweb,nlweb,nlweb.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,
 5,,admin,logs-viewer,logs,logs,logs.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,
-6,,admin,idp,idp,idp.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,
+6,,admin,idp,idp,idp,idp.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,
