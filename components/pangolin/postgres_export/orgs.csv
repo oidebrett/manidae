@@ -1,2 +1,2 @@
 orgId,name,subnet,createdAt,description,deletedAt,expiresAt,planId,billingEnabled,isSuspended
-admin,admin,100.90.128.0/24,,,,,7,0,0,
+admin,admin,100.90.128.0/24,,,,,7,0,0
