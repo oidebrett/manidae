@@ -73,7 +73,14 @@ CREATE TABLE IF NOT EXISTS orgs (
     "orgId" TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     subnet TEXT,
-    settings TEXT
+    "utilitySubnet" TEXT,
+    "createdAt" BIGINT,
+    "requireTwoFactor" BOOLEAN,
+    "maxSessionLengthHours" INTEGER,
+    "passwordExpiryDays" INTEGER,
+    "settingsLogRetentionDaysRequest" INTEGER DEFAULT 7,
+    "settingsLogRetentionDaysAccess" INTEGER DEFAULT 0,
+    "settingsLogRetentionDaysAction" INTEGER DEFAULT 0
 );
 
 -- Organization domains table
@@ -113,11 +120,10 @@ CREATE TABLE IF NOT EXISTS sites (
     "publicKey" TEXT,
     "lastHolePunch" BIGINT,
     "listenPort" INTEGER,
-    "dockerSocketEnabled" BOOLEAN NOT NULL DEFAULT TRUE,
-    "remoteSubnets" TEXT
+    "dockerSocketEnabled" BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- Resources table (adds proxyProtocol and proxyProtocolVersion)
+-- Resources table (adds proxyProtocol, proxyProtocolVersion, and maintenance mode columns)
 CREATE TABLE IF NOT EXISTS resources (
     "resourceId" SERIAL PRIMARY KEY,
     "resourceGuid" TEXT NOT NULL DEFAULT 'PLACEHOLDER',
@@ -142,8 +148,13 @@ CREATE TABLE IF NOT EXISTS resources (
     "enableProxy" BOOLEAN DEFAULT TRUE,
     "skipToIdpId" INTEGER REFERENCES idp("idpId") ON DELETE CASCADE,
     headers TEXT,
-    proxyProtocol TEXT,
-    proxyProtocolVersion TEXT
+    "proxyProtocol" BOOLEAN NOT NULL DEFAULT FALSE,
+    "proxyProtocolVersion" INTEGER DEFAULT 1,
+    "maintenanceModeEnabled" BOOLEAN NOT NULL DEFAULT FALSE,
+    "maintenanceModeType" TEXT DEFAULT 'forced',
+    "maintenanceTitle" TEXT,
+    "maintenanceMessage" TEXT,
+    "maintenanceEstimatedTime" TEXT
 );
 
 -- Site Resources table
@@ -153,11 +164,17 @@ CREATE TABLE IF NOT EXISTS "siteResources" (
     "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE,
     "niceId" TEXT NOT NULL,
     name TEXT NOT NULL,
-    protocol TEXT NOT NULL,
-    "proxyPort" INTEGER NOT NULL,
-    "destinationPort" INTEGER NOT NULL,
-    "destination" TEXT NOT NULL,
-    enabled BOOLEAN DEFAULT TRUE NOT NULL
+    mode TEXT NOT NULL DEFAULT 'proxy',
+    protocol TEXT,
+    "proxyPort" INTEGER,
+    "destinationPort" INTEGER,
+    destination TEXT,
+    enabled BOOLEAN DEFAULT TRUE NOT NULL,
+    alias TEXT,
+    "aliasAddress" TEXT,
+    "tcpPortRangeString" TEXT DEFAULT '*',
+    "udpPortRangeString" TEXT DEFAULT '*',
+    "disableIcmp" BOOLEAN DEFAULT FALSE NOT NULL
 );
 
 -- Targets table
