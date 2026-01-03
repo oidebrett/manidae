@@ -156,7 +156,7 @@ CREATE TABLE IF NOT EXISTS "siteResources" (
     protocol TEXT NOT NULL,
     "proxyPort" INTEGER NOT NULL,
     "destinationPort" INTEGER NOT NULL,
-    "destinationIp" TEXT NOT NULL,
+    "destination" TEXT NOT NULL,
     enabled BOOLEAN DEFAULT TRUE NOT NULL
 );
 

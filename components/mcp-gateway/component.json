@@ -1,0 +1,36 @@
+{
+  "name": "mcp-gateway",
+  "required_env": [],
+  "optional_env": [
+    "OPENROUTER_API_KEY",
+    "SIMULATION_MODEL",
+    "CHAT_MODEL",
+    "LANGWATCH_API_KEY",
+    "PANGOLIN_API_KEY",
+    "PANGOLIN_API_URL",
+    "PANGOLIN_ORG_ID",
+    "KOMODO_API_KEY",
+    "KOMODO_API_SECRET",
+    "KOMODO_API_URL",
+    "SKILLS_BUILDER_MODEL",
+    "NANGO_SECRET_KEY",
+    "NANGO_DEFAULT_USER_ID",
+    "NANGO_API_URL",
+    "NANGO_MCP_URL",
+    "VERCEL_TOKEN",
+    "VERCEL_TEAM_ID",
+    "VERCEL_PROJECT_ID",
+    "MCP_REGISTRY_URL",
+    "OM_API_KEY",
+    "OM_MODE",
+    "OM_TIER",
+    "OM_EMBEDDINGS",
+    "OPENAI_API_KEY",
+    "GEMINI_API_KEY",
+    "MCP_GATEWAY_SUBDOMAIN",
+    "OPENMEMORY_SUBDOMAIN",
+    "LANGWATCH_SUBDOMAIN"
+  ],
+  "description": "MCP Gateway with OpenMemory, LangWatch observability, and MCP Registry - provides AI orchestration and memory services"
+}
+

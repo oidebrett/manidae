@@ -272,6 +272,15 @@ process_html_template() {
             sed -i '/<!-- COMPONENT_CONDITIONAL_CHATKIT_START -->/,/<!-- COMPONENT_CONDITIONAL_CHATKIT_END -->/d' "$html_file"
         fi
 
+        ### MCP GATEWAY SECTION ###
+        if has_component "mcp-gateway"; then
+            echo "✅ Including MCP Gateway section in HTML"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_START -->/d; /<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_END -->/d' "$html_file"
+        else
+            echo "❌ Excluding MCP Gateway section from HTML"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_START -->/,/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_END -->/d' "$html_file"
+        fi
+
         echo "✅ HTML template processed successfully"
     else
         echo "⚠️ HTML template not found, skipping HTML processing"

@@ -223,6 +223,18 @@ process_html_template() {
         fi
         mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
 
+        # Process MCP Gateway section
+        if has_component "mcp-gateway"; then
+            echo "✅ Including MCP Gateway section in HTML"
+            # Keep the MCP Gateway section - remove the conditional markers
+            sed '/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_START -->/d; /<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
+        else
+            echo "❌ Excluding MCP Gateway section from HTML"
+            # Remove the entire MCP Gateway section
+            sed '/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_START -->/,/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
+        fi
+        mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
+
         echo "✅ HTML template processed successfully"
     else
         echo "⚠️ HTML template not found, skipping HTML processing"

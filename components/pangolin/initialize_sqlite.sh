@@ -514,7 +514,7 @@ CREATE TEMP TABLE temp_site_resources (
 .import "$TEMP_CSV" temp_site_resources
 
 INSERT INTO siteResources (
-    siteResourceId, siteId, orgId, niceId, name, protocol, proxyPort, destinationPort, destinationIp, enabled
+    siteResourceId, siteId, orgId, niceId, name, protocol, proxyPort, destinationPort, destination, enabled
 )
 SELECT
     CASE WHEN siteResourceId = '' THEN NULL ELSE CAST(siteResourceId AS INTEGER) END,
