@@ -506,7 +506,7 @@ CREATE TEMP TABLE temp_site_resources (
     protocol TEXT,
     proxyPort TEXT,
     destinationPort TEXT,
-    destinationIp TEXT,
+    destination TEXT,
     enabled TEXT
 );
 
@@ -525,7 +525,7 @@ SELECT
     protocol,
     CASE WHEN proxyPort = '' THEN NULL ELSE CAST(proxyPort AS INTEGER) END,
     CASE WHEN destinationPort = '' THEN NULL ELSE CAST(destinationPort AS INTEGER) END,
-    destinationIp,
+    destination,
     CASE WHEN enabled = 't' THEN 1 WHEN enabled = 'f' THEN 0 ELSE CAST(enabled AS INTEGER) END
 FROM temp_site_resources;
 

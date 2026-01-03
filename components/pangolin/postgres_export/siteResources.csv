@@ -1,1 +1,1 @@
-siteResourceId,siteId,orgId,niceId,name,protocol,proxyPort,destinationPort,destinationIp,enabled
+siteResourceId,siteId,orgId,niceId,name,protocol,proxyPort,destinationPort,destination,enabled
