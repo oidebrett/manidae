@@ -352,8 +352,28 @@ is_pangolin_plus() {
     esac
 }
 
+# Function to detect if mcp-gateway is included
+# When mcp-gateway is included, we disable crowdsec middleware on websecure entrypoint
+# because it can block web traffic before proper configuration
+has_mcp_gateway() {
+    case "${COMPONENTS_CSV:-}" in
+        *"mcp-gateway"*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
 # Traefik static config
 if is_pangolin_plus; then
+    # Determine if crowdsec middleware should be enabled on websecure
+    # Disable it when mcp-gateway is included to avoid blocking traffic
+    if has_mcp_gateway; then
+        CROWDSEC_ENTRYPOINT_CONFIG="      # middlewares disabled for mcp-gateway compatibility
+      #   - crowdsec@file"
+    else
+        CROWDSEC_ENTRYPOINT_CONFIG="      middlewares:
+        - crowdsec@file"
+    fi
+
     # Pangolin+ configuration with CrowdSec support
     cat > "$ROOT_HOST_DIR/config/traefik/traefik_config.yml" << EOF
 api:
@@ -411,8 +431,7 @@ entryPoints:
     http:
       tls:
         certResolver: "letsencrypt"
-      middlewares:
-        - crowdsec@file
+${CROWDSEC_ENTRYPOINT_CONFIG}
 
 serversTransport:
   insecureSkipVerify: true
