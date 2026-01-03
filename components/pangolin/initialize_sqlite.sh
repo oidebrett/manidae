@@ -714,14 +714,22 @@ EOF
         fi
     else
         # Check if this table needs filtering for deployment type
+        # Only filter if COMPONENTS_CSV or COMPONENTS is set (i.e., we have component info)
+        # If not set, assume the CSV files are already pre-filtered during setup
         if [[ "$table" == "resources" || "$table" == "targets" || "$table" == "roleResources" ]]; then
-            # Use filtered CSV for deployment-specific tables
-            FILTERED_CSV="/tmp/${table}_filtered.csv"
-            if filter_csv_for_deployment "$CSV_FILE" "$FILTERED_CSV" "$table"; then
-                import_csv_to_sqlite "$table" "$FILTERED_CSV"
-                rm -f "$FILTERED_CSV"  # Clean up filtered file
+            if [[ -n "${COMPONENTS_CSV:-${COMPONENTS:-}}" ]]; then
+                # COMPONENTS info is available, filter the CSV
+                FILTERED_CSV="/tmp/${table}_filtered.csv"
+                if filter_csv_for_deployment "$CSV_FILE" "$FILTERED_CSV" "$table"; then
+                    import_csv_to_sqlite "$table" "$FILTERED_CSV"
+                    rm -f "$FILTERED_CSV"  # Clean up filtered file
+                else
+                    echo "Failed to filter $table, skipping import"
+                fi
             else
-                echo "Failed to filter $table, skipping import"
+                # No COMPONENTS info - assume CSV is already pre-filtered during setup, import as-is
+                echo "No COMPONENTS variable set - using pre-filtered CSV for $table"
+                import_csv_to_sqlite "$table" "$CSV_FILE"
             fi
         else
             # Normal import for other tables

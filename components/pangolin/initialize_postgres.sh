@@ -887,14 +887,24 @@ for table in "${TABLES[@]}"; do
     else
         if [[ -f "$CSV_FILE" && $(wc -l < "$CSV_FILE") -gt 1 ]]; then
             # For filterable tables, create filtered CSV first
+            # Only filter if COMPONENTS_CSV or COMPONENTS is set (i.e., we have component info)
+            # If not set, assume the CSV files are already pre-filtered during setup
             if [[ "$table" == "resources" || "$table" == "targets" || "$table" == "roleResources" ]]; then
-                FILTERED_CSV="/tmp/${table}_filtered.csv"
-                if filter_csv_for_deployment "$CSV_FILE" "$FILTERED_CSV" "$table"; then
-                    PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "TRUNCATE TABLE \"$table\" RESTART IDENTITY CASCADE;"
-                    import_csv_with_casts "$table" "$FILTERED_CSV"
-                    rm -f "$FILTERED_CSV"
+                if [[ -n "${COMPONENTS_CSV:-${COMPONENTS:-}}" ]]; then
+                    # COMPONENTS info is available, filter the CSV
+                    FILTERED_CSV="/tmp/${table}_filtered.csv"
+                    if filter_csv_for_deployment "$CSV_FILE" "$FILTERED_CSV" "$table"; then
+                        PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "TRUNCATE TABLE \"$table\" RESTART IDENTITY CASCADE;"
+                        import_csv_with_casts "$table" "$FILTERED_CSV"
+                        rm -f "$FILTERED_CSV"
+                    else
+                        echo "Failed to filter $table, skipping import"
+                    fi
                 else
-                    echo "Failed to filter $table, skipping import"
+                    # No COMPONENTS info - assume CSV is already pre-filtered during setup, import as-is
+                    echo "No COMPONENTS variable set - using pre-filtered CSV for $table"
+                    PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "TRUNCATE TABLE \"$table\" RESTART IDENTITY CASCADE;"
+                    import_csv_with_casts "$table" "$CSV_FILE"
                 fi
             else
                 PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "TRUNCATE TABLE \"$table\" RESTART IDENTITY CASCADE;"
