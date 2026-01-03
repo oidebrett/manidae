@@ -250,10 +250,15 @@ services:
       ENROLL_TAGS: docker
       ENROLL_KEY: REPLACE_WITH_YOUR_KEY
     healthcheck:
+      test:
+        - CMD
+        - cscli
+        - lapi
+        - status
       interval: 10s
-      retries: 15
-      timeout: 10s
-      test: ["CMD", "cscli", "capi", "status"]
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     labels:
       - "traefik.enable=false" # Disable traefik for crowdsec
     volumes:
