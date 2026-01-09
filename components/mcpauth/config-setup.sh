@@ -36,7 +36,7 @@ add_mcpauth_routing() {
         print "        - websecure"
         print "      tls:"
         print "        certResolver: letsencrypt"
-        print "      priority: 199"
+        print "      priority: 1000"
         print ""
         print "    # MCPAuth http redirect router"
         print "    mcpauth-router-redirect:"
