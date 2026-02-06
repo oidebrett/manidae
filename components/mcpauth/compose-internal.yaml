@@ -1,12 +1,17 @@
   # Auth management
   mcpauth:
-    image: oideibrett/mcpauth:latest
+    #image: oideibrett/mcpauth:latest - this is the less sophisticated version without keycloak
+    image: oideibrett/mcpauth:dev
     volumes:
       - ./config/data:/app/data
     environment:
       - PORT=11000
       - PROVIDER=internal   # or google (overrides default)
       - OAUTH_DOMAIN=${OAUTH_DOMAIN:-oauth.${DOMAIN}}
+      - KEYCLOAK_AUTH_HOST=keycloak.${DOMAIN}
+      - KEYCLOAK_AUTH_PORT=443
+      - KEYCLOAK_AUTH_PROTOCOL=https
+      - KEYCLOAK_REALM=master
       - ALLOWED_SCOPES=openid,email,profile
       - REQUIRED_SCOPES=openid,email
     restart: unless-stopped
