@@ -67,6 +67,7 @@ rate_limits:
         max_requests: 500
 
 flags:
+    enable_integration_api: true
     require_email_verification: false
     disable_signup_without_invite: true
     disable_user_create_org: false
