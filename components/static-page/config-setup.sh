@@ -56,15 +56,6 @@ create_static_page_html() {
             sed -i '/<!-- Start of Chatkit Admin -->/,/<!-- End of Chatkit Admin -->/d' "/tmp/index.html.template"
             sed -i '/<!-- COMPONENT_CONDITIONAL_CHATKIT_START -->/,/<!-- COMPONENT_CONDITIONAL_CHATKIT_END -->/d' "/tmp/index.html.template"
 
-            # Remove MCP Gateway section if not in component list
-            if ! echo "${COMPONENTS_CSV:-}" | grep -q "mcp-gateway"; then
-                echo "Removing MCP Gateway section from template as 'mcp-gateway' is not in COMPONENTS_CSV"
-                sed -i '/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_START -->/,/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_END -->/d' "/tmp/index.html.template"
-            else
-                # Just remove the markers, keep the content
-                sed -i '/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_START -->/d; /<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_END -->/d' "/tmp/index.html.template"
-            fi
-
             # Remove NLWeb section if not in component list
             if ! echo "${COMPONENTS_CSV:-}" | grep -q "nlweb"; then
                 echo "Removing NLWeb section from template as 'nlweb' is not in COMPONENTS_CSV"

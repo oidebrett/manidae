@@ -1,17 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="bg-gray-900 text-white font-sans h-screen overflow-hidden">
     <div class="flex h-full">
         <!-- Mobile Menu Button -->
-        <button id="mobile-menu-btn" class="md:hidden fixed top-4 left-4 z-50 bg-gray-800 text-white p-2 rounded-lg shadow-lg">
+        <button id="mobile-menu-btn"
+            class="md:hidden fixed top-4 left-4 z-50 bg-gray-800 text-white p-2 rounded-lg shadow-lg">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16">
+                </path>
             </svg>
         </button>
 
@@ -25,22 +29,26 @@
                 <div class="flex items-center">
                     <div class="w-8 h-8 bg-cyan-400 rounded-lg flex items-center justify-center flex-shrink-0">
                         <svg class="w-5 h-5 text-gray-900" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+                            <path
+                                d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                         </svg>
                     </div>
-                    <div class="ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                    <div
+                        class="ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
                         <h1 class="text-2xl font-bold text-cyan-400">Gateway</h1>
                         <p class="text-sm text-gray-400 mt-1">Application Dashboard</p>
                     </div>
                 </div>
             </div>
-            
+
             <nav class="flex-1 p-2 space-y-2 overflow-hidden">
                 <!-- Start of Home -->
-                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 border-l-4 border-cyan-400 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="showWelcome()">
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 border-l-4 border-cyan-400 flex items-center justify-center group-hover:justify-start min-h-[3rem]"
+                    onclick="showWelcome()">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
                         <svg class="w-6 h-6 text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                            <path
+                                d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
                         </svg>
                     </div>
                     <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -50,10 +58,14 @@
                 <!-- End of Home -->
 
                 <!-- Start of Pangolin -->
-                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://subdomain.yourdomain.com/admin/settings/resources', 'Pangolin', this)">
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]"
+                    onclick="loadApp('https://subdomain.yourdomain.com/admin/settings/resources', 'Pangolin', this)">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
-                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/pangolin.webp" alt="Pangolin Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">P</div>
+                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/pangolin.webp" alt="Pangolin Icon"
+                            class="w-6 h-6 object-contain"
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900"
+                            style="display:none;">P</div>
                     </div>
                     <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <div class="text-lg font-semibold text-cyan-400 truncate">Pangolin</div>
@@ -62,10 +74,14 @@
                 <!-- End of Pangolin -->
 
                 <!-- Start of Chatkit -->
-                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://chat.yourdomain.com', 'AI Chat', this)">
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]"
+                    onclick="loadApp('https://chat.yourdomain.com', 'AI Chat', this)">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
-                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/chatgpt.webp" alt="Chatkit Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">AI</div>
+                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/chatgpt.webp" alt="Chatkit Icon"
+                            class="w-6 h-6 object-contain"
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900"
+                            style="display:none;">AI</div>
                     </div>
                     <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <div class="text-lg font-semibold text-cyan-400 truncate">AI Chat</div>
@@ -74,10 +90,14 @@
                 <!-- End of Chatkit -->
 
                 <!-- Start of Chatkit Admin -->
-                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://chat.yourdomain.com/admin', 'Chat Admin', this)">
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]"
+                    onclick="loadApp('https://chat.yourdomain.com/admin', 'Chat Admin', this)">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
-                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/settings.webp" alt="Chat Admin Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">CA</div>
+                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/settings.webp" alt="Chat Admin Icon"
+                            class="w-6 h-6 object-contain"
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900"
+                            style="display:none;">CA</div>
                     </div>
                     <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <div class="text-lg font-semibold text-cyan-400 truncate">Chat Admin</div>
@@ -86,63 +106,82 @@
                 <!-- End of Chatkit Admin -->
 
                 <!-- Start of Komodo -->
-                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://komodo.yourdomain.com', 'Komodo', this)">
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]"
+                    onclick="loadApp('https://komodo.yourdomain.com', 'Komodo', this)">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
-                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/komodo.webp" alt="Komodo Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">K</div>
+                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/komodo.webp" alt="Komodo Icon"
+                            class="w-6 h-6 object-contain"
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900"
+                            style="display:none;">K</div>
                     </div>
                     <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <div class="text-lg font-semibold text-cyan-400 truncate">Komodo</div>
-                    </div>                    
+                    </div>
                 </div>
                 <!-- End of Komodo -->
 
                 <!-- Start of Middleware Manager -->
-                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://middleware-manager.yourdomain.com', 'Middleware Manager', this)">
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]"
+                    onclick="loadApp('https://middleware-manager.yourdomain.com', 'Middleware Manager', this)">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
-                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/middleware-manager.webp" alt="Middleware Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">M</div>
+                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/middleware-manager.webp"
+                            alt="Middleware Icon" class="w-6 h-6 object-contain"
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900"
+                            style="display:none;">M</div>
                     </div>
                     <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <div class="text-lg font-semibold text-cyan-400 truncate">Middleware Manager</div>
-                    </div>                    
+                    </div>
                 </div>
                 <!-- End of Middleware Manager -->
 
                 <!-- Start of Traefik -->
-                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://traefik.yourdomain.com/dashboard/', 'Traefik Dashboard', this)">
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]"
+                    onclick="loadApp('https://traefik.yourdomain.com/dashboard/', 'Traefik Dashboard', this)">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
-                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/traefik.webp" alt="Traefik Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">T</div>
+                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/traefik.webp" alt="Traefik Icon"
+                            class="w-6 h-6 object-contain"
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900"
+                            style="display:none;">T</div>
                     </div>
                     <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <div class="text-lg font-semibold text-cyan-400 truncate">Traefik</div>
-                    </div>                    
+                    </div>
                 </div>
                 <!-- End of Traefik -->
 
                 <!-- Start of Logs -->
-                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://logs.yourdomain.com/dashboard/', 'Logs Dashboard', this)">
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]"
+                    onclick="loadApp('https://logs.yourdomain.com/dashboard/', 'Logs Dashboard', this)">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
-                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/graylog.webp" alt="Logs Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">L</div>
+                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/graylog.webp" alt="Logs Icon"
+                            class="w-6 h-6 object-contain"
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900"
+                            style="display:none;">L</div>
                     </div>
                     <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <div class="text-lg font-semibold text-cyan-400 truncate">Logs</div>
-                    </div>                    
+                    </div>
                 </div>
                 <!-- End of Logs -->
 
                 <!-- Start of Crowdsec -->
-                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" 
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]"
                     onclick="window.open('https://app.crowdsec.net/alerts', '_blank')">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
-                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/crowdsec.webp" alt="Logs Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">L</div>
+                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/crowdsec.webp" alt="Logs Icon"
+                            class="w-6 h-6 object-contain"
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900"
+                            style="display:none;">L</div>
                     </div>
                     <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <div class="text-lg font-semibold text-cyan-400 truncate">Crowdsec</div>
-                    </div>                    
+                    </div>
                 </div>
                 <!-- End of Crowdsec -->
 
@@ -159,9 +198,13 @@
                         <div id="loading-indicator" class="hidden">
                             <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-cyan-400"></div>
                         </div>
-                        <button id="refresh-btn" class="hidden bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded-lg text-sm transition-colors duration-200" onclick="refreshIframe()">
+                        <button id="refresh-btn"
+                            class="hidden bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded-lg text-sm transition-colors duration-200"
+                            onclick="refreshIframe()">
                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+                                <path fill-rule="evenodd"
+                                    d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                                    clip-rule="evenodd" />
                             </svg>
                         </button>
                     </div>
@@ -173,37 +216,48 @@
                 <!-- Welcome Screen -->
                 <div id="welcome-screen" class="flex items-center justify-center h-full bg-gray-900">
                     <div class="text-center max-w-2xl px-8">
-                        <!-- Main Title: Welcomes the user to the Agent Gateway -->
                         <h1 class="text-6xl font-bold mb-6 text-cyan-400 animate-pulse">
-                            Agent Gateway
+                            Secure Agent Connectivity
                         </h1>
                         <h2 class="text-3xl font-semibold mb-4 text-cyan-500">
-                            AI-Powered Infrastructure Platform
+                            Write Skills Once, Deploy Everywhere
                         </h2>
-                        <!-- Subtitle: Directs the user to the left-hand navigation -->
-                        <p class="text-xl text-gray-400 mb-8">
-                            Secure infrastructure management with integrated AI assistance and comprehensive monitoring.
+                        <p class="text-xl text-gray-400 mb-8 leading-relaxed">
+                            Give your agents secure organizational knowledge through mandatory access controls and
+                            identity enforcement.
                         </p>
-                        <!-- Informational Cards: Provides high-level overview of the gateway's functions -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm text-gray-500">
-                            <!-- Card 1: Focuses on traffic management and routing -->
-                            <div class="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-cyan-400/50 transition-shadow duration-300">
-                                <div class="font-semibold text-cyan-400 mb-2">Service Orchestration</div>
-                                <div>Routing & Proxying • Load Balancing</div>
+
+                        <div
+                            class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-[11px] text-gray-500 leading-tight">
+                            <div
+                                class="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-cyan-400/50 transition-shadow duration-300">
+                                <div class="font-bold text-cyan-400 mb-2 uppercase tracking-wider">Identity Enforcement
+                                </div>
+                                <div>Neutralizing unauthenticated MCP vulnerabilities by requiring mandatory OAuth 2.1
+                                    identity for every skill request.</div>
                             </div>
-                            <!-- Card 2: Highlights security and access control -->
-                            <div class="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-cyan-400/50 transition-shadow duration-300">
-                                <div class="font-semibold text-cyan-400 mb-2">Centralized Governance</div>
-                                <div>Authentication • Policy Enforcement</div>
+                            <div
+                                class="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-cyan-400/50 transition-shadow duration-300">
+                                <div class="font-bold text-cyan-400 mb-2 uppercase tracking-wider">Cross-Platform
+                                    Portability</div>
+                                <div>Standardizing agent capabilities in a unified mesh so you can develop skills once
+                                    and leverage them across any environment.</div>
                             </div>
-                            <!-- Card 3: Covers observability and metrics -->
-                            <div class="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-cyan-400/50 transition-shadow duration-300">
-                                <div class="font-semibold text-cyan-400 mb-2">Platform Visibility</div>
-                                <div>Metrics • Logging & Tracing</div>
+                            <div
+                                class="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-cyan-400/50 transition-shadow duration-300">
+                                <div class="font-bold text-cyan-400 mb-2 uppercase tracking-wider">Institutional Memory
+                                </div>
+                                <div>Injecting agents with governed access to organizational data while maintaining
+                                    strict human-in-the-loop oversight.</div>
                             </div>
                         </div>
                         <p class="text-md text-gray-500 mt-8">
                             Select an application from the navigation panel to get started.
+                        </p>
+                        <p class="text-sm text-gray-600 mt-2">
+                            If installed, connect to the agent skills builder at <a
+                                href="https://agentskills.yourdomain.com"
+                                class="text-cyan-400 hover:text-cyan-300 underline">https://agentskills.yourdomain.com</a>
                         </p>
                     </div>
                 </div>
@@ -216,91 +270,89 @@
 
     <script>
         let currentActiveItem = document.querySelector('.sidebar-item');
-        
+
         function showWelcome() {
             // Hide iframe and show welcome screen
             document.getElementById('app-iframe').classList.add('hidden');
             const welcomeScreen = document.getElementById('welcome-screen');
             welcomeScreen.innerHTML = `
                     <div class="text-center max-w-2xl px-8">
-                        <!-- Main Title: Welcomes the user to the Agent Gateway -->
                         <h1 class="text-6xl font-bold mb-6 text-cyan-400 animate-pulse">
-                            Agent Gateway
+                            Secure Agent Connectivity
                         </h1>
                         <h2 class="text-3xl font-semibold mb-4 text-cyan-500">
-                            AI-Powered Infrastructure Platform
+                            Write Skills Once, Deploy Everywhere
                         </h2>
-                        <!-- Subtitle: Directs the user to the left-hand navigation -->
-                        <p class="text-xl text-gray-400 mb-8">
-                            Secure infrastructure management with integrated AI assistance and comprehensive monitoring.
+                        <p class="text-xl text-gray-400 mb-8 leading-relaxed">
+                            Give your agents secure organizational knowledge through mandatory access controls and identity enforcement.
                         </p>
-                        <!-- Informational Cards: Provides high-level overview of the gateway's functions -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm text-gray-500">
-                            <!-- Card 1: Focuses on traffic management and routing -->
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-[11px] text-gray-500 leading-tight">
                             <div class="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-cyan-400/50 transition-shadow duration-300">
-                                <div class="font-semibold text-cyan-400 mb-2">Service Orchestration</div>
-                                <div>Routing & Proxying • Load Balancing</div>
+                                <div class="font-bold text-cyan-400 mb-2 uppercase tracking-wider">Identity Enforcement</div>
+                                <div>Neutralizing unauthenticated MCP vulnerabilities by requiring mandatory OAuth 2.1 identity for every skill request.</div>
                             </div>
-                            <!-- Card 2: Highlights security and access control -->
                             <div class="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-cyan-400/50 transition-shadow duration-300">
-                                <div class="font-semibold text-cyan-400 mb-2">Centralized Governance</div>
-                                <div>Authentication • Policy Enforcement</div>
+                                <div class="font-bold text-cyan-400 mb-2 uppercase tracking-wider">Cross-Platform Portability</div>
+                                <div>Standardizing agent capabilities in a unified mesh so you can develop skills once and leverage them across any environment.</div>
                             </div>
-                            <!-- Card 3: Covers observability and metrics -->
                             <div class="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-cyan-400/50 transition-shadow duration-300">
-                                <div class="font-semibold text-cyan-400 mb-2">Platform Visibility</div>
-                                <div>Metrics • Logging & Tracing</div>
+                                <div class="font-bold text-cyan-400 mb-2 uppercase tracking-wider">Institutional Memory</div>
+                                <div>Injecting agents with governed access to organizational data while maintaining strict human-in-the-loop oversight.</div>
                             </div>
                         </div>
                         <p class="text-md text-gray-500 mt-8">
                             Select an application from the navigation panel to get started.
+                        </p>
+                        <p class="text-sm text-gray-600 mt-2">
+                            If installed, connect to the agent skills builder at <a href="https://agentskills.yourdomain.com" class="text-cyan-400 hover:text-cyan-300 underline">https://agentskills.yourdomain.com</a>
                         </p>
                     </div>
             `;
             welcomeScreen.classList.remove('hidden');
             document.getElementById('current-app-title').textContent = 'Welcome';
             document.getElementById('refresh-btn').classList.add('hidden');
-            
+
             // Update active item
             updateActiveItem(document.querySelector('.sidebar-item'));
         }
-        
+
         function loadApp(url, title, element) {
             const iframe = document.getElementById('app-iframe');
             const welcomeScreen = document.getElementById('welcome-screen');
             const titleElement = document.getElementById('current-app-title');
             const loadingIndicator = document.getElementById('loading-indicator');
             const refreshBtn = document.getElementById('refresh-btn');
-            
+
             // Show loading indicator
             loadingIndicator.classList.remove('hidden');
             titleElement.textContent = `Loading ${title}...`;
-            
+
             // Hide welcome screen and show iframe
             welcomeScreen.classList.add('hidden');
             iframe.classList.remove('hidden');
 
             if (url.includes('traefik') && url.includes('/dashboard/')) {
-              // For Traefik dashboard, use a different approach to avoid parameter issues
-              iframe.src = url;
+                // For Traefik dashboard, use a different approach to avoid parameter issues
+                iframe.src = url;
             }
             else {
-              // Force iframe refresh by adding timestamp to prevent caching issues
-              const timestamp = new Date().getTime();
-              const separator = url.includes('?') ? '&' : '?';
-              const urlWithTimestamp = url+separator+'_t='+timestamp;
+                // Force iframe refresh by adding timestamp to prevent caching issues
+                const timestamp = new Date().getTime();
+                const separator = url.includes('?') ? '&' : '?';
+                const urlWithTimestamp = url + separator + '_t=' + timestamp;
 
-              // Load the application
-              iframe.src = urlWithTimestamp;
-            }            
+                // Load the application
+                iframe.src = urlWithTimestamp;
+            }
 
             // Update active sidebar item
             updateActiveItem(element);
-            
+
             // Set up iframe blocking detection
             let iframeBlocked = false;
             let loadTimeout;
-            
+
             // Timeout to detect if iframe is blocked (most blocking happens immediately)
             loadTimeout = setTimeout(() => {
                 if (!iframeBlocked) {
@@ -308,15 +360,15 @@
                     handleIframeBlocked(url, title);
                 }
             }, 20000);
-            
+
             // Handle iframe load success
-            iframe.onload = function() {
+            iframe.onload = function () {
                 clearTimeout(loadTimeout);
-                
+
                 try {
                     // Try to access iframe content to detect if it's blocked
                     const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                    
+
                     // If we can access it and it's not empty, it loaded successfully
                     if (iframeDoc && iframeDoc.body && iframeDoc.body.innerHTML.trim() !== '') {
                         loadingIndicator.classList.add('hidden');
@@ -350,25 +402,25 @@
                     }, 1000);
                 }
             };
-            
+
             // Handle iframe load errors
-            iframe.onerror = function() {
+            iframe.onerror = function () {
                 clearTimeout(loadTimeout);
                 handleIframeBlocked(url, title);
             };
         }
-        
+
         function handleIframeBlocked(url, title) {
             const iframe = document.getElementById('app-iframe');
             const welcomeScreen = document.getElementById('welcome-screen');
             const titleElement = document.getElementById('current-app-title');
             const loadingIndicator = document.getElementById('loading-indicator');
             const refreshBtn = document.getElementById('refresh-btn');
-            
+
             // Hide loading indicator
             loadingIndicator.classList.add('hidden');
             refreshBtn.classList.add('hidden');
-            
+
             // Show blocking message
             iframe.classList.add('hidden');
             welcomeScreen.innerHTML = `
@@ -401,31 +453,31 @@
             welcomeScreen.classList.remove('hidden');
             titleElement.textContent = `${title} - Blocked`;
         }
-        
+
         function updateActiveItem(element) {
             // Remove active state from all items
             document.querySelectorAll('.sidebar-item').forEach(item => {
                 item.classList.remove('border-l-4', 'border-cyan-400', 'bg-gray-600');
                 item.classList.add('bg-gray-700');
             });
-            
+
             // Add active state to clicked item
             element.classList.remove('bg-gray-700');
             element.classList.add('border-l-4', 'border-cyan-400', 'bg-gray-600');
             currentActiveItem = element;
         }
-        
+
         function refreshIframe() {
             const iframe = document.getElementById('app-iframe');
             const loadingIndicator = document.getElementById('loading-indicator');
-            
+
             if (iframe.src !== 'about:blank') {
                 loadingIndicator.classList.remove('hidden');
                 iframe.src = iframe.src; // Reload the iframe
             }
-            
+
         }
-        
+
         // Mobile menu functionality
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
         const mobileOverlay = document.getElementById('mobile-overlay');
@@ -485,4 +537,5 @@
         showWelcome();
     </script>
 </body>
+
 </html>

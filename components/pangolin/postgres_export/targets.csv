@@ -5,6 +5,4 @@ targetId,resourceId,siteId,ip,method,port,internalPort,enabled,path,pathMatchTyp
 5,5,1,traefik-dashboard,http,3000,,t,,,,,100
 6,6,1,mcpauth,http,11000,,t,,,,,100
 7,7,1,crawler,http,5000,,t,,,,,100
-8,8,1,mcp-gateway,http,3000,,t,,,,,100
-9,9,1,openmemory-dashboard,http,3000,,t,,,,,100
-10,10,1,langwatch-app,http,5560,,t,,,,,100
+

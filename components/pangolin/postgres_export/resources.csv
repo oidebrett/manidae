@@ -5,6 +5,4 @@ resourceId,resourceGuid,orgId,niceId,name,subdomain,fullDomain,domainId,ssl,bloc
 5,,admin,logs-viewer,logs,logs,logs.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,,f,forced,,,
 6,,admin,idp,idp,idp,idp.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,,f,forced,,,
 7,,admin,nlweb-crawler,nlweb-crawler,crawler.nlweb,crawler.nlweb.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,,f,forced,,,
-8,,admin,mcp-gateway,mcp-gateway,mcpgateway,mcpgateway.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,,f,forced,,,
-9,,admin,openmemory,openmemory,memory,memory.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,,f,forced,,,
-10,,admin,langwatch,langwatch,langwatch,langwatch.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,,f,forced,,,
+

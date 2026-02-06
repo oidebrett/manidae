@@ -294,8 +294,7 @@ EOF
 
   if has_component crowdsec; then sed -n '1,9999p' "$ROOT_DIR/components/crowdsec/compose.yaml"; fi
   if has_component nlweb; then sed -n '1,9999p' "$ROOT_DIR/components/nlweb/compose.yaml"; fi
-  if has_component mcp-gateway; then sed -n '1,9999p' "$ROOT_DIR/components/mcp-gateway/compose.yaml"; fi
-  # Note: komodo component has been removed from all deployments
+  # Note: komodo and mcp-gateway components have been removed from all deployments
 
   # Add backup service if MAX_BACKUPS is set and greater than 0
   if [[ -n "${MAX_BACKUPS:-}" && "${MAX_BACKUPS:-0}" -gt 0 ]]; then
@@ -370,14 +369,12 @@ EOF
   volumes_needed=false
   if [[ "$BASE_PLATFORM" == "coolify" ]]; then volumes_needed=true; fi
   if has_component nlweb; then volumes_needed=true; fi
-  if has_component mcp-gateway; then volumes_needed=true; fi
 
   if [[ "$volumes_needed" == "true" ]]; then
     echo "volumes:"
     if [[ "$BASE_PLATFORM" == "coolify" ]]; then sed -n '1,9999p' "$ROOT_DIR/components/coolify/volumes.yaml"; fi
     if has_component nlweb; then sed -n '1,9999p' "$ROOT_DIR/components/nlweb/volumes.yaml"; fi
-    if has_component mcp-gateway; then sed -n '1,9999p' "$ROOT_DIR/components/mcp-gateway/volumes.yaml"; fi
-    # Note: komodo volumes have been removed from all deployments
+    # Note: komodo and mcp-gateway volumes have been removed from all deployments
   fi
 
   # Networks (generic for all platforms)

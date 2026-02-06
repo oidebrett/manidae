@@ -136,10 +136,6 @@ get_included_resource_ids() {
         resource_ids="$resource_ids,6"
     fi
 
-    # Include mcp-gateway (8), openmemory (9), langwatch (10) if mcp-gateway component is present
-    if has_component "mcp-gateway"; then
-        resource_ids="$resource_ids,8,9,10"
-    fi
 
     # Note: komodo-core (3) is intentionally excluded from all deployments
 
