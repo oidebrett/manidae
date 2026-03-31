@@ -5,7 +5,10 @@
     volumes:
       - ./config/data:/app/data
     environment:
+      - ENABLE_EDGE_AUTH=true
+      - COOKIE_DOMAIN=.${DOMAIN}
       - PORT=11000
+      - PROVIDER=google
       - CLIENT_ID=${CLIENT_ID}
       - CLIENT_SECRET=${CLIENT_SECRET}
       - OAUTH_DOMAIN=${OAUTH_DOMAIN:-oauth.${DOMAIN}}
