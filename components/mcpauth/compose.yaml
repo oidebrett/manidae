@@ -1,6 +1,6 @@
   # Auth management
   mcpauth:
-    image: oideibrett/mcpauth:edge_auth
+    image: oideibrett/mcpauth:dev
     #container_name: mcpauth
     volumes:
       - ./config/data:/app/data
