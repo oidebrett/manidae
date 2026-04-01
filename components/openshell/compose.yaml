@@ -24,7 +24,7 @@
       - SSH_GATEWAY_HOST=openshell-gateway.${DOMAIN}
       - SSH_GATEWAY_PORT=443
     healthcheck:
-      test: ["/usr/local/bin/cluster-healthcheck.sh"]
+      test: ["CMD", "/usr/local/bin/cluster-healthcheck.sh"]
       interval: 5s
       timeout: 5s
       start_period: 20s
