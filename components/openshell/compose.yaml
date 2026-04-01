@@ -3,6 +3,9 @@
     container_name: openshell-cluster-openshell
     restart: unless-stopped
     privileged: true
+    command:
+      - --plaintext
+      - --disable-gateway-auth
     volumes:
       - openshell_data:/var/lib/rancher/k3s
     environment:
