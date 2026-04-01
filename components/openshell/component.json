@@ -1,0 +1,6 @@
+{
+  "name": "openshell",
+  "required_env": [],
+  "optional_env": [],
+  "description": "OpenShell k3s cluster - provides WebSocket terminal gateway at openshell-gateway.yourdomain.com via reverse proxy (no direct port exposure)"
+}

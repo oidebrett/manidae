@@ -4,3 +4,4 @@ resourceId,resourceGuid,orgId,niceId,name,subdomain,fullDomain,domainId,ssl,bloc
 4,,admin,nlweb-app,nlweb,nlweb,nlweb.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,,f,forced,,,
 5,,admin,logs-viewer,logs,logs,logs.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,,f,forced,,,
 6,,admin,idp,idp,idp,idp.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,,f,forced,,,
+7,,admin,openshell-gateway,openshell-gateway,openshell-gateway,openshell-gateway.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,,f,forced,,,

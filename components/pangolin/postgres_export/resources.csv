@@ -8,3 +8,4 @@ resourceId,resourceGuid,orgId,niceId,name,subdomain,fullDomain,domainId,ssl,bloc
 8,,admin,mcp-gateway,mcp-gateway,mcpgateway,mcpgateway.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,,f,forced,,,
 9,,admin,openmemory,openmemory,memory,memory.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,,f,forced,,,
 10,,admin,langwatch,langwatch,langwatch,langwatch.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,,f,forced,,,
+11,,admin,openshell-gateway,openshell-gateway,openshell-gateway,openshell-gateway.yourdomain.com,domain1,t,f,t,t,tcp,,f,f,t,f,,,t,,,f,,f,forced,,,

@@ -18,7 +18,7 @@ echo "🔧 Creating Traefik static configuration..."
 cat > "/host-setup/config/traefik/traefik_config.yml" << EOF
 api:
   insecure: true
-  dashboard: false
+  dashboard: true
 
 providers:
   file:

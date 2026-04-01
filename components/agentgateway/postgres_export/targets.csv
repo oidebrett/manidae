@@ -4,3 +4,4 @@ targetId,resourceId,siteId,ip,method,port,internalPort,enabled,path,pathMatchTyp
 4,4,1,nlweb,http,8000,,t,,,,,100
 5,5,1,traefik-dashboard,http,3000,,t,,,,,100
 6,6,1,mcpauth,http,11000,,t,,,,,100
+7,7,1,openshell-cluster-openshell,http,30051,,t,,,,,100

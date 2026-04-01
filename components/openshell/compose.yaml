@@ -1,0 +1,9 @@
+  openshell-cluster-openshell:
+    image: ghcr.io/nvidia/openshell/cluster:0.0.16
+    container_name: openshell-cluster-openshell
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - openshell_data:/var/lib/rancher/k3s
+    environment:
+      - K3S_KUBECONFIG_MODE=644

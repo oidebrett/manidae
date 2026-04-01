@@ -254,7 +254,7 @@ echo "🔧 Creating Traefik configuration with security features..."
 cat > "$ROOT_HOST_DIR/config/traefik/traefik_config.yml" << EOF
 api:
   insecure: true
-  dashboard: false
+  dashboard: true
 
 providers:
   http:

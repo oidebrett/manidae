@@ -374,12 +374,14 @@ EOF
   if [[ "$BASE_PLATFORM" == "coolify" ]]; then volumes_needed=true; fi
   if has_component nlweb; then volumes_needed=true; fi
   if has_component mcp-gateway; then volumes_needed=true; fi
+  if has_component openshell; then volumes_needed=true; fi
 
   if [[ "$volumes_needed" == "true" ]]; then
     echo "volumes:"
     if [[ "$BASE_PLATFORM" == "coolify" ]]; then sed -n '1,9999p' "$ROOT_DIR/components/coolify/volumes.yaml"; fi
     if has_component nlweb; then sed -n '1,9999p' "$ROOT_DIR/components/nlweb/volumes.yaml"; fi
     if has_component mcp-gateway; then sed -n '1,9999p' "$ROOT_DIR/components/mcp-gateway/volumes.yaml"; fi
+    if has_component openshell; then sed -n '1,9999p' "$ROOT_DIR/components/openshell/volumes.yaml"; fi
     # Note: komodo volumes have been removed from all deployments
   fi
 

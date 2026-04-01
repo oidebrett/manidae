@@ -1,0 +1,3 @@
+  # OpenShell k3s persistent storage
+  openshell_data:
+    driver: local

@@ -119,6 +119,11 @@ get_included_resource_ids() {
         resource_ids="$resource_ids,8,9,10"
     fi
 
+    # Include openshell-gateway (11) if openshell component is present
+    if has_component "openshell"; then
+        resource_ids="$resource_ids,11"
+    fi
+
     # Note: komodo-core (3) is intentionally excluded from all deployments
 
     echo "$resource_ids"
@@ -378,7 +383,7 @@ if is_pangolin_plus; then
     cat > "$ROOT_HOST_DIR/config/traefik/traefik_config.yml" << EOF
 api:
   insecure: true
-  dashboard: false
+  dashboard: true
 
 providers:
   http:
@@ -441,7 +446,7 @@ else
     cat > "$ROOT_HOST_DIR/config/traefik/traefik_config.yml" << EOF
 api:
   insecure: true
-  dashboard: false
+  dashboard: true
 
 providers:
   http:
