@@ -640,6 +640,11 @@ get_included_resource_ids() {
     if has_component "mcp-gateway"; then
         resource_ids="$resource_ids,8,9,10"
     fi
+    # Include openshell-gateway if openshell component is present
+    # id 7 in agentgateway/pangolin+ CSVs, id 11 in pangolin CSVs
+    if has_component "openshell"; then
+        resource_ids="$resource_ids,7,11"
+    fi
     echo "$resource_ids"
 }
 
