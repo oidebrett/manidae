@@ -298,6 +298,7 @@ EOF
   if has_component crowdsec; then sed -n '1,9999p' "$ROOT_DIR/components/crowdsec/compose.yaml"; fi
   if has_component nlweb; then sed -n '1,9999p' "$ROOT_DIR/components/nlweb/compose.yaml"; fi
   if has_component mcp-gateway; then sed -n '1,9999p' "$ROOT_DIR/components/mcp-gateway/compose.yaml"; fi
+  if has_component openshell; then sed -n '1,9999p' "$ROOT_DIR/components/openshell/compose.yaml"; fi
   # Note: komodo component has been removed from all deployments
 
   # Add backup service if MAX_BACKUPS is set and greater than 0
