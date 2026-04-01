@@ -54,6 +54,43 @@ create_static_page_html() {
             echo "Removing Chatkit sections from template (not AgentGateway deployment)"
             sed -i '/<!-- Start of Chatkit -->/,/<!-- End of Chatkit -->/d' "/tmp/index.html.template"
             sed -i '/<!-- Start of Chatkit Admin -->/,/<!-- End of Chatkit Admin -->/d' "/tmp/index.html.template"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_CHATKIT_START -->/,/<!-- COMPONENT_CONDITIONAL_CHATKIT_END -->/d' "/tmp/index.html.template"
+
+            # Remove MCP Gateway section if not in component list
+            if ! echo "${COMPONENTS_CSV:-}" | grep -q "mcp-gateway"; then
+                echo "Removing MCP Gateway section from template as 'mcp-gateway' is not in COMPONENTS_CSV"
+                sed -i '/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_START -->/,/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_END -->/d' "/tmp/index.html.template"
+            else
+                # Just remove the markers, keep the content
+                sed -i '/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_START -->/d; /<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_END -->/d' "/tmp/index.html.template"
+            fi
+
+            # Remove NLWeb section if not in component list
+            if ! echo "${COMPONENTS_CSV:-}" | grep -q "nlweb"; then
+                echo "Removing NLWeb section from template as 'nlweb' is not in COMPONENTS_CSV"
+                sed -i '/<!-- COMPONENT_CONDITIONAL_NLWEB_START -->/,/<!-- COMPONENT_CONDITIONAL_NLWEB_END -->/d' "/tmp/index.html.template"
+            else
+                # Just remove the markers, keep the content
+                sed -i '/<!-- COMPONENT_CONDITIONAL_NLWEB_START -->/d; /<!-- COMPONENT_CONDITIONAL_NLWEB_END -->/d' "/tmp/index.html.template"
+            fi
+        fi
+
+        # Remove Traefik/Logs section if not in component list
+        if ! echo "${COMPONENTS_CSV:-}" | grep -q "traefik-log-dashboard"; then
+            echo "Removing Traefik/Logs section from template as 'traefik-log-dashboard' is not in COMPONENTS_CSV"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_TRAEFIK_START -->/,/<!-- COMPONENT_CONDITIONAL_TRAEFIK_END -->/d' "/tmp/index.html.template"
+        else
+            # Just remove the markers, keep the content
+            sed -i '/<!-- COMPONENT_CONDITIONAL_TRAEFIK_START -->/d; /<!-- COMPONENT_CONDITIONAL_TRAEFIK_END -->/d' "/tmp/index.html.template"
+        fi
+
+        # Remove Crowdsec section if not in component list (crowdsec or pangolin+)
+        if ! echo "${COMPONENTS_CSV:-}" | grep -q "crowdsec" && ! echo "${COMPONENTS_CSV:-}" | grep -q "pangolin+"; then
+            echo "Removing Crowdsec section from template as neither 'crowdsec' nor 'pangolin+' is in COMPONENTS_CSV"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_CROWDSEC_START -->/,/<!-- COMPONENT_CONDITIONAL_CROWDSEC_END -->/d' "/tmp/index.html.template"
+        else
+            # Just remove the markers, keep the content
+            sed -i '/<!-- COMPONENT_CONDITIONAL_CROWDSEC_START -->/d; /<!-- COMPONENT_CONDITIONAL_CROWDSEC_END -->/d' "/tmp/index.html.template"
         fi
 
         # If KOMODO_HOST_IP is not set, remove the Komodo section from the template

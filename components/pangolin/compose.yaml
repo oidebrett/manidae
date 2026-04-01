@@ -1,18 +1,22 @@
   # Main Pangolin application
   pangolin:
-    image:  docker.io/fosrl/pangolin:1.12.2
+    image:  docker.io/fosrl/pangolin:ee-1.14.1
     #container_name: pangolin
     restart: unless-stopped
     volumes:
       - ./config:/app/config
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/api/v1/"]
-      interval: "10s"
-      timeout: "10s"
+      interval: 10s
       retries: 15
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://localhost:3001/api/v1/
+      timeout: 10s
   # Gerbil WireGuard management
   gerbil:
-    image: fosrl/gerbil:1.2.2
+    image: docker.io/fosrl/gerbil:1.3.0
     #container_name: gerbil
     restart: unless-stopped
     depends_on:
@@ -36,7 +40,7 @@
 
   # Traefik reverse proxy
   traefik:
-    image: traefik:v3.5.3
+    image: traefik:v3.6
     #container_name: traefik
     restart: unless-stopped
     network_mode: service:gerbil # Ports appear on the gerbil service

@@ -1,0 +1,253 @@
+  # ================================
+  # MCP Gateway - AI Orchestration Hub
+  # ================================
+  mcp-gateway:
+    image: oideibrett/context-serve-app:latest
+    #container_name: mcp-gateway
+    restart: unless-stopped
+    environment:
+      # Database
+      - DATABASE_URL=/app/database/services.db
+      # Docker socket mount for container management
+      - DOCKER_SOCKET_PATH=/var/run/docker.sock
+      # Application
+      - NODE_ENV=production
+      - NEXT_PUBLIC_BASE_URL=http://localhost:3000
+      # LLM Provider
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - SIMULATION_MODEL=${SIMULATION_MODEL:-google/gemini-2.0-flash-001}
+      - CHAT_MODEL=${CHAT_MODEL:-google/gemini-2.0-flash-001}
+      # LangWatch
+      - LANGWATCH_API_KEY=${LANGWATCH_API_KEY:-}
+      - LANGWATCH_ENDPOINT=http://langwatch-app:5560
+      - LANGWATCH_APP_URL=http://localhost:5560
+      # Pangolin API
+      - PANGOLIN_API_KEY=${PANGOLIN_API_KEY:-}
+      - PANGOLIN_API_URL=${PANGOLIN_API_URL:-}
+      - PANGOLIN_ORG_ID=${PANGOLIN_ORG_ID:-admin}
+      # Komodo API
+      - KOMODO_API_KEY=${KOMODO_API_KEY:-}
+      - KOMODO_API_SECRET=${KOMODO_API_SECRET:-}
+      - KOMODO_API_URL=${KOMODO_API_URL:-}
+      # Skills Builder
+      - SKILLS_BUILDER_MODEL=${SKILLS_BUILDER_MODEL:-google/gemini-2.0-flash-001}
+      - SKILLS_DIR=/app/skills
+      # Nango
+      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
+      - NANGO_DEFAULT_USER_ID=${NANGO_DEFAULT_USER_ID:-}
+      - NANGO_API_URL=${NANGO_API_URL:-https://api.nango.dev}
+      - NANGO_MCP_URL=${NANGO_MCP_URL:-https://api.nango.dev/mcp}
+      # Vercel
+      - VERCEL_TOKEN=${VERCEL_TOKEN:-}
+      - VERCEL_TEAM_ID=${VERCEL_TEAM_ID:-}
+      - VERCEL_PROJECT_ID=${VERCEL_PROJECT_ID:-}
+      # MCP Publisher
+      - MCP_PUBLISHER_PATH=/usr/local/bin/mcp-publisher
+      - MCP_REGISTRY_URL=${MCP_REGISTRY_URL:-http://mcp-registry:8080}
+      - HOST_PROJECT_PATH=${PWD}
+    env_file:
+      - .env
+    volumes:
+      - mcp-gateway-data:/app/database
+      - /var/run/docker.sock:/var/run/docker.sock
+      - .:/app-project
+      - ./config:/app/config
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # MCP Registry
+  mcp-registry:
+    image: ghcr.io/modelcontextprotocol/registry:latest
+    #container_name: mcp-registry
+    restart: on-failure
+    environment:
+      - MCP_REGISTRY_DATABASE_URL=postgres://postgres:mysecretpassword@mcp-postgres:5432/mcp-registry?sslmode=disable
+      - MCP_REGISTRY_SEED_FROM=/app/data/seed.json
+    volumes:
+      - ./config/mcp-gateway/seed.json:/app/data/seed.json:ro
+    depends_on:
+      - mcp-postgres
+
+  # OpenMemory - AI Memory Service
+  openmemory:
+    image: oideibrett/openmemory-openmemory
+    #container_name: openmemory
+    environment:
+      - OM_PORT=${OM_PORT:-8765}
+      - OM_MODE=${OM_MODE:-standard}
+      - OM_TIER=${OM_TIER:-hybrid}
+      - OM_DB_PATH=/data/openmemory.sqlite
+      - OM_API_KEY=${OM_API_KEY:-}
+      - OM_IDE_MODE=${OM_IDE_MODE:-false}
+      - OM_IDE_ALLOWED_ORIGINS=${OM_IDE_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:3001}
+      - OM_RATE_LIMIT_ENABLED=${OM_RATE_LIMIT_ENABLED:-false}
+      - OM_EMBEDDINGS=${OM_EMBEDDINGS:-synthetic}
+      - OM_EMBEDDING_FALLBACK=${OM_EMBEDDING_FALLBACK:-synthetic}
+      - OM_EMBED_MODE=${OM_EMBED_MODE:-simple}
+      - OM_VEC_DIM=${OM_VEC_DIM:-256}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OM_OPENAI_API_KEY=${OM_OPENAI_API_KEY:-}
+      - OM_OPENAI_BASE_URL=${OM_OPENAI_BASE_URL:-https://api.openai.com/v1}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - OM_GEMINI_API_KEY=${OM_GEMINI_API_KEY:-}
+      - OM_MIN_SCORE=${OM_MIN_SCORE:-0.3}
+      - OM_METADATA_BACKEND=${OM_METADATA_BACKEND:-sqlite}
+      - OM_VECTOR_BACKEND=${OM_VECTOR_BACKEND:-sqlite}
+      - OM_AUTO_REFLECT=${OM_AUTO_REFLECT:-false}
+    volumes:
+      - openmemory-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:8765/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # OpenMemory Dashboard
+  openmemory-dashboard:
+    image: oideibrett/openmemory-dashboard
+    #container_name: openmemory-dashboard
+    environment:
+      - PORT=3000
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_OPENMEMORY_API_URL:-http://localhost:8765}
+      - NEXT_PUBLIC_API_KEY=${OM_API_KEY:-}
+    depends_on:
+      openmemory:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3000']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # MCP Postgres Database
+  mcp-postgres:
+    image: postgres:15-alpine
+    #container_name: mcp-postgres
+    environment:
+      - POSTGRES_PASSWORD=mysecretpassword
+      - POSTGRES_DB=mcp-registry
+    volumes:
+      - mcp-postgres-data:/var/lib/postgresql/data
+
+  # LangWatch App - AI Observability
+  langwatch-app:
+    image: langwatch/langwatch:latest
+    #container_name: langwatch-app
+    environment:
+      SKIP_ENV_VALIDATION: "true"
+      DISABLE_PII_REDACTION: "true"
+      DATABASE_URL: postgresql://prisma:prisma@langwatch-postgres:5432/mydb?schema=mydb
+      ELASTICSEARCH_NODE_URL: http://langwatch-opensearch:9200
+      IS_OPENSEARCH: "true"
+      REDIS_URL: redis://langwatch-redis:6379
+      LANGWATCH_NLP_SERVICE: http://langwatch-nlp:5561
+      LANGEVALS_ENDPOINT: http://langwatch-langevals:5562
+      INSTALL_METHOD: docker
+      NODE_ENV: production
+    env_file:
+      - ./config/mcp-gateway/langwatch.env
+    pull_policy: always
+    depends_on:
+      langwatch-postgres:
+        condition: service_healthy
+      langwatch-redis:
+        condition: service_healthy
+      langwatch-opensearch:
+        condition: service_healthy
+
+  # LangWatch NLP Service
+  langwatch-nlp:
+    image: langwatch/langwatch_nlp:latest
+    #container_name: langwatch-nlp
+    env_file:
+      - ./config/mcp-gateway/langwatch.env
+    restart: always
+    pull_policy: always
+    environment:
+      - LANGWATCH_ENDPOINT=http://langwatch-app:5560
+
+  # LangWatch Langevals Service
+  langwatch-langevals:
+    image: langwatch/langevals:latest
+    #container_name: langwatch-langevals
+    restart: always
+    pull_policy: always
+    environment:
+      - DISABLE_EVALUATORS_PRELOAD=true
+
+  # LangWatch Postgres Database
+  langwatch-postgres:
+    image: postgres:16
+    #container_name: langwatch-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: mydb
+      POSTGRES_USER: prisma
+      POSTGRES_PASSWORD: prisma
+    volumes:
+      - langwatch-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prisma -d mydb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # LangWatch Redis
+  langwatch-redis:
+    image: redis:alpine
+    #container_name: langwatch-redis
+    volumes:
+      - langwatch-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # LangWatch OpenSearch
+  langwatch-opensearch:
+    image: langwatch/opensearch-lite:latest
+    #container_name: langwatch-opensearch
+    environment:
+      - discovery.type=single-node
+      - DISABLE_SECURITY_PLUGIN=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms256m -Xmx256m -XX:+UseG1GC -XX:-UseSerialGC -XX:G1ReservePercent=25 -XX:+AlwaysPreTouch -XX:InitiatingHeapOccupancyPercent=30"
+      - "cluster.routing.allocation.disk.threshold_enabled=false"
+      - "bootstrap.memory_lock=false"
+      - "cluster.routing.allocation.disk.watermark.low=95%"
+      - "cluster.routing.allocation.disk.watermark.high=96%"
+      - "cluster.routing.allocation.disk.watermark.flood_stage=97%"
+      - "cluster.info.update.interval=1m"
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=Some-random-password-which-is-greater-than-16-chars-long~
+      - "node.store.allow_mmap=false"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - langwatch-opensearch-data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200 || exit 1"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "1.0"
+    restart: always
+    pull_policy: always
+

@@ -1,0 +1,31 @@
+  openshell-cluster-openshell:
+    image: ghcr.io/nvidia/openshell/cluster:0.0.16
+    container_name: openshell-cluster-openshell
+    restart: unless-stopped
+    privileged: true
+    security_opt:
+      - label=disable
+    extra_hosts:
+      - host.docker.internal:host-gateway
+      - host.openshell.internal:host-gateway
+    command:
+      - server
+      - --disable=traefik
+      - --tls-san=127.0.0.1
+      - --tls-san=localhost
+      - --tls-san=host.docker.internal
+    volumes:
+      - openshell_data:/var/lib/rancher/k3s
+    environment:
+      - K3S_KUBECONFIG_MODE=644
+      - DISABLE_TLS=true
+      - DISABLE_GATEWAY_AUTH=true
+      - IMAGE_TAG=0.0.16
+      - SSH_GATEWAY_HOST=openshell-gateway.${DOMAIN}
+      - SSH_GATEWAY_PORT=443
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/cluster-healthcheck.sh"]
+      interval: 5s
+      timeout: 5s
+      start_period: 20s
+      retries: 60

@@ -1,4 +1,4 @@
-  # Auth management
+  # Auth management (Keycloak IdP)
   mcpauth:
     image: oideibrett/mcpauth:latest
     volumes:
@@ -7,10 +7,16 @@
       - ENABLE_EDGE_AUTH=true
       - COOKIE_DOMAIN=.${DOMAIN}
       - PORT=11000
-      - PROVIDER=internal
+      - PROVIDER=keycloak
+      - CLIENT_ID=${CLIENT_ID}
+      - CLIENT_SECRET=${CLIENT_SECRET}
       - OAUTH_DOMAIN=${OAUTH_DOMAIN:-oauth.${DOMAIN}}
+      - KEYCLOAK_AUTH_HOST=${KEYCLOAK_AUTH_HOST}
+      - KEYCLOAK_AUTH_PORT=443
+      - KEYCLOAK_AUTH_PROTOCOL=https
+      - KEYCLOAK_REALM=master
       - ALLOWED_SCOPES=openid,email,profile
-      - REQUIRED_SCOPES=openid,email
+      - REQUIRED_SCOPES=email
     restart: unless-stopped
     ports:
       - "11000:11000"

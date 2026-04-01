@@ -18,6 +18,10 @@ add_mcpauth_routing() {
     # Create a temporary file for the new configuration
     local temp_file="/tmp/dynamic_config_mcpauth_temp.yml"
 
+    # Set default for openshell gateway subdomain
+    OPENSHELL_GATEWAY_SUBDOMAIN="${OPENSHELL_GATEWAY_SUBDOMAIN:-openshell-gateway}"
+    export OPENSHELL_GATEWAY_SUBDOMAIN
+
     # Read the existing file and add MCPAuth routing
     awk '
     /^  routers:/ {
@@ -53,6 +57,16 @@ add_mcpauth_routing() {
         print "      service: mcpauth-service"
         print "      entryPoints:"
         print "        - websecure"
+        print "      tls:"
+        print "        certResolver: letsencrypt"
+        print ""
+        print "    # OpenShell login router - routes OAuth/edge-auth paths on openshell subdomain to mcpauth"
+        print "    openshell-login-router:"
+        print "      entryPoints:"
+        print "        - websecure"
+        print "      priority: 300"
+        print "      rule: \"Host(\`" ENVIRON["OPENSHELL_GATEWAY_SUBDOMAIN"] "." ENVIRON["DOMAIN"] "\`) && (PathPrefix(\`/auth/connect\`) || PathPrefix(\`/authorize\`) || PathPrefix(\`/callback\`) || PathPrefix(\`/internal\`))\""
+        print "      service: mcpauth-service"
         print "      tls:"
         print "        certResolver: letsencrypt"
         print ""

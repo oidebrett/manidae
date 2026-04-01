@@ -73,7 +73,14 @@ CREATE TABLE IF NOT EXISTS orgs (
     "orgId" TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     subnet TEXT,
-    settings TEXT
+    "utilitySubnet" TEXT,
+    "createdAt" BIGINT,
+    "requireTwoFactor" BOOLEAN,
+    "maxSessionLengthHours" INTEGER,
+    "passwordExpiryDays" INTEGER,
+    "settingsLogRetentionDaysRequest" INTEGER DEFAULT 7,
+    "settingsLogRetentionDaysAccess" INTEGER DEFAULT 0,
+    "settingsLogRetentionDaysAction" INTEGER DEFAULT 0
 );
 
 -- Organization domains table
@@ -113,11 +120,10 @@ CREATE TABLE IF NOT EXISTS sites (
     "publicKey" TEXT,
     "lastHolePunch" BIGINT,
     "listenPort" INTEGER,
-    "dockerSocketEnabled" BOOLEAN NOT NULL DEFAULT TRUE,
-    "remoteSubnets" TEXT
+    "dockerSocketEnabled" BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- Resources table (adds proxyProtocol and proxyProtocolVersion)
+-- Resources table (adds proxyProtocol, proxyProtocolVersion, and maintenance mode columns)
 CREATE TABLE IF NOT EXISTS resources (
     "resourceId" SERIAL PRIMARY KEY,
     "resourceGuid" TEXT NOT NULL DEFAULT 'PLACEHOLDER',
@@ -142,8 +148,13 @@ CREATE TABLE IF NOT EXISTS resources (
     "enableProxy" BOOLEAN DEFAULT TRUE,
     "skipToIdpId" INTEGER REFERENCES idp("idpId") ON DELETE CASCADE,
     headers TEXT,
-    proxyProtocol TEXT,
-    proxyProtocolVersion TEXT
+    "proxyProtocol" BOOLEAN NOT NULL DEFAULT FALSE,
+    "proxyProtocolVersion" INTEGER DEFAULT 1,
+    "maintenanceModeEnabled" BOOLEAN NOT NULL DEFAULT FALSE,
+    "maintenanceModeType" TEXT DEFAULT 'forced',
+    "maintenanceTitle" TEXT,
+    "maintenanceMessage" TEXT,
+    "maintenanceEstimatedTime" TEXT
 );
 
 -- Site Resources table
@@ -153,11 +164,17 @@ CREATE TABLE IF NOT EXISTS "siteResources" (
     "orgId" TEXT NOT NULL REFERENCES orgs("orgId") ON DELETE CASCADE,
     "niceId" TEXT NOT NULL,
     name TEXT NOT NULL,
-    protocol TEXT NOT NULL,
-    "proxyPort" INTEGER NOT NULL,
-    "destinationPort" INTEGER NOT NULL,
-    "destinationIp" TEXT NOT NULL,
-    enabled BOOLEAN DEFAULT TRUE NOT NULL
+    mode TEXT NOT NULL DEFAULT 'proxy',
+    protocol TEXT,
+    "proxyPort" INTEGER,
+    "destinationPort" INTEGER,
+    destination TEXT,
+    enabled BOOLEAN DEFAULT TRUE NOT NULL,
+    alias TEXT,
+    "aliasAddress" TEXT,
+    "tcpPortRangeString" TEXT DEFAULT '*',
+    "udpPortRangeString" TEXT DEFAULT '*',
+    "disableIcmp" BOOLEAN DEFAULT FALSE NOT NULL
 );
 
 -- Targets table
@@ -619,6 +636,15 @@ get_included_resource_ids() {
     if has_component "mcpauth"; then
         resource_ids="$resource_ids,6"
     fi
+    # Include mcp-gateway (8), openmemory (9), langwatch (10) if mcp-gateway component is present
+    if has_component "mcp-gateway"; then
+        resource_ids="$resource_ids,8,9,10"
+    fi
+    # Include openshell-gateway if openshell component is present
+    # id 7 in agentgateway/pangolin+ CSVs, id 11 in pangolin CSVs
+    if has_component "openshell"; then
+        resource_ids="$resource_ids,7,11"
+    fi
     echo "$resource_ids"
 }
 
@@ -866,14 +892,24 @@ for table in "${TABLES[@]}"; do
     else
         if [[ -f "$CSV_FILE" && $(wc -l < "$CSV_FILE") -gt 1 ]]; then
             # For filterable tables, create filtered CSV first
+            # Only filter if COMPONENTS_CSV or COMPONENTS is set (i.e., we have component info)
+            # If not set, assume the CSV files are already pre-filtered during setup
             if [[ "$table" == "resources" || "$table" == "targets" || "$table" == "roleResources" ]]; then
-                FILTERED_CSV="/tmp/${table}_filtered.csv"
-                if filter_csv_for_deployment "$CSV_FILE" "$FILTERED_CSV" "$table"; then
-                    PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "TRUNCATE TABLE \"$table\" RESTART IDENTITY CASCADE;"
-                    import_csv_with_casts "$table" "$FILTERED_CSV"
-                    rm -f "$FILTERED_CSV"
+                if [[ -n "${COMPONENTS_CSV:-${COMPONENTS:-}}" ]]; then
+                    # COMPONENTS info is available, filter the CSV
+                    FILTERED_CSV="/tmp/${table}_filtered.csv"
+                    if filter_csv_for_deployment "$CSV_FILE" "$FILTERED_CSV" "$table"; then
+                        PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "TRUNCATE TABLE \"$table\" RESTART IDENTITY CASCADE;"
+                        import_csv_with_casts "$table" "$FILTERED_CSV"
+                        rm -f "$FILTERED_CSV"
+                    else
+                        echo "Failed to filter $table, skipping import"
+                    fi
                 else
-                    echo "Failed to filter $table, skipping import"
+                    # No COMPONENTS info - assume CSV is already pre-filtered during setup, import as-is
+                    echo "No COMPONENTS variable set - using pre-filtered CSV for $table"
+                    PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "TRUNCATE TABLE \"$table\" RESTART IDENTITY CASCADE;"
+                    import_csv_with_casts "$table" "$CSV_FILE"
                 fi
             else
                 PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -c "TRUNCATE TABLE \"$table\" RESTART IDENTITY CASCADE;"

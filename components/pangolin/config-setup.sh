@@ -114,6 +114,16 @@ get_included_resource_ids() {
         resource_ids="$resource_ids,6"
     fi
 
+    # Include mcp-gateway (8), openmemory (9), langwatch (10) if mcp-gateway component is present
+    if has_component "mcp-gateway"; then
+        resource_ids="$resource_ids,8,9,10"
+    fi
+
+    # Include openshell-gateway (11) if openshell component is present
+    if has_component "openshell"; then
+        resource_ids="$resource_ids,11"
+    fi
+
     # Note: komodo-core (3) is intentionally excluded from all deployments
 
     echo "$resource_ids"
@@ -205,6 +215,24 @@ update_domains_in_csv() {
             echo "✅ Updated traefik subdomain to ${TRAEFIK_SUBDOMAIN}"
         fi
 
+        # Update mcp-gateway subdomain if custom subdomain is provided
+        if [ -n "${MCP_GATEWAY_SUBDOMAIN:-}" ]; then
+            sed -i "s/mcpgateway\.${DOMAIN}/${MCP_GATEWAY_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
+            echo "✅ Updated mcp-gateway subdomain to ${MCP_GATEWAY_SUBDOMAIN}"
+        fi
+
+        # Update openmemory subdomain if custom subdomain is provided
+        if [ -n "${OPENMEMORY_SUBDOMAIN:-}" ]; then
+            sed -i "s/memory\.${DOMAIN}/${OPENMEMORY_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
+            echo "✅ Updated openmemory subdomain to ${OPENMEMORY_SUBDOMAIN}"
+        fi
+
+        # Update langwatch subdomain if custom subdomain is provided
+        if [ -n "${LANGWATCH_SUBDOMAIN:-}" ]; then
+            sed -i "s/langwatch\.${DOMAIN}/${LANGWATCH_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
+            echo "✅ Updated langwatch subdomain to ${LANGWATCH_SUBDOMAIN}"
+        fi
+
         echo "✅ Updated domain references in resources.csv"
     else
         echo "⚠️ resources.csv not found, skipping domain update"
@@ -272,6 +300,42 @@ process_html_template() {
             sed -i '/<!-- COMPONENT_CONDITIONAL_CHATKIT_START -->/,/<!-- COMPONENT_CONDITIONAL_CHATKIT_END -->/d' "$html_file"
         fi
 
+        ### MCP GATEWAY SECTION ###
+        if has_component "mcp-gateway"; then
+            echo "✅ Including MCP Gateway section in HTML"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_START -->/d; /<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_END -->/d' "$html_file"
+        else
+            echo "❌ Excluding MCP Gateway section from HTML"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_START -->/,/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_END -->/d' "$html_file"
+        fi
+
+        ### TRAEFIK/LOGS SECTION ###
+        if has_component "traefik-log-dashboard"; then
+            echo "✅ Including Traefik/Logs section in HTML"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_TRAEFIK_START -->/d; /<!-- COMPONENT_CONDITIONAL_TRAEFIK_END -->/d' "$html_file"
+        else
+            echo "❌ Excluding Traefik/Logs section from HTML"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_TRAEFIK_START -->/,/<!-- COMPONENT_CONDITIONAL_TRAEFIK_END -->/d' "$html_file"
+        fi
+
+        ### CROWDSEC SECTION ###
+        if has_component "crowdsec" || has_component "pangolin+"; then
+            echo "✅ Including Crowdsec section in HTML"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_CROWDSEC_START -->/d; /<!-- COMPONENT_CONDITIONAL_CROWDSEC_END -->/d' "$html_file"
+        else
+            echo "❌ Excluding Crowdsec section from HTML"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_CROWDSEC_START -->/,/<!-- COMPONENT_CONDITIONAL_CROWDSEC_END -->/d' "$html_file"
+        fi
+
+        ### NLWEB SECTION ###
+        if has_component "nlweb"; then
+            echo "✅ Including NLWeb section in HTML"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_NLWEB_START -->/d; /<!-- COMPONENT_CONDITIONAL_NLWEB_END -->/d' "$html_file"
+        else
+            echo "❌ Excluding NLWeb section from HTML"
+            sed -i '/<!-- COMPONENT_CONDITIONAL_NLWEB_START -->/,/<!-- COMPONENT_CONDITIONAL_NLWEB_END -->/d' "$html_file"
+        fi
+
         echo "✅ HTML template processed successfully"
     else
         echo "⚠️ HTML template not found, skipping HTML processing"
@@ -293,8 +357,28 @@ is_pangolin_plus() {
     esac
 }
 
+# Function to detect if mcp-gateway is included
+# When mcp-gateway is included, we disable crowdsec middleware on websecure entrypoint
+# because it can block web traffic before proper configuration
+has_mcp_gateway() {
+    case "${COMPONENTS_CSV:-}" in
+        *"mcp-gateway"*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
 # Traefik static config
 if is_pangolin_plus; then
+    # Determine if crowdsec middleware should be enabled on websecure
+    # Disable it when mcp-gateway is included to avoid blocking traffic
+    if has_mcp_gateway; then
+        CROWDSEC_ENTRYPOINT_CONFIG="      # middlewares disabled for mcp-gateway compatibility
+      #   - crowdsec@file"
+    else
+        CROWDSEC_ENTRYPOINT_CONFIG="      middlewares:
+        - crowdsec@file"
+    fi
+
     # Pangolin+ configuration with CrowdSec support
     cat > "$ROOT_HOST_DIR/config/traefik/traefik_config.yml" << EOF
 api:
@@ -352,8 +436,7 @@ entryPoints:
     http:
       tls:
         certResolver: "letsencrypt"
-      middlewares:
-        - crowdsec@file
+${CROWDSEC_ENTRYPOINT_CONFIG}
 
 serversTransport:
   insecureSkipVerify: true

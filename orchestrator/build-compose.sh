@@ -60,8 +60,8 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
       COMPONENTS_RAW="$COMPONENTS_RAW,crowdsec"
     fi
   fi
-  if [[ -n "${CLIENT_ID:-}" && -n "${CLIENT_SECRET:-}" ]]; then
-    echo "[orchestrator] Adding mcpauth (CLIENT_ID and CLIENT_SECRET are set)"
+  if [[ -n "${CLIENT_ID:-}" && -n "${CLIENT_SECRET:-}" ]] || [[ -n "${PROVIDER:-}" ]]; then
+    echo "[orchestrator] Adding mcpauth (CLIENT_ID/CLIENT_SECRET or PROVIDER is set)"
     if [[ "$COMPONENTS_RAW" != *"mcpauth"* ]]; then
       COMPONENTS_RAW="$COMPONENTS_RAW,mcpauth"
     fi
@@ -281,19 +281,24 @@ EOF
   if has_component static-page; then sed -n '1,9999p' "$ROOT_DIR/components/static-page/compose.yaml"; fi
   if has_component traefik-log-dashboard; then sed -n '1,9999p' "$ROOT_DIR/components/traefik-log-dashboard/compose.yaml"; fi
 
-  # MCPAuth with conditional configuration based on CLIENT_ID/CLIENT_SECRET
+  # MCPAuth with conditional configuration based on PROVIDER
   if has_component mcpauth; then
-    if [[ -n "${CLIENT_ID:-}" && -n "${CLIENT_SECRET:-}" ]]; then
+    if [[ "${PROVIDER:-}" == "keycloak" ]]; then
+      echo "[orchestrator] Using mcpauth with Keycloak IdP" >&2
+      sed -n '1,9999p' "$ROOT_DIR/components/mcpauth/compose-keycloak.yaml"
+    elif [[ -n "${CLIENT_ID:-}" && -n "${CLIENT_SECRET:-}" ]]; then
       echo "[orchestrator] Using mcpauth with Google OAuth (CLIENT_ID and CLIENT_SECRET are set)" >&2
       sed -n '1,9999p' "$ROOT_DIR/components/mcpauth/compose.yaml"
     else
-      echo "[orchestrator] Using mcpauth with internal OAuth (CLIENT_ID and CLIENT_SECRET not set)" >&2
+      echo "[orchestrator] Using mcpauth with internal OAuth" >&2
       sed -n '1,9999p' "$ROOT_DIR/components/mcpauth/compose-internal.yaml"
     fi
   fi
 
   if has_component crowdsec; then sed -n '1,9999p' "$ROOT_DIR/components/crowdsec/compose.yaml"; fi
   if has_component nlweb; then sed -n '1,9999p' "$ROOT_DIR/components/nlweb/compose.yaml"; fi
+  if has_component mcp-gateway; then sed -n '1,9999p' "$ROOT_DIR/components/mcp-gateway/compose.yaml"; fi
+  if has_component openshell; then sed -n '1,9999p' "$ROOT_DIR/components/openshell/compose.yaml"; fi
   # Note: komodo component has been removed from all deployments
 
   # Add backup service if MAX_BACKUPS is set and greater than 0
@@ -369,11 +374,15 @@ EOF
   volumes_needed=false
   if [[ "$BASE_PLATFORM" == "coolify" ]]; then volumes_needed=true; fi
   if has_component nlweb; then volumes_needed=true; fi
+  if has_component mcp-gateway; then volumes_needed=true; fi
+  if has_component openshell; then volumes_needed=true; fi
 
   if [[ "$volumes_needed" == "true" ]]; then
     echo "volumes:"
     if [[ "$BASE_PLATFORM" == "coolify" ]]; then sed -n '1,9999p' "$ROOT_DIR/components/coolify/volumes.yaml"; fi
     if has_component nlweb; then sed -n '1,9999p' "$ROOT_DIR/components/nlweb/volumes.yaml"; fi
+    if has_component mcp-gateway; then sed -n '1,9999p' "$ROOT_DIR/components/mcp-gateway/volumes.yaml"; fi
+    if has_component openshell; then sed -n '1,9999p' "$ROOT_DIR/components/openshell/volumes.yaml"; fi
     # Note: komodo volumes have been removed from all deployments
   fi
 

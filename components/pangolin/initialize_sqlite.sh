@@ -136,6 +136,17 @@ get_included_resource_ids() {
         resource_ids="$resource_ids,6"
     fi
 
+    # Include mcp-gateway (8), openmemory (9), langwatch (10) if mcp-gateway component is present
+    if has_component "mcp-gateway"; then
+        resource_ids="$resource_ids,8,9,10"
+    fi
+
+    # Include openshell-gateway if openshell component is present
+    # id 7 in agentgateway/pangolin+ CSVs, id 11 in pangolin CSVs
+    if has_component "openshell"; then
+        resource_ids="$resource_ids,7,11"
+    fi
+
     # Note: komodo-core (3) is intentionally excluded from all deployments
 
     echo "$resource_ids"
@@ -326,8 +337,7 @@ CREATE TEMP TABLE temp_sites (
     publicKey TEXT,
     lastHolePunch TEXT,
     listenPort TEXT,
-    dockerSocketEnabled TEXT,
-    remoteSubnets TEXT
+    dockerSocketEnabled TEXT
 );
 
 .mode csv
@@ -336,7 +346,7 @@ CREATE TEMP TABLE temp_sites (
 INSERT INTO sites (
     siteId, orgId, niceId, exitNode, name, pubKey, subnet, bytesIn, bytesOut,
     lastBandwidthUpdate, type, online, address, endpoint, publicKey,
-    lastHolePunch, listenPort, dockerSocketEnabled, remoteSubnets
+    lastHolePunch, listenPort, dockerSocketEnabled
 )
 SELECT
     CASE WHEN siteId = '' THEN NULL ELSE CAST(siteId AS INTEGER) END,
@@ -356,8 +366,7 @@ SELECT
     CASE WHEN publicKey = '' THEN NULL ELSE publicKey END,
     CASE WHEN lastHolePunch = '' THEN NULL ELSE CAST(lastHolePunch AS INTEGER) END,
     CASE WHEN listenPort = '' THEN NULL ELSE CAST(listenPort AS INTEGER) END,
-    CASE WHEN dockerSocketEnabled = 't' THEN 1 WHEN dockerSocketEnabled = 'f' THEN 0 ELSE CAST(dockerSocketEnabled AS INTEGER) END,
-    NULL as remoteSubnets
+    CASE WHEN dockerSocketEnabled = 't' THEN 1 WHEN dockerSocketEnabled = 'f' THEN 0 ELSE CAST(dockerSocketEnabled AS INTEGER) END
 FROM temp_sites;
 
 DROP TABLE temp_sites;
@@ -433,7 +442,12 @@ CREATE TEMP TABLE temp_resources (
     skipToIdpId TEXT,
     headers TEXT,
     proxyProtocol TEXT,
-    proxyProtocolVersion TEXT
+    proxyProtocolVersion TEXT,
+    maintenanceModeEnabled TEXT,
+    maintenanceModeType TEXT,
+    maintenanceTitle TEXT,
+    maintenanceMessage TEXT,
+    maintenanceEstimatedTime TEXT
 );
 
 .mode csv
@@ -443,7 +457,8 @@ INSERT INTO resources (
     resourceId, resourceGuid, orgId, niceId, name, subdomain, fullDomain, domainId,
     ssl, blockAccess, sso, http, protocol, proxyPort, emailWhitelistEnabled,
     applyRules, enabled, stickySession, tlsServerName, setHostHeader, enableProxy,
-    skipToIdpId, headers, proxyProtocol, proxyProtocolVersion
+    skipToIdpId, headers, proxyProtocol, proxyProtocolVersion,
+    maintenanceModeEnabled, maintenanceModeType, maintenanceTitle, maintenanceMessage, maintenanceEstimatedTime
 )
 SELECT
     CASE WHEN resourceId = '' THEN NULL ELSE CAST(resourceId AS INTEGER) END,
@@ -476,8 +491,13 @@ SELECT
     CASE WHEN enableProxy = 't' THEN 1 WHEN enableProxy = 'f' THEN 0 WHEN enableProxy = '' THEN 1 ELSE CAST(enableProxy AS INTEGER) END,
     CASE WHEN skipToIdpId = '' THEN NULL ELSE CAST(skipToIdpId AS INTEGER) END,
     CASE WHEN headers = '' THEN NULL ELSE headers END,
-    CASE WHEN proxyProtocol = '' THEN NULL ELSE proxyProtocol END,
-    CASE WHEN proxyProtocolVersion = '' THEN NULL ELSE proxyProtocolVersion END
+    CASE WHEN proxyProtocol = 't' THEN 1 WHEN proxyProtocol = 'f' THEN 0 ELSE 0 END,
+    CASE WHEN proxyProtocolVersion = '' THEN 1 ELSE CAST(proxyProtocolVersion AS INTEGER) END,
+    CASE WHEN maintenanceModeEnabled = 't' THEN 1 WHEN maintenanceModeEnabled = 'f' THEN 0 ELSE 0 END,
+    CASE WHEN maintenanceModeType = '' THEN 'forced' ELSE maintenanceModeType END,
+    CASE WHEN maintenanceTitle = '' THEN NULL ELSE maintenanceTitle END,
+    CASE WHEN maintenanceMessage = '' THEN NULL ELSE maintenanceMessage END,
+    CASE WHEN maintenanceEstimatedTime = '' THEN NULL ELSE maintenanceEstimatedTime END
 FROM temp_resources;
 
 DROP TABLE temp_resources;
@@ -503,18 +523,25 @@ CREATE TEMP TABLE temp_site_resources (
     orgId TEXT,
     niceId TEXT,
     name TEXT,
+    mode TEXT,
     protocol TEXT,
     proxyPort TEXT,
     destinationPort TEXT,
-    destinationIp TEXT,
-    enabled TEXT
+    destination TEXT,
+    enabled TEXT,
+    alias TEXT,
+    aliasAddress TEXT,
+    tcpPortRangeString TEXT,
+    udpPortRangeString TEXT,
+    disableIcmp TEXT
 );
 
 .mode csv
 .import "$TEMP_CSV" temp_site_resources
 
 INSERT INTO siteResources (
-    siteResourceId, siteId, orgId, niceId, name, protocol, proxyPort, destinationPort, destinationIp, enabled
+    siteResourceId, siteId, orgId, niceId, name, mode, protocol, proxyPort, destinationPort, destination, enabled,
+    alias, aliasAddress, tcpPortRangeString, udpPortRangeString, disableIcmp
 )
 SELECT
     CASE WHEN siteResourceId = '' THEN NULL ELSE CAST(siteResourceId AS INTEGER) END,
@@ -522,11 +549,17 @@ SELECT
     orgId,
     CASE WHEN niceId = '' OR niceId IS NULL THEN 'site-resource-' || siteResourceId ELSE niceId END,
     name,
-    protocol,
+    CASE WHEN mode = '' THEN 'proxy' ELSE mode END,
+    CASE WHEN protocol = '' THEN NULL ELSE protocol END,
     CASE WHEN proxyPort = '' THEN NULL ELSE CAST(proxyPort AS INTEGER) END,
     CASE WHEN destinationPort = '' THEN NULL ELSE CAST(destinationPort AS INTEGER) END,
-    destinationIp,
-    CASE WHEN enabled = 't' THEN 1 WHEN enabled = 'f' THEN 0 ELSE CAST(enabled AS INTEGER) END
+    destination,
+    CASE WHEN enabled = 't' THEN 1 WHEN enabled = 'f' THEN 0 ELSE 1 END,
+    CASE WHEN alias = '' THEN NULL ELSE alias END,
+    CASE WHEN aliasAddress = '' THEN NULL ELSE aliasAddress END,
+    CASE WHEN tcpPortRangeString = '' THEN '*' ELSE tcpPortRangeString END,
+    CASE WHEN udpPortRangeString = '' THEN '*' ELSE udpPortRangeString END,
+    CASE WHEN disableIcmp = 't' THEN 1 WHEN disableIcmp = 'f' THEN 0 ELSE 0 END
 FROM temp_site_resources;
 
 DROP TABLE temp_site_resources;
@@ -561,7 +594,8 @@ CREATE TEMP TABLE temp_targets (
     path TEXT,
     pathMatchType TEXT,
     rewritePath TEXT,
-    rewritePathType TEXT
+    rewritePathType TEXT,
+    priority TEXT
 );
 
 .mode csv
@@ -569,7 +603,7 @@ CREATE TEMP TABLE temp_targets (
 
 INSERT INTO targets (
     targetId, resourceId, siteId, ip, method, port, internalPort, enabled,
-    path, pathMatchType, rewritePath, rewritePathType
+    path, pathMatchType, rewritePath, rewritePathType, priority
 )
 SELECT
     CASE WHEN targetId = '' THEN NULL ELSE CAST(targetId AS INTEGER) END,
@@ -583,7 +617,8 @@ SELECT
     CASE WHEN path = '' THEN NULL ELSE path END,
     CASE WHEN pathMatchType = '' THEN NULL ELSE pathMatchType END,
     CASE WHEN rewritePath = '' THEN NULL ELSE rewritePath END,
-    CASE WHEN rewritePathType = '' THEN NULL ELSE rewritePathType END
+    CASE WHEN rewritePathType = '' THEN NULL ELSE rewritePathType END,
+    CASE WHEN priority = '' THEN 100 ELSE CAST(priority AS INTEGER) END
 FROM temp_targets;
 
 DROP TABLE temp_targets;
@@ -685,14 +720,22 @@ EOF
         fi
     else
         # Check if this table needs filtering for deployment type
+        # Only filter if COMPONENTS_CSV or COMPONENTS is set (i.e., we have component info)
+        # If not set, assume the CSV files are already pre-filtered during setup
         if [[ "$table" == "resources" || "$table" == "targets" || "$table" == "roleResources" ]]; then
-            # Use filtered CSV for deployment-specific tables
-            FILTERED_CSV="/tmp/${table}_filtered.csv"
-            if filter_csv_for_deployment "$CSV_FILE" "$FILTERED_CSV" "$table"; then
-                import_csv_to_sqlite "$table" "$FILTERED_CSV"
-                rm -f "$FILTERED_CSV"  # Clean up filtered file
+            if [[ -n "${COMPONENTS_CSV:-${COMPONENTS:-}}" ]]; then
+                # COMPONENTS info is available, filter the CSV
+                FILTERED_CSV="/tmp/${table}_filtered.csv"
+                if filter_csv_for_deployment "$CSV_FILE" "$FILTERED_CSV" "$table"; then
+                    import_csv_to_sqlite "$table" "$FILTERED_CSV"
+                    rm -f "$FILTERED_CSV"  # Clean up filtered file
+                else
+                    echo "Failed to filter $table, skipping import"
+                fi
             else
-                echo "Failed to filter $table, skipping import"
+                # No COMPONENTS info - assume CSV is already pre-filtered during setup, import as-is
+                echo "No COMPONENTS variable set - using pre-filtered CSV for $table"
+                import_csv_to_sqlite "$table" "$CSV_FILE"
             fi
         else
             # Normal import for other tables
