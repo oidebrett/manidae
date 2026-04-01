@@ -1,6 +1,6 @@
   # Auth management (Keycloak IdP)
   mcpauth:
-    image: oideibrett/mcpauth:latest
+    image: oideibrett/mcpauth:edge_auth
     volumes:
       - ./config/data:/app/data
     environment:
