@@ -378,7 +378,7 @@ if is_pangolin_plus; then
     cat > "$ROOT_HOST_DIR/config/traefik/traefik_config.yml" << EOF
 api:
   insecure: true
-  dashboard: true
+  dashboard: false
 
 providers:
   http:
@@ -441,7 +441,7 @@ else
     cat > "$ROOT_HOST_DIR/config/traefik/traefik_config.yml" << EOF
 api:
   insecure: true
-  dashboard: true
+  dashboard: false
 
 providers:
   http:
