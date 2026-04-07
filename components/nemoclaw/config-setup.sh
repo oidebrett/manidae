@@ -17,10 +17,6 @@ chmod 600 "${HOST_SETUP_DIR}/config/letsencrypt"
 
 # Create Traefik static configuration
 cat > "${HOST_SETUP_DIR}/config/traefik/traefik_config.yml" << EOF
-api:
-  insecure: true
-  dashboard: true
-
 providers:
   file:
     directory: "/rules"
@@ -81,7 +77,7 @@ http:
     nemoclaw-service:
       loadBalancer:
         servers:
-          - url: "http://host.docker.internal:18789"
+          - url: "http://localhost:18789"
 EOF
 
 echo "NemoClaw Traefik setup complete"
