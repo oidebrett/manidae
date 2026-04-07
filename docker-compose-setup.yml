@@ -122,6 +122,7 @@ services:
         # Validate required environment variables based on platform
         PANGOLIN_VARS_SET=false
         COOLIFY_VARS_SET=false
+        NEMOCLAW_VARS_SET=false
 
         if [ -n \"$$DOMAIN\" ] && [ -n \"$$EMAIL\" ]; then
           PANGOLIN_VARS_SET=true
@@ -133,7 +134,12 @@ services:
           COOLIFY_VARS_SET=true
         fi
 
-        if [ \"$$PANGOLIN_VARS_SET\" = false ] && [ \"$$COOLIFY_VARS_SET\" = false ]; then
+        # For NemoClaw, check if COMPONENTS includes nemoclaw OR NemoClaw env vars are set
+        if [ \"$$COMPONENTS\" = \"nemoclaw\" ] || echo \"$$COMPONENTS\" | grep -q \"nemoclaw\" || ([ -n \"$$NEMOCLAW_PROVIDER\" ] && [ -n \"$$NEMOCLAW_MODEL\" ] && [ -n \"$$NEMOCLAW_INFERENCE_API_KEY\" ]); then
+          NEMOCLAW_VARS_SET=true
+        fi
+
+        if [ \"$$PANGOLIN_VARS_SET\" = false ] && [ \"$$COOLIFY_VARS_SET\" = false ] && [ \"$$NEMOCLAW_VARS_SET\" = false ]; then
           echo '❌ Error: No platform detected!'
           echo ''
           echo '🐧 For Pangolin platform (required):'
@@ -148,6 +154,9 @@ services:
           echo 'Or provide any Coolify variables:'
           echo 'DB_USERNAME=coolify DB_PASSWORD=secure-password docker compose -f docker-compose-setup.yml up'
           echo 'Most Coolify variables are optional and will be auto-generated if not provided'
+          echo ''
+          echo '🤖 For NemoClaw platform:'
+          echo 'COMPONENTS=nemoclaw NEMOCLAW_PROVIDER=cloud NEMOCLAW_MODEL=... NEMOCLAW_INFERENCE_API_KEY=... docker compose -f docker-compose-setup.yml up'
           echo ''
           echo '📋 Use .env file:'
           echo 'Copy .env.pangolin.example or .env.coolify.example to .env and run:'
