@@ -1,0 +1,18 @@
+  # Traefik reverse proxy for NemoClaw dashboard
+  # Routes {NEMOCLAW_SUBDOMAIN}.nemoclaw.dpdns.org → OpenShell sandbox port 18789
+  # The NemoClaw sandbox itself runs inside OpenShell (installed via startup script),
+  # NOT as a Docker container in this compose.
+  traefik:
+    image: traefik:v3.6
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    command:
+      - --configFile=/etc/traefik/traefik_config.yml
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes:
+      - ./config/traefik:/etc/traefik:ro
+      - ./config/letsencrypt:/letsencrypt
+      - ./config/traefik/rules:/rules

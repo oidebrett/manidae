@@ -1,0 +1,21 @@
+{
+  "name": "nemoclaw",
+  "required_env": [
+    {"name": "NEMOCLAW_PROVIDER", "hint": "Inference provider (nvidia-prod, openai-api, anthropic-prod, gemini-api, compatible-endpoint)"},
+    {"name": "NEMOCLAW_MODEL", "hint": "Model ID (e.g., nvidia/nemotron-3-super-120b-a12b)"},
+    {"name": "NEMOCLAW_INFERENCE_API_KEY", "hint": "API key for the inference provider"}
+  ],
+  "optional_env": [
+    {"name": "NEMOCLAW_INFERENCE_BASE_URL", "hint": "Custom inference API endpoint URL"},
+    {"name": "NEMOCLAW_INFERENCE_API", "hint": "API type (openai-responses, openai-completions, anthropic)"},
+    {"name": "NEMOCLAW_SUBDOMAIN", "hint": "Subdomain for the NemoClaw dashboard (auto-generated if not set)"},
+    {"name": "NEMOCLAW_DOMAIN", "hint": "Base domain (default: nemoclaw.dpdns.org)"},
+    {"name": "NEMOCLAW_AUTH_TOKEN", "hint": "Gateway auth token (auto-generated if not set)"},
+    {"name": "TELEGRAM_BOT_TOKEN", "hint": "Telegram bot token for messaging channel"},
+    {"name": "TELEGRAM_USER_ID", "hint": "Telegram user ID for DM allowlist"},
+    {"name": "DISCORD_BOT_TOKEN", "hint": "Discord bot token for messaging channel"},
+    {"name": "SLACK_BOT_TOKEN", "hint": "Slack bot token for messaging channel"},
+    {"name": "BRAVE_API_KEY", "hint": "Brave Search API key for web search capability"}
+  ],
+  "description": "NVIDIA NemoClaw AI agent sandbox with OpenShell security (Landlock + seccomp + netns)"
+}

@@ -1,0 +1,22 @@
+
+NemoClaw AI Agent Sandbox
+=========================
+
+Your NemoClaw deployment includes:
+- OpenClaw AI agent gateway (port 18789)
+- NemoClaw plugin with blueprints
+- OpenShell sandbox with Landlock + seccomp + netns security
+- Traefik reverse proxy with automatic HTTPS via Let's Encrypt
+
+Dashboard: https://${NEMOCLAW_SUBDOMAIN}.${NEMOCLAW_DOMAIN}
+
+Messaging channels (if configured):
+- Telegram: Send /start to your bot to begin chatting
+- Discord: Add the bot to your server and mention it
+- Slack: Add the bot to a channel and mention it
+
+To connect to the sandbox:
+  nemoclaw ${NEMOCLAW_SUBDOMAIN} connect
+
+To check status:
+  nemoclaw ${NEMOCLAW_SUBDOMAIN} status

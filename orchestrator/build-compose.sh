@@ -38,6 +38,9 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
       echo "[orchestrator] Adding static-page (STATIC_PAGE_SUBDOMAIN is set)"
       COMPONENTS_RAW="$COMPONENTS_RAW,static-page"
     fi
+  elif [[ -n "${NEMOCLAW_PROVIDER:-}" && -n "${NEMOCLAW_MODEL:-}" && -n "${NEMOCLAW_INFERENCE_API_KEY:-}" ]]; then
+    echo "[orchestrator] Detected NemoClaw platform (NEMOCLAW_PROVIDER, NEMOCLAW_MODEL, NEMOCLAW_INFERENCE_API_KEY are set)"
+    COMPONENTS_RAW="nemoclaw"
   elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -z "${ADMIN_USERNAME:-}" ]]; then
     echo "[orchestrator] Detected OpenAI Chatkit platform (OPENAI_API_KEY and WORKFLOW_ID are set, no Pangolin admin)"
     COMPONENTS_RAW="openai-chatkit"
@@ -49,6 +52,7 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
     echo "  - For Pangolin: DOMAIN and EMAIL"
     echo "  - For Coolify: Any Coolify environment variables (or COMPONENTS=coolify)"
     echo "  - For OpenAI Chatkit: DOMAIN, EMAIL, OPENAI_API_KEY, and WORKFLOW_ID"
+    echo "  - For NemoClaw: NEMOCLAW_PROVIDER, NEMOCLAW_MODEL, and NEMOCLAW_INFERENCE_API_KEY"
     echo "  - Or specify COMPONENTS explicitly"
     exit 1
   fi
@@ -181,6 +185,8 @@ has_component() {
 detect_base_platform() {
   if has_component "coolify"; then
     echo "coolify"
+  elif has_component "nemoclaw"; then
+    echo "nemoclaw"
   elif has_component "agentgateway"; then
     echo "agentgateway"
   elif has_component "openai-chatkit" && (has_component "pangolin" || has_component "middleware-manager"); then
@@ -194,6 +200,8 @@ detect_base_platform() {
     # Auto-detect based on environment variables
     if [[ -n "${DB_USERNAME:-}" && -n "${REDIS_PASSWORD:-}" && -n "${PUSHER_APP_ID:-}" ]]; then
       echo "coolify"
+    elif [[ -n "${NEMOCLAW_PROVIDER:-}" && -n "${NEMOCLAW_MODEL:-}" ]]; then
+      echo "nemoclaw"
     elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -n "${ADMIN_USERNAME:-}" && -n "${ADMIN_PASSWORD:-}" ]]; then
       echo "agentgateway"
     elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -z "${ADMIN_USERNAME:-}" ]]; then
@@ -274,6 +282,9 @@ EOF
   elif [[ "$BASE_PLATFORM" == "openai-chatkit" ]]; then
     # OpenAI Chatkit platform (standalone with traefik)
     sed -n '1,9999p' "$ROOT_DIR/components/openai-chatkit/compose.yaml"
+  elif [[ "$BASE_PLATFORM" == "nemoclaw" ]]; then
+    # NemoClaw platform (Traefik proxy to OpenShell sandbox)
+    sed -n '1,9999p' "$ROOT_DIR/components/nemoclaw/compose.yaml"
   fi
 
   # Optional components (platform-agnostic)
@@ -413,6 +424,13 @@ networks:
     driver: bridge
     external: true
 EOF
+  elif [[ "$BASE_PLATFORM" == "nemoclaw" ]]; then
+    cat <<'EOF'
+networks:
+  default:
+    driver: bridge
+    name: nemoclaw
+EOF
   elif [[ "$BASE_PLATFORM" == "openai-chatkit" ]]; then
     cat <<'EOF'
 networks:
@@ -454,6 +472,19 @@ export MAXMIND_LICENSE_KEY="\${MAXMIND_LICENSE_KEY:-}"
 export CLIENT_ID="\${CLIENT_ID:-}"
 export CLIENT_SECRET="\${CLIENT_SECRET:-}"
 export OAUTH_DOMAIN="\${OAUTH_DOMAIN:-}"
+export NEMOCLAW_PROVIDER="\${NEMOCLAW_PROVIDER:-}"
+export NEMOCLAW_MODEL="\${NEMOCLAW_MODEL:-}"
+export NEMOCLAW_INFERENCE_API_KEY="\${NEMOCLAW_INFERENCE_API_KEY:-}"
+export NEMOCLAW_INFERENCE_BASE_URL="\${NEMOCLAW_INFERENCE_BASE_URL:-}"
+export NEMOCLAW_INFERENCE_API="\${NEMOCLAW_INFERENCE_API:-}"
+export NEMOCLAW_SUBDOMAIN="\${NEMOCLAW_SUBDOMAIN:-}"
+export NEMOCLAW_DOMAIN="\${NEMOCLAW_DOMAIN:-nemoclaw.dpdns.org}"
+export NEMOCLAW_AUTH_TOKEN="\${NEMOCLAW_AUTH_TOKEN:-}"
+export TELEGRAM_BOT_TOKEN="\${TELEGRAM_BOT_TOKEN:-}"
+export TELEGRAM_USER_ID="\${TELEGRAM_USER_ID:-}"
+export DISCORD_BOT_TOKEN="\${DISCORD_BOT_TOKEN:-}"
+export SLACK_BOT_TOKEN="\${SLACK_BOT_TOKEN:-}"
+export BRAVE_API_KEY="\${BRAVE_API_KEY:-}"
 
 log() { printf "%s\n" "\$*"; }
 run_component_hooks() {
@@ -514,6 +545,19 @@ export MAXMIND_LICENSE_KEY="\${MAXMIND_LICENSE_KEY:-}"
 export CLIENT_ID="\${CLIENT_ID:-}"
 export CLIENT_SECRET="\${CLIENT_SECRET:-}"
 export OAUTH_DOMAIN="\${OAUTH_DOMAIN:-}"
+export NEMOCLAW_PROVIDER="\${NEMOCLAW_PROVIDER:-}"
+export NEMOCLAW_MODEL="\${NEMOCLAW_MODEL:-}"
+export NEMOCLAW_INFERENCE_API_KEY="\${NEMOCLAW_INFERENCE_API_KEY:-}"
+export NEMOCLAW_INFERENCE_BASE_URL="\${NEMOCLAW_INFERENCE_BASE_URL:-}"
+export NEMOCLAW_INFERENCE_API="\${NEMOCLAW_INFERENCE_API:-}"
+export NEMOCLAW_SUBDOMAIN="\${NEMOCLAW_SUBDOMAIN:-}"
+export NEMOCLAW_DOMAIN="\${NEMOCLAW_DOMAIN:-nemoclaw.dpdns.org}"
+export NEMOCLAW_AUTH_TOKEN="\${NEMOCLAW_AUTH_TOKEN:-}"
+export TELEGRAM_BOT_TOKEN="\${TELEGRAM_BOT_TOKEN:-}"
+export TELEGRAM_USER_ID="\${TELEGRAM_USER_ID:-}"
+export DISCORD_BOT_TOKEN="\${DISCORD_BOT_TOKEN:-}"
+export SLACK_BOT_TOKEN="\${SLACK_BOT_TOKEN:-}"
+export BRAVE_API_KEY="\${BRAVE_API_KEY:-}"
 
 log() { printf "%s\n" "\$*"; }
 run_component_hooks() {
@@ -554,6 +598,8 @@ info_out="$OUTPUT_DIR/DEPLOYMENT_INFO.txt"
     sed -n '1,9999p' "$ROOT_DIR/components/coolify/deployment-info.txt"
   elif [[ "$BASE_PLATFORM" == "openai-chatkit" ]]; then
     sed -n '1,9999p' "$ROOT_DIR/components/openai-chatkit/deployment-info.txt"
+  elif [[ "$BASE_PLATFORM" == "nemoclaw" ]]; then
+    sed -n '1,9999p' "$ROOT_DIR/components/nemoclaw/deployment-info.txt"
   fi
 
   # Component-specific deployment info
