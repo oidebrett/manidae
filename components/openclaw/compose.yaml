@@ -1,0 +1,14 @@
+  # Traefik reverse proxy for OpenClaw gateway
+  # Routes {OPENCLAW_SUBDOMAIN}.{OPENCLAW_DOMAIN} → OpenClaw host port 18789
+  # The OpenClaw gateway runs as a systemd service on the host, NOT in Docker.
+  # Uses host network mode so Traefik can reach the host's localhost:18789.
+  traefik:
+    image: traefik:v3.6
+    restart: unless-stopped
+    network_mode: host
+    command:
+      - --configFile=/etc/traefik/traefik_config.yml
+    volumes:
+      - ./config/traefik:/etc/traefik:ro
+      - ./config/letsencrypt:/letsencrypt
+      - ./config/traefik/rules:/rules

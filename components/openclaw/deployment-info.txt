@@ -1,0 +1,21 @@
+
+======================================================================
+🦞 OPENCLAW DEPLOYMENT SUCCESSFUL
+======================================================================
+
+Access your OpenClaw Gateway at:
+https://${OPENCLAW_SUBDOMAIN}.${OPENCLAW_DOMAIN}
+
+Your auto-generated access token:
+${OPENCLAW_AUTH_TOKEN}
+
+Tokenized quick-access link:
+https://${OPENCLAW_SUBDOMAIN}.${OPENCLAW_DOMAIN}/#token=${OPENCLAW_AUTH_TOKEN}
+
+----------------------------------------------------------------------
+SYSTEM INFO:
+- OpenClaw is running as a host systemd service (managed by openclaw cli)
+- Traefik is running in Docker (host network mode) as a reverse proxy
+- Logs: journalctl -u openclaw-gateway (on host)
+- Status: openclaw gateway status (on host)
+======================================================================

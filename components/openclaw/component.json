@@ -1,0 +1,32 @@
+{
+  "name": "openclaw",
+  "description": "OpenClaw AI agent gateway — lightweight, no kernel sandbox.",
+  "dependencies": [],
+  "env": [
+    {
+      "name": "OPENCLAW_PROVIDER",
+      "required": true
+    },
+    {
+      "name": "OPENCLAW_MODEL",
+      "required": true
+    },
+    {
+      "name": "OPENCLAW_INFERENCE_API_KEY",
+      "required": true
+    },
+    {
+      "name": "OPENCLAW_SUBDOMAIN",
+      "required": true,
+      "default": "openclaw"
+    },
+    {
+      "name": "OPENCLAW_DOMAIN",
+      "required": true
+    },
+    {
+      "name": "OPENCLAW_AUTH_TOKEN",
+      "required": true
+    }
+  ]
+}

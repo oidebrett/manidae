@@ -72,6 +72,16 @@ services:
       - NEMOCLAW_SUBDOMAIN=${NEMOCLAW_SUBDOMAIN:-}
       - NEMOCLAW_DOMAIN=${NEMOCLAW_DOMAIN:-nemoclaw.dpdns.org}
       - NEMOCLAW_AUTH_TOKEN=${NEMOCLAW_AUTH_TOKEN:-}
+      # OpenClaw configuration
+      - OPENCLAW_PROVIDER=${OPENCLAW_PROVIDER:-}
+      - OPENCLAW_MODEL=${OPENCLAW_MODEL:-}
+      - OPENCLAW_INFERENCE_API_KEY=${OPENCLAW_INFERENCE_API_KEY:-}
+      - OPENCLAW_INFERENCE_BASE_URL=${OPENCLAW_INFERENCE_BASE_URL:-}
+      - OPENCLAW_INFERENCE_API=${OPENCLAW_INFERENCE_API:-}
+      - OPENCLAW_SUBDOMAIN=${OPENCLAW_SUBDOMAIN:-}
+      - OPENCLAW_DOMAIN=${OPENCLAW_DOMAIN:-}
+      - OPENCLAW_AUTH_TOKEN=${OPENCLAW_AUTH_TOKEN:-}
+      # Integrations
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - TELEGRAM_USER_ID=${TELEGRAM_USER_ID:-}
       - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:-}
@@ -123,6 +133,7 @@ services:
         PANGOLIN_VARS_SET=false
         COOLIFY_VARS_SET=false
         NEMOCLAW_VARS_SET=false
+        OPENCLAW_VARS_SET=false
 
         if [ -n \"$$DOMAIN\" ] && [ -n \"$$EMAIL\" ]; then
           PANGOLIN_VARS_SET=true
@@ -139,7 +150,12 @@ services:
           NEMOCLAW_VARS_SET=true
         fi
 
-        if [ \"$$PANGOLIN_VARS_SET\" = false ] && [ \"$$COOLIFY_VARS_SET\" = false ] && [ \"$$NEMOCLAW_VARS_SET\" = false ]; then
+        # For OpenClaw, check if COMPONENTS includes openclaw OR OpenClaw env vars are set
+        if [ \"$$COMPONENTS\" = \"openclaw\" ] || echo \"$$COMPONENTS\" | grep -q \"openclaw\" || ([ -n \"$$OPENCLAW_PROVIDER\" ] && [ -n \"$$OPENCLAW_MODEL\" ] && [ -n \"$$OPENCLAW_INFERENCE_API_KEY\" ]); then
+          OPENCLAW_VARS_SET=true
+        fi
+
+        if [ \"$$PANGOLIN_VARS_SET\" = false ] && [ \"$$COOLIFY_VARS_SET\" = false ] && [ \"$$NEMOCLAW_VARS_SET\" = false ] && [ \"$$OPENCLAW_VARS_SET\" = false ]; then
           echo '❌ Error: No platform detected!'
           echo ''
           echo '🐧 For Pangolin platform (required):'
@@ -157,6 +173,9 @@ services:
           echo ''
           echo '🤖 For NemoClaw platform:'
           echo 'COMPONENTS=nemoclaw NEMOCLAW_PROVIDER=cloud NEMOCLAW_MODEL=... NEMOCLAW_INFERENCE_API_KEY=... docker compose -f docker-compose-setup.yml up'
+          echo ''
+          echo '🦞 For OpenClaw platform:'
+          echo 'COMPONENTS=openclaw OPENCLAW_PROVIDER=cloud OPENCLAW_MODEL=... OPENCLAW_INFERENCE_API_KEY=... docker compose -f docker-compose-setup.yml up'
           echo ''
           echo '📋 Use .env file:'
           echo 'Copy .env.pangolin.example or .env.coolify.example to .env and run:'
@@ -214,6 +233,12 @@ services:
             if [ -n \"$$DB_USERNAME\" ] && [ -n \"$$REDIS_PASSWORD\" ] && [ -n \"$$PUSHER_APP_ID\" ]; then
               echo \"[orchestrator] Detected Coolify platform (DB_USERNAME, REDIS_PASSWORD, PUSHER_APP_ID are set)\"
               COMPONENTS=\"coolify\"
+            elif [ -n \"$$NEMOCLAW_PROVIDER\" ] && [ -n \"$$NEMOCLAW_MODEL\" ] && [ -n \"$$NEMOCLAW_INFERENCE_API_KEY\" ]; then
+              echo \"[orchestrator] Detected NemoClaw platform (NEMOCLAW variables are set)\"
+              COMPONENTS=\"nemoclaw\"
+            elif [ -n \"$$OPENCLAW_PROVIDER\" ] && [ -n \"$$OPENCLAW_MODEL\" ] && [ -n \"$$OPENCLAW_INFERENCE_API_KEY\" ]; then
+              echo \"[orchestrator] Detected OpenClaw platform (OPENLAW variables are set)\"
+              COMPONENTS=\"openclaw\"
             elif [ -n \"$$DOMAIN\" ] && [ -n \"$$EMAIL\" ]; then
               echo \"[orchestrator] Detected Pangolin platform (DOMAIN and EMAIL are set)\"
               COMPONENTS=\"pangolin,middleware-manager\"

@@ -41,6 +41,9 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
   elif [[ -n "${NEMOCLAW_PROVIDER:-}" && -n "${NEMOCLAW_MODEL:-}" && -n "${NEMOCLAW_INFERENCE_API_KEY:-}" ]]; then
     echo "[orchestrator] Detected NemoClaw platform (NEMOCLAW_PROVIDER, NEMOCLAW_MODEL, NEMOCLAW_INFERENCE_API_KEY are set)"
     COMPONENTS_RAW="nemoclaw"
+  elif [[ -n "${OPENCLAW_PROVIDER:-}" && -n "${OPENCLAW_MODEL:-}" && -n "${OPENCLAW_INFERENCE_API_KEY:-}" ]]; then
+    echo "[orchestrator] Detected OpenClaw platform (OPENLAW_PROVIDER, OPENCLAW_MODEL, OPENCLAW_INFERENCE_API_KEY are set)"
+    COMPONENTS_RAW="openclaw"
   elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -z "${ADMIN_USERNAME:-}" ]]; then
     echo "[orchestrator] Detected OpenAI Chatkit platform (OPENAI_API_KEY and WORKFLOW_ID are set, no Pangolin admin)"
     COMPONENTS_RAW="openai-chatkit"
@@ -187,6 +190,8 @@ detect_base_platform() {
     echo "coolify"
   elif has_component "nemoclaw"; then
     echo "nemoclaw"
+  elif has_component "openclaw"; then
+    echo "openclaw"
   elif has_component "agentgateway"; then
     echo "agentgateway"
   elif has_component "openai-chatkit" && (has_component "pangolin" || has_component "middleware-manager"); then
@@ -202,6 +207,8 @@ detect_base_platform() {
       echo "coolify"
     elif [[ -n "${NEMOCLAW_PROVIDER:-}" && -n "${NEMOCLAW_MODEL:-}" ]]; then
       echo "nemoclaw"
+    elif [[ -n "${OPENCLAW_PROVIDER:-}" && -n "${OPENCLAW_MODEL:-}" ]]; then
+      echo "openclaw"
     elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -n "${ADMIN_USERNAME:-}" && -n "${ADMIN_PASSWORD:-}" ]]; then
       echo "agentgateway"
     elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -z "${ADMIN_USERNAME:-}" ]]; then
@@ -285,6 +292,9 @@ EOF
   elif [[ "$BASE_PLATFORM" == "nemoclaw" ]]; then
     # NemoClaw platform (Traefik proxy to OpenShell sandbox)
     sed -n '1,9999p' "$ROOT_DIR/components/nemoclaw/compose.yaml"
+  elif [[ "$BASE_PLATFORM" == "openclaw" ]]; then
+    # OpenClaw platform (Traefik proxy to host service)
+    sed -n '1,9999p' "$ROOT_DIR/components/openclaw/compose.yaml"
   fi
 
   # Optional components (platform-agnostic)
@@ -437,6 +447,13 @@ networks:
   default:
     driver: bridge
     name: chatkit
+EOF
+  elif [[ "$BASE_PLATFORM" == "openclaw" ]]; then
+    cat <<'EOF'
+networks:
+  default:
+    driver: bridge
+    name: openclaw
 EOF
   fi
 } > "$compose_out"
@@ -600,6 +617,8 @@ info_out="$OUTPUT_DIR/DEPLOYMENT_INFO.txt"
     sed -n '1,9999p' "$ROOT_DIR/components/openai-chatkit/deployment-info.txt"
   elif [[ "$BASE_PLATFORM" == "nemoclaw" ]]; then
     sed -n '1,9999p' "$ROOT_DIR/components/nemoclaw/deployment-info.txt"
+  elif [[ "$BASE_PLATFORM" == "openclaw" ]]; then
+    sed -n '1,9999p' "$ROOT_DIR/components/openclaw/deployment-info.txt"
   fi
 
   # Component-specific deployment info
