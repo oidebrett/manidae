@@ -31,6 +31,7 @@
       - ${CROWDSEC_CAPTCHA_PATH:-./config/traefik/conf/captcha.html:/etc/traefik/conf/captcha.html}
     ports:
       - 6060:6060 # metrics endpoint for prometheus
+      - 127.0.0.1:8080:8080 # LAPI for Traefik bouncer plugin (localhost only)
     restart: unless-stopped
     #command: -t # Add test config flag to verify configuration
     networks:

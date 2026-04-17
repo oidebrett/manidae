@@ -103,9 +103,11 @@ if [ "$PLATFORM" = "pangolin" ]; then
     wget -O "$ROOT_HOST_DIR/config/traefik/conf/captcha.html" https://gist.githubusercontent.com/hhftechnology/48569d9f899bb6b889f9de2407efd0d2/raw/captcha.html
 elif [ "$PLATFORM" = "coolify" ]; then
     # For Coolify, download captcha.html to the coolify proxy config
+    mkdir -p "$ROOT_HOST_DIR/config/coolify/proxy/dynamic"
     wget -O "$ROOT_HOST_DIR/config/coolify/proxy/captcha.html" https://gist.githubusercontent.com/hhftechnology/48569d9f899bb6b889f9de2407efd0d2/raw/captcha.html
 
     # Create CrowdSec plugin configuration for Coolify Traefik
+    # Uses host.docker.internal:8080 — CrowdSec exposes LAPI on 127.0.0.1:8080 on the host
     cat > "$ROOT_HOST_DIR/config/coolify/proxy/dynamic/crowdsec-plugin.yml" << 'EOF'
 http:
   middlewares:
@@ -113,54 +115,17 @@ http:
       plugin:
         crowdsec-bouncer:
           crowdsecMode: live
-          crowdsecLapiHost: 'crowdsec:8080'
+          crowdsecLapiHost: 'host.docker.internal:8080'
           crowdsecLapiKey: 'PASTE_YOUR_KEY_HERE'
           enabled: true
 EOF
 
-    # Create docker-compose.override.yml for Coolify proxy logging (to be placed in /data/coolify/proxy/)
-    cat > "$ROOT_HOST_DIR/config/coolify/proxy/docker-compose.override.yml" << 'EOF'
-# Coolify Proxy Logging Override
-# This file enables access logging for Coolify's Traefik proxy
-#
-# IMPORTANT: Copy this file to /data/coolify/proxy/docker-compose.override.yml
-# This will enable access logging required for CrowdSec integration
-
-services:
-  traefik:
-    command:
-      - '--ping=true'
-      - '--ping.entrypoint=http'
-      - '--api.dashboard=true'
-      - '--entrypoints.http.address=:80'
-      - '--entrypoints.https.address=:443'
-      - '--entrypoints.http.http.encodequerysemicolons=true'
-      - '--entryPoints.http.http2.maxConcurrentStreams=250'
-      - '--entrypoints.https.http.encodequerysemicolons=true'
-      - '--entryPoints.https.http2.maxConcurrentStreams=250'
-      - '--entrypoints.https.http3'
-      - '--providers.file.directory=/traefik/dynamic/'
-      - '--providers.file.watch=true'
-      - '--certificatesresolvers.letsencrypt.acme.httpchallenge=true'
-      - '--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=http'
-      - '--certificatesresolvers.letsencrypt.acme.storage=/traefik/acme.json'
-      - '--api.insecure=false'
-      - '--providers.docker=true'
-      - '--providers.docker.exposedbydefault=false'
-      # 🔽 Added crowdsec bounver
-      - '--experimental.plugins.crowdsec-bouncer.modulename=github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin'
-      - '--experimental.plugins.crowdsec-bouncer.version=v1.4.5'      
-      # 🔽 Added log settings
-      - '--log.format=json'
-      - '--log.level=INFO'
-      - '--log.maxSize=100'
-      - '--log.maxAge=3'
-      - '--log.compress=true'
-      - '--accesslog=true'
-      - '--accesslog.format=json'
-      - '--accesslog.filepath=/traefik/access.log'
-
-EOF
+    # Also copy immediately to the proxy dynamic dir so the middleware is defined at startup
+    # (with placeholder key — will be updated by post_deploy once CrowdSec is running)
+    if [ -d "/data/coolify/proxy/dynamic" ]; then
+        cp "$ROOT_HOST_DIR/config/coolify/proxy/dynamic/crowdsec-plugin.yml" /data/coolify/proxy/dynamic/crowdsec-plugin.yml
+        echo "Copied crowdsec-plugin.yml to /data/coolify/proxy/dynamic/"
+    fi
 
 fi
 
