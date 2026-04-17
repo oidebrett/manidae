@@ -1,6 +1,6 @@
   crowdsec:
     image: crowdsecurity/crowdsec:latest
-    container_name: crowdsec
+    #container_name: crowdsec
     extra_hosts:
       - host.docker.internal:host-gateway    
     environment:
