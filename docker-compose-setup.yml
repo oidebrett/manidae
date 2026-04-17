@@ -41,7 +41,7 @@ services:
       # Optional features
       - CROWDSEC_ENROLLMENT_KEY=${CROWDSEC_ENROLLMENT_KEY:-}
       - STATIC_PAGE_SUBDOMAIN=${STATIC_PAGE_SUBDOMAIN:-}
-      - MAXMIND_LICENSE_KEY=${MAXMIND_LICENSE_KEY:-}
+      - MAIN_STACK_PREFIX=${MAIN_STACK_PREFIX:-}
       # OAuth configuration (if needed)
       - CLIENT_ID=${CLIENT_ID:-}
       - CLIENT_SECRET=${CLIENT_SECRET:-}
@@ -273,10 +273,7 @@ services:
               echo \"[orchestrator] Adding static-page (STATIC_PAGE_SUBDOMAIN is set)\"
               COMPONENTS=\"$$COMPONENTS,static-page\"
             fi
-            if [ -n \"$$MAXMIND_LICENSE_KEY\" ]; then
-              echo \"[orchestrator] Adding traefik-log-dashboard (MAXMIND_LICENSE_KEY is set)\"
-              COMPONENTS=\"$$COMPONENTS,traefik-log-dashboard\"
-            fi
+            # traefik-log-dashboard is no longer used; crowdsec-manager replaces it
             export COMPONENTS
             echo \"[orchestrator] Auto-derived COMPONENTS: $$COMPONENTS\"
           else

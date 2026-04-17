@@ -78,15 +78,6 @@ create_static_page_html() {
             fi
         fi
 
-        # Remove Traefik/Logs section if not in component list
-        if ! echo "${COMPONENTS_CSV:-}" | grep -q "traefik-log-dashboard"; then
-            echo "Removing Traefik/Logs section from template as 'traefik-log-dashboard' is not in COMPONENTS_CSV"
-            sed -i '/<!-- COMPONENT_CONDITIONAL_TRAEFIK_START -->/,/<!-- COMPONENT_CONDITIONAL_TRAEFIK_END -->/d' "/tmp/index.html.template"
-        else
-            # Just remove the markers, keep the content
-            sed -i '/<!-- COMPONENT_CONDITIONAL_TRAEFIK_START -->/d; /<!-- COMPONENT_CONDITIONAL_TRAEFIK_END -->/d' "/tmp/index.html.template"
-        fi
-
         # Remove Crowdsec section if not in component list (crowdsec or pangolin+)
         if ! echo "${COMPONENTS_CSV:-}" | grep -q "crowdsec" && ! echo "${COMPONENTS_CSV:-}" | grep -q "pangolin+"; then
             echo "Removing Crowdsec section from template as neither 'crowdsec' nor 'pangolin+' is in COMPONENTS_CSV"
