@@ -1,0 +1,22 @@
+  crowdsec-manager:
+    image: hhftechnology/crowdsec-manager:latest
+    container_name: crowdsec-manager
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      - PORT=8080
+      - ENVIRONMENT=production
+      - TRAEFIK_DYNAMIC_CONFIG=/app/config/traefik/dynamic_config.yml
+      - TRAEFIK_CONTAINER_NAME=traefik
+      - TRAEFIK_STATIC_CONFIG=/app/config/traefik/traefik_config.yml
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config:/app/config
+      - ./compose.yaml:/app/docker-compose.yml
+      - ./backups:/app/backups
+      - ./data:/app/data
+    labels:
+      - "traefik.enable=false"
+    networks:
+      - default

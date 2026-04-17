@@ -25,13 +25,7 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
     COMPONENTS_RAW="coolify"
   elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -n "${ADMIN_USERNAME:-}" && -n "${ADMIN_PASSWORD:-}" ]]; then
     echo "[orchestrator] Detected AgentGateway platform (OPENAI_API_KEY, WORKFLOW_ID, and admin credentials are set)"
-    COMPONENTS_RAW="agentgateway,middleware-manager,crowdsec,mcpauth"
-
-    # Add traefik-log-dashboard if MAXMIND_LICENSE_KEY is provided
-    if [[ -n "${MAXMIND_LICENSE_KEY:-}" ]]; then
-      echo "[orchestrator] Adding traefik-log-dashboard (MAXMIND_LICENSE_KEY is set)"
-      COMPONENTS_RAW="$COMPONENTS_RAW,traefik-log-dashboard"
-    fi
+    COMPONENTS_RAW="agentgateway,middleware-manager,crowdsec,crowdsec-manager,mcpauth"
 
     # Add static-page if STATIC_PAGE_SUBDOMAIN is provided
     if [[ -n "${STATIC_PAGE_SUBDOMAIN:-}" ]]; then
@@ -91,10 +85,6 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
       echo "[orchestrator] Adding static-page (STATIC_PAGE_SUBDOMAIN is set)"
       COMPONENTS_RAW="$COMPONENTS_RAW,static-page"
     fi
-    if [[ -n "${MAXMIND_LICENSE_KEY:-}" ]]; then
-      echo "[orchestrator] Adding traefik-log-dashboard (MAXMIND_LICENSE_KEY is set)"
-      COMPONENTS_RAW="$COMPONENTS_RAW,traefik-log-dashboard"
-    fi
   fi
 
   echo "[orchestrator] Auto-derived COMPONENTS: $COMPONENTS_RAW"
@@ -118,9 +108,8 @@ if [[ "$COMPONENTS_RAW" == "agentgateway" || "$COMPONENTS_RAW" == *",agentgatewa
   fi
 
   # Add conditional components based on environment variables
-  if [[ -n "${MAXMIND_LICENSE_KEY:-}" && "$COMPONENTS_RAW" != *"traefik-log-dashboard"* ]]; then
-    echo "[orchestrator] Adding traefik-log-dashboard (MAXMIND_LICENSE_KEY is set)"
-    COMPONENTS_RAW="$COMPONENTS_RAW,traefik-log-dashboard"
+  if [[ "$COMPONENTS_RAW" != *"crowdsec-manager"* ]]; then
+    COMPONENTS_RAW="$COMPONENTS_RAW,crowdsec-manager"
   fi
   if [[ -n "${STATIC_PAGE_SUBDOMAIN:-}" && "$COMPONENTS_RAW" != *"static-page"* ]]; then
     echo "[orchestrator] Adding static-page (STATIC_PAGE_SUBDOMAIN is set)"
@@ -300,7 +289,7 @@ EOF
   # Optional components (platform-agnostic)
   if has_component middleware-manager; then sed -n '1,9999p' "$ROOT_DIR/components/middleware-manager/compose.yaml"; fi
   if has_component static-page; then sed -n '1,9999p' "$ROOT_DIR/components/static-page/compose.yaml"; fi
-  if has_component traefik-log-dashboard; then sed -n '1,9999p' "$ROOT_DIR/components/traefik-log-dashboard/compose.yaml"; fi
+  if has_component crowdsec-manager; then sed -n '1,9999p' "$ROOT_DIR/components/crowdsec-manager/compose.yaml"; fi
 
   # MCPAuth with conditional configuration based on PROVIDER
   if has_component mcpauth; then

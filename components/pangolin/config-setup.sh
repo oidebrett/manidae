@@ -94,9 +94,9 @@ get_included_resource_ids() {
     # Always include middleware-manager (1) for pangolin deployments
     resource_ids="1"
 
-    # Include traefik-dashboard (2) and logs-viewer (5) if traefik-log-dashboard component is present
-    if has_component "traefik-log-dashboard"; then
-        resource_ids="$resource_ids,2,5"
+    # Include crowdsec-manager (2) if crowdsec-manager component is present
+    if has_component "crowdsec-manager"; then
+        resource_ids="$resource_ids,2"
     fi
 
     # Include nlweb-app (4) and nlweb-crawler (7) if nlweb component is present
@@ -209,10 +209,10 @@ update_domains_in_csv() {
         # Replace yourdomain.com with the DOMAIN variable in resources.csv
         sed -i "s/yourdomain\.com/${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
 
-        # Update traefik subdomain if custom subdomain is provided (traefik is part of pangolin platform)
-        if [ -n "${TRAEFIK_SUBDOMAIN:-}" ]; then
-            sed -i "s/traefik\.${DOMAIN}/${TRAEFIK_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
-            echo "✅ Updated traefik subdomain to ${TRAEFIK_SUBDOMAIN}"
+        # Update crowdsec-manager subdomain if custom subdomain is provided
+        if [ -n "${CROWDSEC_MANAGER_SUBDOMAIN:-}" ]; then
+            sed -i "s/crowdsec-manager\.${DOMAIN}/${CROWDSEC_MANAGER_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
+            echo "✅ Updated crowdsec-manager subdomain to ${CROWDSEC_MANAGER_SUBDOMAIN}"
         fi
 
         # Update mcp-gateway subdomain if custom subdomain is provided
@@ -307,15 +307,6 @@ process_html_template() {
         else
             echo "❌ Excluding MCP Gateway section from HTML"
             sed -i '/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_START -->/,/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_END -->/d' "$html_file"
-        fi
-
-        ### TRAEFIK/LOGS SECTION ###
-        if has_component "traefik-log-dashboard"; then
-            echo "✅ Including Traefik/Logs section in HTML"
-            sed -i '/<!-- COMPONENT_CONDITIONAL_TRAEFIK_START -->/d; /<!-- COMPONENT_CONDITIONAL_TRAEFIK_END -->/d' "$html_file"
-        else
-            echo "❌ Excluding Traefik/Logs section from HTML"
-            sed -i '/<!-- COMPONENT_CONDITIONAL_TRAEFIK_START -->/,/<!-- COMPONENT_CONDITIONAL_TRAEFIK_END -->/d' "$html_file"
         fi
 
         ### CROWDSEC SECTION ###

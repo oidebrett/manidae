@@ -165,43 +165,19 @@
                 </div>
                 <!-- End of Middleware Manager -->
 
-                <!-- COMPONENT_CONDITIONAL_TRAEFIK_START -->
-                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://traefik.yourdomain.com/dashboard/', 'Traefik Dashboard', this)">
-                    <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
-                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/traefik.webp" alt="Traefik Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">T</div>
-                    </div>
-                    <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div class="text-lg font-semibold text-cyan-400 truncate">Traefik</div>
-                    </div>
-                </div>
-
-                <!-- Start of Logs -->
-                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://logs.yourdomain.com/dashboard/', 'Logs Dashboard', this)">
-                    <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
-                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/graylog.webp" alt="Logs Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">L</div>
-                    </div>
-                    <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div class="text-lg font-semibold text-cyan-400 truncate">Logs</div>
-                    </div>
-                </div>
-                <!-- End of Logs -->
-                <!-- COMPONENT_CONDITIONAL_TRAEFIK_END -->
-
                 <!-- COMPONENT_CONDITIONAL_CROWDSEC_START -->
-                <!-- Start of Crowdsec -->
+                <!-- Start of Crowdsec Manager -->
                 <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]"
-                    onclick="window.open('https://app.crowdsec.net/alerts', '_blank')">
+                    onclick="loadApp('https://crowdsec-manager.yourdomain.com', 'CrowdSec Manager', this)">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
-                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/crowdsec.webp" alt="Logs Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">L</div>
+                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/crowdsec.webp" alt="CrowdSec Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">C</div>
                     </div>
                     <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div class="text-lg font-semibold text-cyan-400 truncate">Crowdsec</div>
+                        <div class="text-lg font-semibold text-cyan-400 truncate">CrowdSec</div>
                     </div>
                 </div>
-                <!-- End of Crowdsec -->
+                <!-- End of Crowdsec Manager -->
                 <!-- COMPONENT_CONDITIONAL_CROWDSEC_END -->
 
             </nav>

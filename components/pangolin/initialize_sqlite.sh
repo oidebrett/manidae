@@ -116,9 +116,9 @@ get_included_resource_ids() {
     # Always include middleware-manager (1) for pangolin deployments
     resource_ids="1"
 
-    # Include traefik-dashboard (2) and logs-viewer (5) if traefik-log-dashboard component is present
-    if has_component "traefik-log-dashboard"; then
-        resource_ids="$resource_ids,2,5"
+    # Include crowdsec-manager (2) if crowdsec-manager component is present
+    if has_component "crowdsec-manager"; then
+        resource_ids="$resource_ids,2"
     fi
 
     # Include nlweb-app (4) and nlweb-crawler (7) if nlweb component is present

@@ -624,8 +624,8 @@ has_component() {
 # Which resource IDs to include (same logic as sqlite script)
 get_included_resource_ids() {
     local resource_ids="1"
-    if has_component "traefik-log-dashboard"; then
-        resource_ids="$resource_ids,2,5"
+    if has_component "crowdsec-manager"; then
+        resource_ids="$resource_ids,2"
     fi
     if has_component "nlweb"; then
         resource_ids="$resource_ids,4,7"
