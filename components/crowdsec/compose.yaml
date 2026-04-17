@@ -9,7 +9,7 @@
       ENROLL_INSTANCE_NAME: "${CROWDSEC_INSTANCE_NAME:-pangolin-crowdsec}"
       PARSERS: crowdsecurity/whitelists
       ENROLL_TAGS: docker
-      ENROLL_KEY: ${CROWDSEC_ENROLLMENT_KEY}
+      ENROLL_KEY: ${CROWDSEC_ENROLLMENT_KEY:-}
     healthcheck:
       test:
         - CMD
