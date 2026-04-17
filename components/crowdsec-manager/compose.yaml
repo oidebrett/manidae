@@ -9,10 +9,10 @@
       - ENVIRONMENT=production
       - TRAEFIK_DYNAMIC_CONFIG=/app/config/traefik/dynamic_config.yml
       - TRAEFIK_STATIC_CONFIG=/app/config/traefik/traefik_config.yml
-      - TRAEFIK_CONTAINER_NAME=${COMPOSE_PROJECT_NAME}-traefik-1
-      - CROWDSEC_CONTAINER_NAME=${COMPOSE_PROJECT_NAME}-crowdsec-1
-      - PANGOLIN_CONTAINER_NAME=${COMPOSE_PROJECT_NAME}-pangolin-1
-      - GERBIL_CONTAINER_NAME=${COMPOSE_PROJECT_NAME}-gerbil-1
+      - TRAEFIK_CONTAINER_NAME=${MAIN_STACK_PREFIX}-traefik-1
+      - CROWDSEC_CONTAINER_NAME=${MAIN_STACK_PREFIX}-crowdsec-1
+      - PANGOLIN_CONTAINER_NAME=${MAIN_STACK_PREFIX}-pangolin-1
+      - GERBIL_CONTAINER_NAME=${MAIN_STACK_PREFIX}-gerbil-1
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./config:/app/config
