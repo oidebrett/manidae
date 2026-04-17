@@ -4,23 +4,26 @@ set -e
 
 echo "📄 Setting up static page component..."
 
+# Use ROOT_HOST_DIR if set, otherwise default to /host-setup
+ROOT_HOST_DIR="${ROOT_HOST_DIR:-/host-setup}"
+
 # Function to create static page HTML
 create_static_page_html() {
     echo "📄 Creating static page HTML..."
-    mkdir -p /host-setup/public_html
-    
+    mkdir -p "$ROOT_HOST_DIR/public_html"
+
     # Check if we're in an AgentGateway deployment (index.html already exists and has chatkit)
-    if [ -f "/host-setup/public_html/index.html" ] && grep -q "chatkit" "/host-setup/public_html/index.html"; then
+    if [ -f "$ROOT_HOST_DIR/public_html/index.html" ] && grep -q "chatkit" "$ROOT_HOST_DIR/public_html/index.html"; then
         echo "AgentGateway index.html detected - skipping static page HTML generation to preserve AgentGateway template"
         return 0
     fi
 
     # Check if template exists in the templates html directory
-    if [ -f "/host-setup/templates/html/index.html" ]; then
+    if [ -f "$ROOT_HOST_DIR/templates/html/index.html" ]; then
         echo "Using template from templates directory"
 
         # Copy template to a temporary file
-        cp "/host-setup/templates/html/index.html" "/tmp/index.html.template"
+        cp "$ROOT_HOST_DIR/templates/html/index.html" "/tmp/index.html.template"
 
         # Determine if this is an AgentGateway deployment
         IS_AGENTGATEWAY=false
@@ -135,14 +138,14 @@ create_static_page_html() {
         fi
 
         # Write to final location
-        cp "/tmp/index.html.processing" /host-setup/public_html/index.html
+        cp "/tmp/index.html.processing" $ROOT_HOST_DIR/public_html/index.html
 
         # Clean up temporary files
         rm "/tmp/index.html.template" "/tmp/index.html.processing"
     else
         echo "Template not found, using embedded version"
         # Create basic index.html (fallback to embedded version)
-        cat > /host-setup/public_html/index.html << 'EOF'
+        cat > $ROOT_HOST_DIR/public_html/index.html << 'EOF'
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -168,7 +171,7 @@ EOF
 modify_dynamic_config() {
     echo "🔧 Modifying Traefik dynamic configuration for static page..."
     
-    local config_file="/host-setup/config/traefik/rules/dynamic_config.yml"
+    local config_file="$ROOT_HOST_DIR/config/traefik/rules/dynamic_config.yml"
     
     if [ ! -f "$config_file" ]; then
         echo "⚠️ Warning: dynamic_config.yml not found at $config_file"
