@@ -193,7 +193,7 @@ services:
 
         # Validate domain and email format (only for Pangolin platform)
         if [ \"$$PANGOLIN_VARS_SET\" = true ]; then
-          if ! echo \"$$DOMAIN\" | grep -E '^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]?\\.[a-zA-Z]{2,}$$' > /dev/null; then
+          if ! echo \"$$DOMAIN\" | grep -E '^([a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]?\\.)+[a-zA-Z]{2,}$$' > /dev/null; then
             echo '❌ Error: Invalid domain format'
             exit 1
           fi
