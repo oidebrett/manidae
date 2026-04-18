@@ -692,32 +692,12 @@ for table in "${TABLES[@]}"; do
     CSV_FILE="$EXPORT_DIR/$table.csv"
 
     if [[ "$table" == "userOrgs" ]]; then
-        # Special handling for userOrgs - get the actual user ID and update CSV on the fly
-        if [[ -f "$CSV_FILE" && $(wc -l < "$CSV_FILE") -gt 1 ]]; then
-            echo "Special handling for userOrgs table - updating userId with actual system user ID"
-
-            # Get actual user ID from database
-            ACTUAL_USER_ID=$(sqlite3 "$DB_PATH" "SELECT id FROM \"user\" LIMIT 1;")
-
-            if [[ -n "$ACTUAL_USER_ID" ]]; then
-                # Create a temporary CSV with the correct userId and boolean conversion
-                TEMP_CSV="/tmp/userOrgs_temp.csv"
-                tail -n +2 "$CSV_FILE" | sed "s/^[^,]*/$ACTUAL_USER_ID/; s/,t$/,1/; s/,f$/,0/" > "$TEMP_CSV"
-
-                # Clear existing data and import
-                sqlite3 "$DB_PATH" "DELETE FROM \"userOrgs\";"
-                sqlite3 "$DB_PATH" <<EOF
-.mode csv
-.import "$TEMP_CSV" "userOrgs"
-EOF
-                rm -f "$TEMP_CSV"  # Clean up temp file
-                echo "Updated userOrgs with user ID: $ACTUAL_USER_ID"
-            else
-                echo "Warning: No user found in database, skipping userOrgs import"
-            fi
-        else
-            echo "Skipped $table (file missing or empty)"
-        fi
+        # Skip userOrgs — pangctl set-admin-credentials already creates the correct
+        # userOrgs row before this script runs. The previous import logic would DELETE
+        # that row and re-import from the template CSV with broken boolean conversion
+        # (sed only converts booleans at end-of-line, but isOwner is column 4 of 5),
+        # leaving the admin user with no org association and an empty Pangolin dashboard.
+        echo "Skipping userOrgs — managed by pangctl set-admin-credentials"
     else
         # Check if this table needs filtering for deployment type
         # Only filter if COMPONENTS_CSV or COMPONENTS is set (i.e., we have component info)
