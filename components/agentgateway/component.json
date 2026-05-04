@@ -4,9 +4,7 @@
     "DOMAIN", 
     "EMAIL", 
     "ADMIN_USERNAME", 
-    "ADMIN_PASSWORD",
-    "OPENAI_API_KEY",
-    "WORKFLOW_ID"
+    "ADMIN_PASSWORD"
   ],
   "optional_env": [
     "ADMIN_SUBDOMAIN", 
@@ -14,24 +12,16 @@
     "POSTGRES_PASSWORD", 
     "POSTGRES_HOST",
     "TRAEFIK_SUBDOMAIN",
-    "CHATKIT_SUBDOMAIN",
+    "MIDDLEWARE_MANAGER_SUBDOMAIN",
     "CROWDSEC_ENROLLMENT_KEY",
     "CLIENT_ID",
     "CLIENT_SECRET",
     "OAUTH_DOMAIN",
-    "LOGS_SUBDOMAIN",
-    "MIDDLEWARE_MANAGER_SUBDOMAIN",
-    "VITE_CHATKIT_API_DOMAIN_KEY",
-    "GITHUB_REPO_URL",
-    "SSH_KEY_PATH",
-    "CHATKIT_THEME_JSON",
-    "CHATKIT_GREETING",
-    "CHATKIT_PLACEHOLDER",
-    "CHATKIT_PROMPTS_JSON",
-    "EMBED_MODE",
-    "SHOW_EMBED_CODE",
-    "VITE_CHATKIT_API_URL",
-    "BACKEND_HOST"
+    "OPENSHELL_CONTROLLER_SUBDOMAIN",
+    "OPENSHELL_CONTROL_PASSWORD",
+    "OPENSHELL_CONTROL_AUTH_SECRET",
+    "OPENSHELL_CONTROL_RECOVERY_TOKEN",
+    "NVIDIA_API_KEY"
   ],
-  "description": "AgentGateway platform - Pangolin-based platform with integrated chatkit-embed, security, and management tools"
+  "description": "AgentGateway platform - Pangolin-based platform with MCP authentication and OpenShell Controller for sandboxed agent execution"
 }

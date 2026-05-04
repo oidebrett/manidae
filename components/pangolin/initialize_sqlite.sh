@@ -300,10 +300,8 @@ import_standard_csv() {
     tail -n +2 "$csv_file" | sed 's/,t,/,1,/g; s/,f,/,0,/g; s/,t$/,1/g; s/,f$/,0/g; s/^t,/1,/g; s/^f,/0,/g' > "$TEMP_CSV"
 
     # Import the converted CSV without headers
-    sqlite3 "$DB_PATH" <<EOF
-.mode csv
-.import "$TEMP_CSV" "$table_name"
-EOF
+    # Note: heredoc form of .import silently drops rows in non-interactive mode; printf pipe works reliably
+    printf '.mode csv\n.import "%s" "%s"\n' "$TEMP_CSV" "$table_name" | sqlite3 "$DB_PATH"
 
     # Clean up temp file
     rm -f "$TEMP_CSV"

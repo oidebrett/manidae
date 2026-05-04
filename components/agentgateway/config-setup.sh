@@ -1,5 +1,5 @@
 #!/bin/sh
-# AgentGateway setup (Pangolin-based platform with chatkit-embed)
+# AgentGateway setup (Pangolin-based platform with MCP Auth and OpenShell Controller)
 set -e
 
 echo "🤖 Setting up AgentGateway platform..."
@@ -12,6 +12,15 @@ generate_secret() {
     openssl rand -base64 32 | tr -d "=+/" | cut -c1-32
 }
 
+# Portable sed -i: macOS (BSD sed) requires an explicit backup extension arg
+_sed_i() {
+    if [ "$(uname)" = "Darwin" ]; then
+        sed -i '' "$@"
+    else
+        sed -i "$@"
+    fi
+}
+
 # Directories
 echo "📁 Creating AgentGateway directories..."
 mkdir -p "$ROOT_HOST_DIR/config/traefik"
@@ -20,52 +29,39 @@ mkdir -p "$ROOT_HOST_DIR/config/letsencrypt"
 mkdir -p "$ROOT_HOST_DIR/public_html"
 chmod 600 "$ROOT_HOST_DIR/config/letsencrypt"
 
-# Copy HTML templates
-echo "📄 Setting up AgentGateway HTML templates..."
-
-# Determine the correct path for templates
-TEMPLATE_FOUND=false
+# Copy HTML template from agentgateway component
+echo "📄 Setting up AgentGateway HTML template..."
 if [ -f "${MANIDAE_ROOT:-$ROOT_HOST_DIR}/components/agentgateway/templates/html/index.html" ]; then
-    echo "Using AgentGateway template from components directory"
-    cp "${MANIDAE_ROOT:-$ROOT_HOST_DIR}/components/agentgateway/templates/html/index.html" "/tmp/index.html.template"
-    TEMPLATE_FOUND=true
+    cp "${MANIDAE_ROOT:-$ROOT_HOST_DIR}/components/agentgateway/templates/html/index.html" "$ROOT_HOST_DIR/public_html/index.html"
 elif [ -f "/components/agentgateway/templates/html/index.html" ]; then
-    echo "Using AgentGateway template from container components directory"
-    cp "/components/agentgateway/templates/html/index.html" "/tmp/index.html.template"
-    TEMPLATE_FOUND=true
-elif [ -f "/host-setup/templates/html/index.html" ]; then
-    echo "Using template from host-setup templates directory"
-    cp "/host-setup/templates/html/index.html" "/tmp/index.html.template"
-    TEMPLATE_FOUND=true
-fi
-
-if [ "$TEMPLATE_FOUND" = false ]; then
-    echo "⚠️  No HTML template found, creating basic template"
-    cat > "/tmp/index.html.template" << 'EOF'
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AgentGateway</title>
-</head>
-<body>
-    <h1>Welcome to AgentGateway</h1>
-    <p>Your AI-powered platform is ready!</p>
-    <a href="https://chat.yourdomain.com">Access Chatkit</a>
-</body>
-</html>
+    cp "/components/agentgateway/templates/html/index.html" "$ROOT_HOST_DIR/public_html/index.html"
+else
+    echo "⚠️  AgentGateway HTML template not found, creating basic fallback"
+    cat > "$ROOT_HOST_DIR/public_html/index.html" << 'EOF'
+<!DOCTYPE html><html><head><title>AgentGateway</title></head><body>
+<h1>AgentGateway</h1>
+<p><a href="https://openshell-controller.yourdomain.com">OpenShell Controller</a></p>
+<p><a href="https://idp.yourdomain.com">MCP Auth</a></p>
+</body></html>
 EOF
 fi
 
-# Replace domain placeholders in the template
-sed "s/yourdomain\.com/${DOMAIN}/g" "/tmp/index.html.template" > "$ROOT_HOST_DIR/public_html/index.html"
-echo "✅ HTML template copied to public_html/index.html"
+# Replace domain placeholders in the HTML
+_sed_i "s/yourdomain\.com/${DOMAIN}/g" "$ROOT_HOST_DIR/public_html/index.html"
+
+# Apply custom subdomains if set
+if [ -n "${ADMIN_SUBDOMAIN:-}" ]; then
+    _sed_i "s/subdomain\.${DOMAIN}/${ADMIN_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/public_html/index.html"
+fi
+if [ -n "${OPENSHELL_CONTROLLER_SUBDOMAIN:-}" ]; then
+    _sed_i "s/openshell-controller\.${DOMAIN}/${OPENSHELL_CONTROLLER_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/public_html/index.html"
+fi
+echo "✅ HTML template configured"
 
 # Secret
 SECRET_KEY=$(generate_secret)
 
-# config.yml (base)
+# config.yml (Pangolin base config)
 echo "⚙️ Creating Pangolin configuration..."
 cat > "$ROOT_HOST_DIR/config/config.yml" << EOF
 app:
@@ -126,10 +122,8 @@ postgres:
 
 EOF
 
-# Copy postgres_export files (AgentGateway always overwrites to ensure correct schema)
+# Copy postgres_export files
 echo "📊 Setting up database export files..."
-
-# Find the correct path to the agentgateway component
 COMPONENT_PATH=""
 if [ -d "${MANIDAE_ROOT:-$ROOT_HOST_DIR}/components/agentgateway/postgres_export" ]; then
     COMPONENT_PATH="${MANIDAE_ROOT:-$ROOT_HOST_DIR}/components/agentgateway/postgres_export"
@@ -138,44 +132,23 @@ elif [ -d "/components/agentgateway/postgres_export" ]; then
 fi
 
 if [ -n "$COMPONENT_PATH" ]; then
-    # Create postgres_export directory if it doesn't exist
     mkdir -p "$ROOT_HOST_DIR/postgres_export"
-    # Copy AgentGateway postgres_export files, overwriting any existing files
     cp -r "$COMPONENT_PATH"/* "$ROOT_HOST_DIR/postgres_export/"
     echo "✅ Copied AgentGateway postgres_export files from $COMPONENT_PATH"
 else
     echo "⚠️ AgentGateway postgres_export directory not found, skipping copy"
 fi
 
-# Portable sed -i: macOS (BSD sed) requires an explicit backup extension arg
-_sed_i() {
-    if [ "$(uname)" = "Darwin" ]; then
-        sed -i '' "$@"
-    else
-        sed -i "$@"
-    fi
-}
-
-# Update domains in CSV files
+# Update domain placeholders in CSV files
 update_domains_in_csv() {
-    # Check if resources.csv exists
     if [ -f "$ROOT_HOST_DIR/postgres_export/resources.csv" ]; then
-        # Replace yourdomain.com with the DOMAIN variable in resources.csv
         _sed_i "s/yourdomain\.com/${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
 
-        # Update traefik subdomain if custom subdomain is provided
         if [ -n "${TRAEFIK_SUBDOMAIN:-}" ]; then
             _sed_i "s/traefik\.${DOMAIN}/${TRAEFIK_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
             echo "✅ Updated traefik subdomain to ${TRAEFIK_SUBDOMAIN}"
         fi
 
-        # Update chatkit subdomain if custom subdomain is provided
-        if [ -n "${CHATKIT_SUBDOMAIN:-}" ]; then
-            _sed_i "s/chat\.${DOMAIN}/${CHATKIT_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
-            echo "✅ Updated chatkit subdomain to ${CHATKIT_SUBDOMAIN}"
-        fi
-
-        # Update openshell-controller subdomain if custom subdomain is provided
         if [ -n "${OPENSHELL_CONTROLLER_SUBDOMAIN:-}" ]; then
             _sed_i "s/openshell-controller\.${DOMAIN}/${OPENSHELL_CONTROLLER_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
             echo "✅ Updated openshell-controller subdomain to ${OPENSHELL_CONTROLLER_SUBDOMAIN}"
@@ -187,85 +160,10 @@ update_domains_in_csv() {
     fi
 }
 
-# Update domains in CSV if present
 update_domains_in_csv
 
-# Function to check if a specific component is included
-has_component() {
-    local component="$1"
-    case "${COMPONENTS_CSV:-}" in
-        *"$component"*) return 0 ;;
-        *) return 1 ;;
-    esac
-}
-
-# Function to process HTML template based on components
-process_html_template() {
-    echo "🌐 Processing HTML template based on components..."
-
-    # Create public_html directory if it doesn't exist
-    mkdir -p "$ROOT_HOST_DIR/public_html"
-
-    # Copy the HTML template
-    if [ -f "${MANIDAE_ROOT:-$ROOT_HOST_DIR}/templates/html/index.html" ]; then
-        cp "${MANIDAE_ROOT:-$ROOT_HOST_DIR}/templates/html/index.html" "$ROOT_HOST_DIR/public_html/index.html"
-
-        # Replace domain placeholders
-        _sed_i "s/yourdomain\.com/${DOMAIN}/g" "$ROOT_HOST_DIR/public_html/index.html"
-
-        # Process conditional sections based on components
-        local temp_file="$ROOT_HOST_DIR/public_html/index.html.tmp"
-
-        # Process NLWeb section (AgentGateway doesn't include nlweb)
-        echo "❌ Excluding NLWeb section from HTML (AgentGateway mode)"
-        sed '/<!-- COMPONENT_CONDITIONAL_NLWEB_START -->/,/<!-- COMPONENT_CONDITIONAL_NLWEB_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
-        mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
-
-        # Process Chatkit section (AgentGateway always includes chatkit)
-        echo "✅ Including Chatkit section in HTML (AgentGateway mode)"
-        sed '/<!-- COMPONENT_CONDITIONAL_CHATKIT_START -->/d; /<!-- COMPONENT_CONDITIONAL_CHATKIT_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
-        mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
-
-        # Process IDP section
-        if has_component "mcpauth"; then
-            echo "✅ Including IDP section in HTML"
-            # Keep the IDP section - remove the conditional markers
-            sed '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/d; /<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
-        else
-            echo "❌ Excluding IDP section from HTML"
-            # Remove the entire IDP section
-            sed '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/,/<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
-        fi
-        mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
-
-        # Process MCP Gateway section
-        if has_component "mcp-gateway"; then
-            echo "✅ Including MCP Gateway section in HTML"
-            # Keep the MCP Gateway section - remove the conditional markers
-            sed '/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_START -->/d; /<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
-        else
-            echo "❌ Excluding MCP Gateway section from HTML"
-            # Remove the entire MCP Gateway section
-            sed '/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_START -->/,/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_END -->/d' "$ROOT_HOST_DIR/public_html/index.html" > "$temp_file"
-        fi
-        mv "$temp_file" "$ROOT_HOST_DIR/public_html/index.html"
-
-        echo "✅ HTML template processed successfully"
-    else
-        echo "⚠️ HTML template not found, skipping HTML processing"
-    fi
-}
-
-# Process HTML template based on components
-process_html_template
-
-# Function to detect if agentgateway+ is being used (always true for agentgateway)
-is_agentgateway_plus() {
-    return 0  # AgentGateway always includes enhanced features
-}
-
-# Traefik static config with CrowdSec support (AgentGateway always includes security)
-echo "🔧 Creating Traefik configuration with security features..."
+# Traefik static config with CrowdSec support
+echo "🔧 Creating Traefik configuration..."
 cat > "$ROOT_HOST_DIR/config/traefik/traefik_config.yml" << EOF
 api:
   insecure: true
@@ -339,7 +237,6 @@ http:
         scheme: https
 
   routers:
-    # HTTP to HTTPS redirect router
     main-app-router-redirect:
       rule: "Host(\`${ADMIN_SUBDOMAIN:-pangolin}.${DOMAIN}\`)"
       service: next-service
@@ -348,7 +245,6 @@ http:
       middlewares:
         - redirect-to-https
 
-    # Next.js router (handles everything except API and WebSocket paths)
     next-router:
       rule: "Host(\`${ADMIN_SUBDOMAIN:-pangolin}.${DOMAIN}\`) && !PathPrefix(\`/api/v1\`)"
       service: next-service
@@ -357,7 +253,6 @@ http:
       tls:
         certResolver: letsencrypt
 
-    # API router (handles /api/v1 paths)
     api-router:
       rule: "Host(\`${ADMIN_SUBDOMAIN:-pangolin}.${DOMAIN}\`) && PathPrefix(\`/api/v1\`)"
       service: api-service
@@ -366,7 +261,6 @@ http:
       tls:
         certResolver: letsencrypt
 
-    # WebSocket router
     ws-router:
       rule: "Host(\`${ADMIN_SUBDOMAIN:-pangolin}.${DOMAIN}\`)"
       service: api-service
@@ -379,12 +273,12 @@ http:
     next-service:
       loadBalancer:
         servers:
-          - url: "http://pangolin:3002" # Next.js server
+          - url: "http://pangolin:3002"
 
     api-service:
       loadBalancer:
         servers:
-          - url: "http://pangolin:3000" # API/WebSocket server
+          - url: "http://pangolin:3000"
 EOF
 
 echo "✅ AgentGateway platform setup complete"

@@ -5,17 +5,16 @@ Deployment completed at: $(date)
 📊 Configuration:
 - Domain: ${DOMAIN}
 - Admin Subdomain: ${ADMIN_SUBDOMAIN:-pangolin}
-- Chatkit Subdomain: ${CHATKIT_SUBDOMAIN:-chat}
+- OpenShell Controller Subdomain: ${OPENSHELL_CONTROLLER_SUBDOMAIN:-openshell-controller}
 - Email: ${EMAIL}
 - Admin Username: ${ADMIN_USERNAME}
 
 🌐 Access Information:
 - Admin Dashboard: https://${ADMIN_SUBDOMAIN:-pangolin}.${DOMAIN}
-- AI Chat Interface: https://${CHATKIT_SUBDOMAIN:-chat}.${DOMAIN}
-- Chat Admin Panel: https://${CHATKIT_SUBDOMAIN:-chat}.${DOMAIN}/admin
+- MCP Auth (IDP): https://idp.${DOMAIN}
+- OpenShell Controller: https://${OPENSHELL_CONTROLLER_SUBDOMAIN:-openshell-controller}.${DOMAIN}
 - Traefik Dashboard: https://${TRAEFIK_SUBDOMAIN:-traefik}.${DOMAIN}/dashboard/
 - Middleware Manager: https://${MIDDLEWARE_MANAGER_SUBDOMAIN:-middleware-manager}.${DOMAIN}
-- Logs Dashboard: https://${LOGS_SUBDOMAIN:-logs}.${DOMAIN}
 
 📁 Directory Structure Created:
 ./config/
@@ -25,46 +24,42 @@ Deployment completed at: $(date)
 │   └── rules/
 │       └── dynamic_config.yml # Traefik dynamic routing
 ├── letsencrypt/              # SSL certificates
-├── data/                     # Application data
 └── middleware-manager/       # Middleware configurations
 
 🔧 Services Included:
-- pangolin: Core application platform
+- pangolin: Core application platform (admin dashboard + tunnel management)
 - gerbil: WireGuard VPN management
 - traefik: Reverse proxy with SSL termination
 - pangolin-postgres: PostgreSQL database
-- chatkit-embed: AI-powered chat interface
 - middleware-manager: Dynamic Traefik configuration
-- logs: Real-time log monitoring
 - crowdsec: Collaborative security engine
-- mcpauth: OAuth authentication management
+- mcpauth: OAuth/MCP authentication management
+- openshell (native): OpenShell gateway (installed via install.sh, runs as systemd service)
+- openshell-controller (native): OpenShell Controller dashboard on port 3000 (runs as systemd service)
 
 🚀 Next Steps:
-1. Ensure DNS records point all subdomains to this server
+1. Ensure DNS records point all subdomains (including wildcard *.${DOMAIN}) to this server
 2. Initialize the admin user:
    docker exec agentgateway-pangolin-1 pangctl set-admin-credentials --email "${ADMIN_USERNAME}" --password "${ADMIN_PASSWORD}"
 3. Initialize the database:
    chmod +x initialize_sqlite.sh && ./initialize_sqlite.sh
 4. Access your admin dashboard: https://${ADMIN_SUBDOMAIN:-pangolin}.${DOMAIN}
-5. Start chatting with AI: https://${CHATKIT_SUBDOMAIN:-chat}.${DOMAIN}
+5. Access OpenShell Controller: https://${OPENSHELL_CONTROLLER_SUBDOMAIN:-openshell-controller}.${DOMAIN}
 
 ⚠️ Important Notes:
 - SSL certificates will be automatically generated via Let's Encrypt
 - Ensure ports 80, 443, and 51820 (UDP) are open and accessible
-- Your OPENAI_API_KEY and WORKFLOW_ID must be valid for the chat service to function
+- OpenShell gateway and controller run as native systemd services (not in Docker)
 - CrowdSec provides real-time threat protection
-- VPN access is available through WireGuard on port 51820
 
 🔐 Security Features:
 - CrowdSec collaborative threat protection
 - SSL/TLS encryption for all services
-- OAuth authentication integration
+- MCP OAuth authentication integration
 - VPN access for secure remote management
 - Role-based access control
 
-🤖 AI Features:
-- Conversational AI interface powered by OpenAI
-- Customizable chat themes and prompts
-- Admin panel for chat configuration
-- Integration with GitHub repositories
-- Workflow automation capabilities
+🐚 OpenShell Features:
+- Native OpenShell gateway (installed via NVIDIA install.sh)
+- OpenShell Controller dashboard for managing sandboxed agent execution
+- Accessible at https://${OPENSHELL_CONTROLLER_SUBDOMAIN:-openshell-controller}.${DOMAIN}

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Dashboard</title>
+    <title>AgentGateway Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-900 text-white font-sans h-screen overflow-hidden">
@@ -29,14 +29,14 @@
                         </svg>
                     </div>
                     <div class="ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-                        <h1 class="text-2xl font-bold text-cyan-400">Gateway</h1>
+                        <h1 class="text-2xl font-bold text-cyan-400">AgentGateway</h1>
                         <p class="text-sm text-gray-400 mt-1">Application Dashboard</p>
                     </div>
                 </div>
             </div>
             
             <nav class="flex-1 p-2 space-y-2 overflow-hidden">
-                <!-- Start of Home -->
+                <!-- Home -->
                 <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 border-l-4 border-cyan-400 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="showWelcome()">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
                         <svg class="w-6 h-6 text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
@@ -47,9 +47,8 @@
                         <div class="text-lg font-semibold text-cyan-400 truncate">Home</div>
                     </div>
                 </div>
-                <!-- End of Home -->
 
-                <!-- Start of Pangolin -->
+                <!-- Pangolin -->
                 <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://subdomain.yourdomain.com/admin/settings/resources', 'Pangolin', this)">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
                         <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/pangolin.webp" alt="Pangolin Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
@@ -59,9 +58,8 @@
                         <div class="text-lg font-semibold text-cyan-400 truncate">Pangolin</div>
                     </div>
                 </div>
-                <!-- End of Pangolin -->
 
-                <!-- Start of Middleware Manager -->
+                <!-- Middleware Manager -->
                 <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://middleware-manager.yourdomain.com', 'Middleware Manager', this)">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
                         <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/middleware-manager.webp" alt="Middleware Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
@@ -71,8 +69,8 @@
                         <div class="text-lg font-semibold text-cyan-400 truncate">Middleware Manager</div>
                     </div>                    
                 </div>
-                <!-- End of Middleware Manager -->
 
+                <!-- Traefik -->
                 <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://traefik.yourdomain.com/dashboard/', 'Traefik Dashboard', this)">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
                         <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/traefik.webp" alt="Traefik Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
@@ -83,30 +81,29 @@
                     </div>
                 </div>
 
-                <!-- Start of Logs -->
-                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://logs.yourdomain.com/dashboard/', 'Logs Dashboard', this)">
+                <!-- MCP Auth (mcpauth/idp) -->
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://idp.yourdomain.com', 'MCP Auth', this)">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
-                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/graylog.webp" alt="Logs Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">L</div>
+                        <svg class="w-6 h-6 text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+                        </svg>
                     </div>
                     <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div class="text-lg font-semibold text-cyan-400 truncate">Logs</div>
-                    </div>                    
+                        <div class="text-lg font-semibold text-cyan-400 truncate">MCP Auth</div>
+                    </div>
                 </div>
-                <!-- End of Logs -->
 
-                <!-- Start of Crowdsec Manager -->
-                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]"
-                    onclick="loadApp('https://crowdsec-manager.yourdomain.com', 'CrowdSec Manager', this)">
+                <!-- OpenShell Controller -->
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://openshell-controller.yourdomain.com', 'OpenShell Controller', this)">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
-                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/crowdsec.webp" alt="CrowdSec Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">CS</div>
+                        <svg class="w-6 h-6 text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+                        </svg>
                     </div>
                     <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div class="text-lg font-semibold text-cyan-400 truncate">CrowdSec</div>
+                        <div class="text-lg font-semibold text-cyan-400 truncate">OpenShell Controller</div>
                     </div>
                 </div>
-                <!-- End of Crowdsec Manager -->
 
             </nav>
         </div>
@@ -135,33 +132,27 @@
                 <!-- Welcome Screen -->
                 <div id="welcome-screen" class="flex items-center justify-center h-full bg-gray-900">
                     <div class="text-center max-w-2xl px-8">
-                        <!-- Main Title: Welcomes the user to the Agent Gateway -->
                         <h1 class="text-6xl font-bold mb-6 text-cyan-400 animate-pulse">
-                            Agent Gateway
+                            AgentGateway
                         </h1>
                         <h2 class="text-3xl font-semibold mb-4 text-cyan-500">
                             Sovereign Infrastructure Platform
                         </h2>
-                        <!-- Subtitle: Directs the user to the left-hand navigation -->
                         <p class="text-xl text-gray-400 mb-8">
-                            Secure infrastructure management with sandboxed agent execution and comprehensive monitoring.
+                            Secure infrastructure management with sandboxed agent execution, MCP authentication, and OpenShell terminal access.
                         </p>
-                        <!-- Informational Cards: Provides high-level overview of the gateway's functions -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm text-gray-500">
-                            <!-- Card 1: Focuses on traffic management and routing -->
                             <div class="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-cyan-400/50 transition-shadow duration-300">
                                 <div class="font-semibold text-cyan-400 mb-2">Service Orchestration</div>
-                                <div>Routing & Proxying • Load Balancing</div>
+                                <div>Routing &amp; Proxying • Load Balancing</div>
                             </div>
-                            <!-- Card 2: Highlights security and access control -->
                             <div class="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-cyan-400/50 transition-shadow duration-300">
-                                <div class="font-semibold text-cyan-400 mb-2">Centralized Governance</div>
-                                <div>Authentication • Policy Enforcement</div>
+                                <div class="font-semibold text-cyan-400 mb-2">MCP Authentication</div>
+                                <div>OAuth • Policy Enforcement</div>
                             </div>
-                            <!-- Card 3: Covers observability and metrics -->
                             <div class="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-cyan-400/50 transition-shadow duration-300">
-                                <div class="font-semibold text-cyan-400 mb-2">Platform Visibility</div>
-                                <div>Metrics • Logging & Tracing</div>
+                                <div class="font-semibold text-cyan-400 mb-2">OpenShell Controller</div>
+                                <div>Sandboxed Agent Execution</div>
                             </div>
                         </div>
                         <p class="text-md text-gray-500 mt-8">
@@ -180,50 +171,33 @@
         let currentActiveItem = document.querySelector('.sidebar-item');
         
         function showWelcome() {
-            // Hide iframe and show welcome screen
             document.getElementById('app-iframe').classList.add('hidden');
             const welcomeScreen = document.getElementById('welcome-screen');
             welcomeScreen.innerHTML = `
                     <div class="text-center max-w-2xl px-8">
-                        <!-- Main Title: Welcomes the user to the Agent Gateway -->
-                        <h1 class="text-6xl font-bold mb-6 text-cyan-400 animate-pulse">
-                            Agent Gateway
-                        </h1>
-                        <h2 class="text-3xl font-semibold mb-4 text-cyan-500">
-                            Sovereign Infrastructure Platform
-                        </h2>
-                        <!-- Subtitle: Directs the user to the left-hand navigation -->
-                        <p class="text-xl text-gray-400 mb-8">
-                            Secure infrastructure management with sandboxed agent execution and comprehensive monitoring.
-                        </p>
-                        <!-- Informational Cards: Provides high-level overview of the gateway's functions -->
+                        <h1 class="text-6xl font-bold mb-6 text-cyan-400 animate-pulse">AgentGateway</h1>
+                        <h2 class="text-3xl font-semibold mb-4 text-cyan-500">Sovereign Infrastructure Platform</h2>
+                        <p class="text-xl text-gray-400 mb-8">Secure infrastructure management with sandboxed agent execution, MCP authentication, and OpenShell terminal access.</p>
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm text-gray-500">
-                            <!-- Card 1: Focuses on traffic management and routing -->
                             <div class="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-cyan-400/50 transition-shadow duration-300">
                                 <div class="font-semibold text-cyan-400 mb-2">Service Orchestration</div>
-                                <div>Routing & Proxying • Load Balancing</div>
+                                <div>Routing &amp; Proxying • Load Balancing</div>
                             </div>
-                            <!-- Card 2: Highlights security and access control -->
                             <div class="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-cyan-400/50 transition-shadow duration-300">
-                                <div class="font-semibold text-cyan-400 mb-2">Centralized Governance</div>
-                                <div>Authentication • Policy Enforcement</div>
+                                <div class="font-semibold text-cyan-400 mb-2">MCP Authentication</div>
+                                <div>OAuth • Policy Enforcement</div>
                             </div>
-                            <!-- Card 3: Covers observability and metrics -->
                             <div class="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-cyan-400/50 transition-shadow duration-300">
-                                <div class="font-semibold text-cyan-400 mb-2">Platform Visibility</div>
-                                <div>Metrics • Logging & Tracing</div>
+                                <div class="font-semibold text-cyan-400 mb-2">OpenShell Controller</div>
+                                <div>Sandboxed Agent Execution</div>
                             </div>
                         </div>
-                        <p class="text-md text-gray-500 mt-8">
-                            Select an application from the navigation panel to get started.
-                        </p>
+                        <p class="text-md text-gray-500 mt-8">Select an application from the navigation panel to get started.</p>
                     </div>
             `;
             welcomeScreen.classList.remove('hidden');
             document.getElementById('current-app-title').textContent = 'Welcome';
             document.getElementById('refresh-btn').classList.add('hidden');
-            
-            // Update active item
             updateActiveItem(document.querySelector('.sidebar-item'));
         }
         
@@ -234,77 +208,47 @@
             const loadingIndicator = document.getElementById('loading-indicator');
             const refreshBtn = document.getElementById('refresh-btn');
             
-            // Show loading indicator
             loadingIndicator.classList.remove('hidden');
             titleElement.textContent = `Loading ${title}...`;
-            
-            // Hide welcome screen and show iframe
             welcomeScreen.classList.add('hidden');
             iframe.classList.remove('hidden');
 
             if (url.includes('traefik') && url.includes('/dashboard/')) {
-              // For Traefik dashboard, use a different approach to avoid parameter issues
               iframe.src = url;
-            }
-            else {
-              // Force iframe refresh by adding timestamp to prevent caching issues
+            } else {
               const timestamp = new Date().getTime();
               const separator = url.includes('?') ? '&' : '?';
-              const urlWithTimestamp = url+separator+'_t='+timestamp;
+              iframe.src = url + separator + '_t=' + timestamp;
+            }
 
-              // Load the application
-              iframe.src = urlWithTimestamp;
-            }            
-
-            // Update active sidebar item
             updateActiveItem(element);
             
-            // Set up iframe blocking detection
-            let iframeBlocked = false;
-            let loadTimeout;
-            
-            // Timeout to detect if iframe is blocked (most blocking happens immediately)
-            loadTimeout = setTimeout(() => {
-                if (!iframeBlocked) {
-                    // Likely blocked by X-Frame-Options or CSP
-                    handleIframeBlocked(url, title);
-                }
+            let loadTimeout = setTimeout(() => {
+                handleIframeBlocked(url, title);
             }, 20000);
             
-            // Handle iframe load success
             iframe.onload = function() {
                 clearTimeout(loadTimeout);
-                
                 try {
-                    // Try to access iframe content to detect if it's blocked
                     const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                    
-                    // If we can access it and it's not empty, it loaded successfully
                     if (iframeDoc && iframeDoc.body && iframeDoc.body.innerHTML.trim() !== '') {
                         loadingIndicator.classList.add('hidden');
                         titleElement.textContent = title;
                         refreshBtn.classList.remove('hidden');
                     } else {
-                        // Empty or blocked content
                         handleIframeBlocked(url, title);
                     }
                 } catch (e) {
-                    // Cross-origin access denied - try to detect if it's actually blocked
-                    // If we get here, the iframe loaded but we can't access content
-                    // This could be normal cross-origin or actual blocking
                     setTimeout(() => {
-                        // Check if iframe is displaying content by checking its location
                         try {
                             if (iframe.contentWindow.location.href === 'about:blank') {
                                 handleIframeBlocked(url, title);
                             } else {
-                                // Likely loaded successfully but cross-origin
                                 loadingIndicator.classList.add('hidden');
                                 titleElement.textContent = title;
                                 refreshBtn.classList.remove('hidden');
                             }
                         } catch (e2) {
-                            // Assume it loaded successfully if we can't check
                             loadingIndicator.classList.add('hidden');
                             titleElement.textContent = title;
                             refreshBtn.classList.remove('hidden');
@@ -313,7 +257,6 @@
                 }
             };
             
-            // Handle iframe load errors
             iframe.onerror = function() {
                 clearTimeout(loadTimeout);
                 handleIframeBlocked(url, title);
@@ -327,11 +270,8 @@
             const loadingIndicator = document.getElementById('loading-indicator');
             const refreshBtn = document.getElementById('refresh-btn');
             
-            // Hide loading indicator
             loadingIndicator.classList.add('hidden');
             refreshBtn.classList.add('hidden');
-            
-            // Show blocking message
             iframe.classList.add('hidden');
             welcomeScreen.innerHTML = `
                 <div class="text-center max-w-2xl px-8">
@@ -346,14 +286,13 @@
                         <div class="space-y-3">
                             <button onclick="window.open('${url}', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes')" 
                                     class="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200 mr-3">
-                                Open in New Window!
+                                Open in New Window
                             </button>
                             <button onclick="window.open('${url}', '_blank')" 
                                     class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200">
                                 Open in New Tab
                             </button>
                         </div>
-                        <p class="text-yellow-300 text-sm mt-4">The application will open in a separate window/tab where it can function normally.</p>
                     </div>
                     <button onclick="showWelcome()" class="text-cyan-400 hover:text-cyan-300 underline">
                         ← Back to Welcome
@@ -365,13 +304,10 @@
         }
         
         function updateActiveItem(element) {
-            // Remove active state from all items
             document.querySelectorAll('.sidebar-item').forEach(item => {
                 item.classList.remove('border-l-4', 'border-cyan-400', 'bg-gray-600');
                 item.classList.add('bg-gray-700');
             });
-            
-            // Add active state to clicked item
             element.classList.remove('bg-gray-700');
             element.classList.add('border-l-4', 'border-cyan-400', 'bg-gray-600');
             currentActiveItem = element;
@@ -380,70 +316,57 @@
         function refreshIframe() {
             const iframe = document.getElementById('app-iframe');
             const loadingIndicator = document.getElementById('loading-indicator');
-            
             if (iframe.src !== 'about:blank') {
                 loadingIndicator.classList.remove('hidden');
-                iframe.src = iframe.src; // Reload the iframe
+                iframe.src = iframe.src;
             }
-            
         }
         
-        // Mobile menu functionality
+        // Mobile menu
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
         const mobileOverlay = document.getElementById('mobile-overlay');
         const sidebar = document.getElementById('sidebar');
 
         function toggleMobileMenu() {
             const isOpen = !sidebar.classList.contains('-translate-x-full');
-
             if (isOpen) {
-                // Close menu
                 sidebar.classList.add('-translate-x-full');
                 mobileOverlay.classList.add('hidden');
                 document.body.classList.remove('overflow-hidden');
             } else {
-                // Open menu
                 sidebar.classList.remove('-translate-x-full');
                 mobileOverlay.classList.remove('hidden');
                 document.body.classList.add('overflow-hidden');
             }
         }
 
-        // Mobile menu button click
         mobileMenuBtn.addEventListener('click', toggleMobileMenu);
-
-        // Overlay click to close menu
         mobileOverlay.addEventListener('click', toggleMobileMenu);
 
-        // Close mobile menu when sidebar item is clicked
         document.querySelectorAll('.sidebar-item').forEach(item => {
             item.addEventListener('click', () => {
-                if (window.innerWidth < 768) { // md breakpoint
+                if (window.innerWidth < 768) {
                     setTimeout(() => {
                         sidebar.classList.add('-translate-x-full');
                         mobileOverlay.classList.add('hidden');
                         document.body.classList.remove('overflow-hidden');
-                    }, 100); // Small delay to allow the app to load
+                    }, 100);
                 }
             });
         });
 
-        // Handle window resize
         window.addEventListener('resize', () => {
-            if (window.innerWidth >= 768) { // md breakpoint
-                // Desktop view - ensure sidebar is visible and overlay is hidden
+            if (window.innerWidth >= 768) {
                 sidebar.classList.remove('-translate-x-full');
                 mobileOverlay.classList.add('hidden');
                 document.body.classList.remove('overflow-hidden');
             } else {
-                // Mobile view - ensure sidebar is hidden initially
                 sidebar.classList.add('-translate-x-full');
                 mobileOverlay.classList.add('hidden');
                 document.body.classList.remove('overflow-hidden');
             }
         });
 
-        // Initialize with welcome screen active
         showWelcome();
     </script>
 </body>
