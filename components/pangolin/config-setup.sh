@@ -8,6 +8,15 @@ generate_secret() {
     openssl rand -base64 32 | tr -d "=+/" | cut -c1-32
 }
 
+# Portable sed -i: macOS (BSD sed) requires an explicit backup extension arg
+_sed_i() {
+    if [ "$(uname)" = "Darwin" ]; then
+        sed -i '' "$@"
+    else
+        sed -i "$@"
+    fi
+}
+
 # Directories
 mkdir -p "$ROOT_HOST_DIR/config/traefik"
 mkdir -p "$ROOT_HOST_DIR/config/traefik/rules"
@@ -207,29 +216,29 @@ update_domains_in_csv() {
     # Check if resources.csv exists
     if [ -f "$ROOT_HOST_DIR/postgres_export/resources.csv" ]; then
         # Replace yourdomain.com with the DOMAIN variable in resources.csv
-        sed -i "s/yourdomain\.com/${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
+        _sed_i "s/yourdomain\.com/${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
 
         # Update crowdsec-manager subdomain if custom subdomain is provided
         if [ -n "${CROWDSEC_MANAGER_SUBDOMAIN:-}" ]; then
-            sed -i "s/crowdsec-manager\.${DOMAIN}/${CROWDSEC_MANAGER_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
+            _sed_i "s/crowdsec-manager\.${DOMAIN}/${CROWDSEC_MANAGER_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
             echo "✅ Updated crowdsec-manager subdomain to ${CROWDSEC_MANAGER_SUBDOMAIN}"
         fi
 
         # Update mcp-gateway subdomain if custom subdomain is provided
         if [ -n "${MCP_GATEWAY_SUBDOMAIN:-}" ]; then
-            sed -i "s/mcpgateway\.${DOMAIN}/${MCP_GATEWAY_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
+            _sed_i "s/mcpgateway\.${DOMAIN}/${MCP_GATEWAY_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
             echo "✅ Updated mcp-gateway subdomain to ${MCP_GATEWAY_SUBDOMAIN}"
         fi
 
         # Update openmemory subdomain if custom subdomain is provided
         if [ -n "${OPENMEMORY_SUBDOMAIN:-}" ]; then
-            sed -i "s/memory\.${DOMAIN}/${OPENMEMORY_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
+            _sed_i "s/memory\.${DOMAIN}/${OPENMEMORY_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
             echo "✅ Updated openmemory subdomain to ${OPENMEMORY_SUBDOMAIN}"
         fi
 
         # Update langwatch subdomain if custom subdomain is provided
         if [ -n "${LANGWATCH_SUBDOMAIN:-}" ]; then
-            sed -i "s/langwatch\.${DOMAIN}/${LANGWATCH_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
+            _sed_i "s/langwatch\.${DOMAIN}/${LANGWATCH_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
             echo "✅ Updated langwatch subdomain to ${LANGWATCH_SUBDOMAIN}"
         fi
 
@@ -259,7 +268,7 @@ process_html_template() {
 
     if [ -f "$template" ]; then
         cp "$template" "$html_file"
-        sed -i "s/yourdomain\.com/${DOMAIN}/g" "$html_file"
+        _sed_i "s/yourdomain\.com/${DOMAIN}/g" "$html_file"
 
         echo "🧾 Initial component list: ${COMPONENTS:-<undefined>}"
 
@@ -274,7 +283,7 @@ process_html_template() {
             echo "❌ Excluding Idp section from HTML"
             temp_file="${ROOT_HOST_DIR}/public_html/index.html.tmp"
             echo "🔍 Removing any CRLF..."
-            sed -i 's/\r$//' "$ROOT_HOST_DIR/public_html/index.html"
+            _sed_i 's/\r$//' "$ROOT_HOST_DIR/public_html/index.html"
             echo "🔍 Before removal (show relevant lines):"
             grep -n "COMPONENT_CONDITIONAL_IDP" "$ROOT_HOST_DIR/public_html/index.html" || echo "(markers not found)"
             sed '/<!--[[:space:]]*COMPONENT_CONDITIONAL_IDP_START[[:space:]]*-->/,/[[:space:]]*COMPONENT_CONDITIONAL_IDP_END[[:space:]]*-->/d' \
@@ -294,37 +303,37 @@ process_html_template() {
         ### CHATKIT SECTION ###
         if has_component "openai-chatkit"; then
             echo "✅ Including Chatkit section in HTML"
-            sed -i '/<!-- COMPONENT_CONDITIONAL_CHATKIT_START -->/d; /<!-- COMPONENT_CONDITIONAL_CHATKIT_END -->/d' "$html_file"
+            _sed_i '/<!-- COMPONENT_CONDITIONAL_CHATKIT_START -->/d; /<!-- COMPONENT_CONDITIONAL_CHATKIT_END -->/d' "$html_file"
         else
             echo "❌ Excluding Chatkit section from HTML"
-            sed -i '/<!-- COMPONENT_CONDITIONAL_CHATKIT_START -->/,/<!-- COMPONENT_CONDITIONAL_CHATKIT_END -->/d' "$html_file"
+            _sed_i '/<!-- COMPONENT_CONDITIONAL_CHATKIT_START -->/,/<!-- COMPONENT_CONDITIONAL_CHATKIT_END -->/d' "$html_file"
         fi
 
         ### MCP GATEWAY SECTION ###
         if has_component "mcp-gateway"; then
             echo "✅ Including MCP Gateway section in HTML"
-            sed -i '/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_START -->/d; /<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_END -->/d' "$html_file"
+            _sed_i '/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_START -->/d; /<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_END -->/d' "$html_file"
         else
             echo "❌ Excluding MCP Gateway section from HTML"
-            sed -i '/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_START -->/,/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_END -->/d' "$html_file"
+            _sed_i '/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_START -->/,/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_END -->/d' "$html_file"
         fi
 
         ### CROWDSEC SECTION ###
         if has_component "crowdsec" || has_component "pangolin+"; then
             echo "✅ Including Crowdsec section in HTML"
-            sed -i '/<!-- COMPONENT_CONDITIONAL_CROWDSEC_START -->/d; /<!-- COMPONENT_CONDITIONAL_CROWDSEC_END -->/d' "$html_file"
+            _sed_i '/<!-- COMPONENT_CONDITIONAL_CROWDSEC_START -->/d; /<!-- COMPONENT_CONDITIONAL_CROWDSEC_END -->/d' "$html_file"
         else
             echo "❌ Excluding Crowdsec section from HTML"
-            sed -i '/<!-- COMPONENT_CONDITIONAL_CROWDSEC_START -->/,/<!-- COMPONENT_CONDITIONAL_CROWDSEC_END -->/d' "$html_file"
+            _sed_i '/<!-- COMPONENT_CONDITIONAL_CROWDSEC_START -->/,/<!-- COMPONENT_CONDITIONAL_CROWDSEC_END -->/d' "$html_file"
         fi
 
         ### NLWEB SECTION ###
         if has_component "nlweb"; then
             echo "✅ Including NLWeb section in HTML"
-            sed -i '/<!-- COMPONENT_CONDITIONAL_NLWEB_START -->/d; /<!-- COMPONENT_CONDITIONAL_NLWEB_END -->/d' "$html_file"
+            _sed_i '/<!-- COMPONENT_CONDITIONAL_NLWEB_START -->/d; /<!-- COMPONENT_CONDITIONAL_NLWEB_END -->/d' "$html_file"
         else
             echo "❌ Excluding NLWeb section from HTML"
-            sed -i '/<!-- COMPONENT_CONDITIONAL_NLWEB_START -->/,/<!-- COMPONENT_CONDITIONAL_NLWEB_END -->/d' "$html_file"
+            _sed_i '/<!-- COMPONENT_CONDITIONAL_NLWEB_START -->/,/<!-- COMPONENT_CONDITIONAL_NLWEB_END -->/d' "$html_file"
         fi
 
         echo "✅ HTML template processed successfully"

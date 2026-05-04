@@ -81,6 +81,8 @@ services:
       - OPENCLAW_SUBDOMAIN=${OPENCLAW_SUBDOMAIN:-}
       - OPENCLAW_DOMAIN=${OPENCLAW_DOMAIN:-}
       - OPENCLAW_AUTH_TOKEN=${OPENCLAW_AUTH_TOKEN:-}
+      # OpenShell Controller subdomain (for Pangolin resource routing)
+      - OPENSHELL_CONTROLLER_SUBDOMAIN=${OPENSHELL_CONTROLLER_SUBDOMAIN:-}
       # Integrations
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - TELEGRAM_USER_ID=${TELEGRAM_USER_ID:-}

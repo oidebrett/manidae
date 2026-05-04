@@ -23,6 +23,8 @@
       - IMAGE_TAG=0.0.16
       - SSH_GATEWAY_HOST=openshell-gateway.${DOMAIN}
       - SSH_GATEWAY_PORT=443
+    ports:
+      - "127.0.0.1:8080:8080"
     healthcheck:
       test: ["CMD", "/usr/local/bin/cluster-healthcheck.sh"]
       interval: 5s

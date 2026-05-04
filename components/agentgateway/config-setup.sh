@@ -147,23 +147,38 @@ else
     echo "⚠️ AgentGateway postgres_export directory not found, skipping copy"
 fi
 
+# Portable sed -i: macOS (BSD sed) requires an explicit backup extension arg
+_sed_i() {
+    if [ "$(uname)" = "Darwin" ]; then
+        sed -i '' "$@"
+    else
+        sed -i "$@"
+    fi
+}
+
 # Update domains in CSV files
 update_domains_in_csv() {
     # Check if resources.csv exists
     if [ -f "$ROOT_HOST_DIR/postgres_export/resources.csv" ]; then
         # Replace yourdomain.com with the DOMAIN variable in resources.csv
-        sed -i "s/yourdomain\.com/${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
+        _sed_i "s/yourdomain\.com/${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
 
         # Update traefik subdomain if custom subdomain is provided
         if [ -n "${TRAEFIK_SUBDOMAIN:-}" ]; then
-            sed -i "s/traefik\.${DOMAIN}/${TRAEFIK_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
+            _sed_i "s/traefik\.${DOMAIN}/${TRAEFIK_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
             echo "✅ Updated traefik subdomain to ${TRAEFIK_SUBDOMAIN}"
         fi
 
         # Update chatkit subdomain if custom subdomain is provided
         if [ -n "${CHATKIT_SUBDOMAIN:-}" ]; then
-            sed -i "s/chat\.${DOMAIN}/${CHATKIT_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
+            _sed_i "s/chat\.${DOMAIN}/${CHATKIT_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
             echo "✅ Updated chatkit subdomain to ${CHATKIT_SUBDOMAIN}"
+        fi
+
+        # Update openshell-controller subdomain if custom subdomain is provided
+        if [ -n "${OPENSHELL_CONTROLLER_SUBDOMAIN:-}" ]; then
+            _sed_i "s/openshell-controller\.${DOMAIN}/${OPENSHELL_CONTROLLER_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
+            echo "✅ Updated openshell-controller subdomain to ${OPENSHELL_CONTROLLER_SUBDOMAIN}"
         fi
 
         echo "✅ Updated domain references in resources.csv"
@@ -196,7 +211,7 @@ process_html_template() {
         cp "${MANIDAE_ROOT:-$ROOT_HOST_DIR}/templates/html/index.html" "$ROOT_HOST_DIR/public_html/index.html"
 
         # Replace domain placeholders
-        sed -i "s/yourdomain\.com/${DOMAIN}/g" "$ROOT_HOST_DIR/public_html/index.html"
+        _sed_i "s/yourdomain\.com/${DOMAIN}/g" "$ROOT_HOST_DIR/public_html/index.html"
 
         # Process conditional sections based on components
         local temp_file="$ROOT_HOST_DIR/public_html/index.html.tmp"

@@ -7,6 +7,15 @@ echo "📄 Setting up static page component..."
 # Use ROOT_HOST_DIR if set, otherwise default to /host-setup
 ROOT_HOST_DIR="${ROOT_HOST_DIR:-/host-setup}"
 
+# Portable sed -i: macOS (BSD sed) requires an explicit backup extension arg
+_sed_i() {
+    if [ "$(uname)" = "Darwin" ]; then
+        sed -i '' "$@"
+    else
+        sed -i "$@"
+    fi
+}
+
 # Function to create static page HTML
 create_static_page_html() {
     echo "📄 Creating static page HTML..."
@@ -35,97 +44,97 @@ create_static_page_html() {
         if [ "$IS_AGENTGATEWAY" = true ]; then
             echo "AgentGateway deployment detected - removing nlweb sections and keeping chatkit sections"
             # Remove nlweb sections for AgentGateway
-            sed -i '/<!-- Start of Nlweb -->/,/<!-- End of Nlweb -->/d' "/tmp/index.html.template"
-            sed -i 's/Pangolin • Nlweb/Pangolin/g' "/tmp/index.html.template"
+            _sed_i '/<!-- Start of Nlweb -->/,/<!-- End of Nlweb -->/d' "/tmp/index.html.template"
+            _sed_i 's/Pangolin • Nlweb/Pangolin/g' "/tmp/index.html.template"
         else
             # For non-AgentGateway deployments
             if [ -z "${OPENAI_API_KEY:-}" ]; then
                 echo "Removing Nlweb section from template as OPENAI_API_KEY is not set"
-                sed -i '/<!-- Start of Nlweb -->/,/<!-- End of Nlweb -->/d' "/tmp/index.html.template"
-                sed -i 's/Pangolin • Nlweb/Pangolin/g' "/tmp/index.html.template"
+                _sed_i '/<!-- Start of Nlweb -->/,/<!-- End of Nlweb -->/d' "/tmp/index.html.template"
+                _sed_i 's/Pangolin • Nlweb/Pangolin/g' "/tmp/index.html.template"
             fi
 
             # Remove IdP section if not in component list
             if ! echo "${COMPONENTS_CSV:-}" | grep -q "idp"; then
                 echo "Removing IdP section from template as 'idp' is not in COMPONENTS_CSV"
-                sed -i '/<!-- Start of IDP -->/,/<!-- End of IDP -->/d' "/tmp/index.html.template"
-                sed -i '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/,/<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "/tmp/index.html.template"
-                sed -i 's/Pangolin • Idp/Pangolin/g' "/tmp/index.html.template"
+                _sed_i '/<!-- Start of IDP -->/,/<!-- End of IDP -->/d' "/tmp/index.html.template"
+                _sed_i '/<!-- COMPONENT_CONDITIONAL_IDP_START -->/,/<!-- COMPONENT_CONDITIONAL_IDP_END -->/d' "/tmp/index.html.template"
+                _sed_i 's/Pangolin • Idp/Pangolin/g' "/tmp/index.html.template"
             fi
-            
+
             # Remove chatkit sections for non-AgentGateway deployments
             echo "Removing Chatkit sections from template (not AgentGateway deployment)"
-            sed -i '/<!-- Start of Chatkit -->/,/<!-- End of Chatkit -->/d' "/tmp/index.html.template"
-            sed -i '/<!-- Start of Chatkit Admin -->/,/<!-- End of Chatkit Admin -->/d' "/tmp/index.html.template"
-            sed -i '/<!-- COMPONENT_CONDITIONAL_CHATKIT_START -->/,/<!-- COMPONENT_CONDITIONAL_CHATKIT_END -->/d' "/tmp/index.html.template"
+            _sed_i '/<!-- Start of Chatkit -->/,/<!-- End of Chatkit -->/d' "/tmp/index.html.template"
+            _sed_i '/<!-- Start of Chatkit Admin -->/,/<!-- End of Chatkit Admin -->/d' "/tmp/index.html.template"
+            _sed_i '/<!-- COMPONENT_CONDITIONAL_CHATKIT_START -->/,/<!-- COMPONENT_CONDITIONAL_CHATKIT_END -->/d' "/tmp/index.html.template"
 
             # Remove MCP Gateway section if not in component list
             if ! echo "${COMPONENTS_CSV:-}" | grep -q "mcp-gateway"; then
                 echo "Removing MCP Gateway section from template as 'mcp-gateway' is not in COMPONENTS_CSV"
-                sed -i '/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_START -->/,/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_END -->/d' "/tmp/index.html.template"
+                _sed_i '/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_START -->/,/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_END -->/d' "/tmp/index.html.template"
             else
                 # Just remove the markers, keep the content
-                sed -i '/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_START -->/d; /<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_END -->/d' "/tmp/index.html.template"
+                _sed_i '/<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_START -->/d; /<!-- COMPONENT_CONDITIONAL_MCPGATEWAY_END -->/d' "/tmp/index.html.template"
             fi
 
             # Remove NLWeb section if not in component list
             if ! echo "${COMPONENTS_CSV:-}" | grep -q "nlweb"; then
                 echo "Removing NLWeb section from template as 'nlweb' is not in COMPONENTS_CSV"
-                sed -i '/<!-- COMPONENT_CONDITIONAL_NLWEB_START -->/,/<!-- COMPONENT_CONDITIONAL_NLWEB_END -->/d' "/tmp/index.html.template"
+                _sed_i '/<!-- COMPONENT_CONDITIONAL_NLWEB_START -->/,/<!-- COMPONENT_CONDITIONAL_NLWEB_END -->/d' "/tmp/index.html.template"
             else
                 # Just remove the markers, keep the content
-                sed -i '/<!-- COMPONENT_CONDITIONAL_NLWEB_START -->/d; /<!-- COMPONENT_CONDITIONAL_NLWEB_END -->/d' "/tmp/index.html.template"
+                _sed_i '/<!-- COMPONENT_CONDITIONAL_NLWEB_START -->/d; /<!-- COMPONENT_CONDITIONAL_NLWEB_END -->/d' "/tmp/index.html.template"
             fi
         fi
 
         # Remove Crowdsec section if not in component list (crowdsec or pangolin+)
         if ! echo "${COMPONENTS_CSV:-}" | grep -q "crowdsec" && ! echo "${COMPONENTS_CSV:-}" | grep -q "pangolin+"; then
             echo "Removing Crowdsec section from template as neither 'crowdsec' nor 'pangolin+' is in COMPONENTS_CSV"
-            sed -i '/<!-- COMPONENT_CONDITIONAL_CROWDSEC_START -->/,/<!-- COMPONENT_CONDITIONAL_CROWDSEC_END -->/d' "/tmp/index.html.template"
+            _sed_i '/<!-- COMPONENT_CONDITIONAL_CROWDSEC_START -->/,/<!-- COMPONENT_CONDITIONAL_CROWDSEC_END -->/d' "/tmp/index.html.template"
         else
             # Just remove the markers, keep the content
-            sed -i '/<!-- COMPONENT_CONDITIONAL_CROWDSEC_START -->/d; /<!-- COMPONENT_CONDITIONAL_CROWDSEC_END -->/d' "/tmp/index.html.template"
+            _sed_i '/<!-- COMPONENT_CONDITIONAL_CROWDSEC_START -->/d; /<!-- COMPONENT_CONDITIONAL_CROWDSEC_END -->/d' "/tmp/index.html.template"
         fi
 
         # If KOMODO_HOST_IP is not set, remove the Komodo section from the template
         if [ -z "${KOMODO_HOST_IP:-}" ]; then
             echo "Removing Komodo section from template as KOMODO_HOST_IP is not set"
-            
+
             # Use sed to remove everything between the start and end Komodo comments
-            sed -i '/<!-- Start of Komodo -->/,/<!-- End of Komodo -->/d' "/tmp/index.html.template"
-            
+            _sed_i '/<!-- Start of Komodo -->/,/<!-- End of Komodo -->/d' "/tmp/index.html.template"
+
             # Also remove Komodo from the welcome screen grid
-            sed -i 's/Pangolin • Komodo/Pangolin/g' "/tmp/index.html.template"
+            _sed_i 's/Pangolin • Komodo/Pangolin/g' "/tmp/index.html.template"
         fi
-        
+
         # Replace domain placeholders and custom subdomains
         cp "/tmp/index.html.template" "/tmp/index.html.processing"
 
         # Replace main domain
-        sed -i "s/yourdomain\.com/${DOMAIN}/g" "/tmp/index.html.processing"
+        _sed_i "s/yourdomain\.com/${DOMAIN}/g" "/tmp/index.html.processing"
 
         # Replace admin subdomain (pangolin admin interface)
-        sed -i "s/subdomain/${ADMIN_SUBDOMAIN}/g" "/tmp/index.html.processing"
+        _sed_i "s/subdomain/${ADMIN_SUBDOMAIN}/g" "/tmp/index.html.processing"
 
         # Replace component-specific subdomains if provided
         if [ -n "${MIDDLEWARE_MANAGER_SUBDOMAIN:-}" ]; then
-            sed -i "s/middleware-manager\.${DOMAIN}/${MIDDLEWARE_MANAGER_SUBDOMAIN}.${DOMAIN}/g" "/tmp/index.html.processing"
+            _sed_i "s/middleware-manager\.${DOMAIN}/${MIDDLEWARE_MANAGER_SUBDOMAIN}.${DOMAIN}/g" "/tmp/index.html.processing"
         fi
 
         if [ -n "${TRAEFIK_SUBDOMAIN:-}" ]; then
-            sed -i "s/traefik\.${DOMAIN}/${TRAEFIK_SUBDOMAIN}.${DOMAIN}/g" "/tmp/index.html.processing"
+            _sed_i "s/traefik\.${DOMAIN}/${TRAEFIK_SUBDOMAIN}.${DOMAIN}/g" "/tmp/index.html.processing"
         fi
 
         if [ -n "${KOMODO_SUBDOMAIN:-}" ]; then
-            sed -i "s/komodo\.${DOMAIN}/${KOMODO_SUBDOMAIN}.${DOMAIN}/g" "/tmp/index.html.processing"
+            _sed_i "s/komodo\.${DOMAIN}/${KOMODO_SUBDOMAIN}.${DOMAIN}/g" "/tmp/index.html.processing"
         fi
 
         if [ -n "${NLWEB_SUBDOMAIN:-}" ]; then
-            sed -i "s/nlweb\.${DOMAIN}/${NLWEB_SUBDOMAIN}.${DOMAIN}/g" "/tmp/index.html.processing"
+            _sed_i "s/nlweb\.${DOMAIN}/${NLWEB_SUBDOMAIN}.${DOMAIN}/g" "/tmp/index.html.processing"
         fi
 
         if [ -n "${LOGS_SUBDOMAIN:-}" ]; then
-            sed -i "s/logs\.${DOMAIN}/${LOGS_SUBDOMAIN}.${DOMAIN}/g" "/tmp/index.html.processing"
+            _sed_i "s/logs\.${DOMAIN}/${LOGS_SUBDOMAIN}.${DOMAIN}/g" "/tmp/index.html.processing"
         fi
 
         # Write to final location

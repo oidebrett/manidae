@@ -491,6 +491,7 @@ export TELEGRAM_USER_ID="\${TELEGRAM_USER_ID:-}"
 export DISCORD_BOT_TOKEN="\${DISCORD_BOT_TOKEN:-}"
 export SLACK_BOT_TOKEN="\${SLACK_BOT_TOKEN:-}"
 export BRAVE_API_KEY="\${BRAVE_API_KEY:-}"
+export OPENSHELL_CONTROLLER_SUBDOMAIN="\${OPENSHELL_CONTROLLER_SUBDOMAIN:-}"
 
 log() { printf "%s\n" "\$*"; }
 run_component_hooks() {
@@ -564,6 +565,7 @@ export TELEGRAM_USER_ID="\${TELEGRAM_USER_ID:-}"
 export DISCORD_BOT_TOKEN="\${DISCORD_BOT_TOKEN:-}"
 export SLACK_BOT_TOKEN="\${SLACK_BOT_TOKEN:-}"
 export BRAVE_API_KEY="\${BRAVE_API_KEY:-}"
+export OPENSHELL_CONTROLLER_SUBDOMAIN="\${OPENSHELL_CONTROLLER_SUBDOMAIN:-}"
 
 log() { printf "%s\n" "\$*"; }
 run_component_hooks() {
