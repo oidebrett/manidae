@@ -49,9 +49,17 @@ fi
 # Replace domain placeholders in the HTML
 _sed_i "s/yourdomain\.com/${DOMAIN}/g" "$ROOT_HOST_DIR/public_html/index.html"
 
-# Apply custom subdomains if set
 if [ -n "${ADMIN_SUBDOMAIN:-}" ]; then
     _sed_i "s/subdomain\.${DOMAIN}/${ADMIN_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/public_html/index.html"
+fi
+if [ -n "${MIDDLEWARE_MANAGER_SUBDOMAIN:-}" ]; then
+    _sed_i "s/middleware-manager\.${DOMAIN}/${MIDDLEWARE_MANAGER_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/public_html/index.html"
+fi
+if [ -n "${TRAEFIK_SUBDOMAIN:-}" ]; then
+    _sed_i "s/traefik\.${DOMAIN}/${TRAEFIK_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/public_html/index.html"
+fi
+if [ -n "${IDP_SUBDOMAIN:-}" ]; then
+    _sed_i "s/idp\.${DOMAIN}/${IDP_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/public_html/index.html"
 fi
 if [ -n "${OPENSHELL_CONTROLLER_SUBDOMAIN:-}" ]; then
     _sed_i "s/openshell-controller\.${DOMAIN}/${OPENSHELL_CONTROLLER_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/public_html/index.html"

@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- AgentGateway Dashboard -->
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
@@ -60,48 +61,48 @@
                 </div>
 
                 <!-- Middleware Manager -->
-                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://middleware-manager.yourdomain.com', 'Middleware Manager', this)">
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://middleware-manager.yourdomain.com', 'middleware-manager', this)">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
                         <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/middleware-manager.webp" alt="Middleware Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                         <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">M</div>
                     </div>
                     <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div class="text-lg font-semibold text-cyan-400 truncate">Middleware Manager</div>
+                        <div class="text-lg font-semibold text-cyan-400 truncate">middleware-manager</div>
                     </div>                    
                 </div>
 
                 <!-- Traefik -->
-                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://traefik.yourdomain.com/dashboard/', 'Traefik Dashboard', this)">
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://traefik.yourdomain.com/dashboard/', 'traefik', this)">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
                         <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/traefik.webp" alt="Traefik Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                         <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">T</div>
                     </div>
                     <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div class="text-lg font-semibold text-cyan-400 truncate">Traefik</div>
+                        <div class="text-lg font-semibold text-cyan-400 truncate">traefik</div>
                     </div>
                 </div>
 
                 <!-- MCP Auth (mcpauth/idp) -->
-                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://idp.yourdomain.com', 'MCP Auth', this)">
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://idp.yourdomain.com/admin', 'idp', this)">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
                         <svg class="w-6 h-6 text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
                         </svg>
                     </div>
                     <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div class="text-lg font-semibold text-cyan-400 truncate">MCP Auth</div>
+                        <div class="text-lg font-semibold text-cyan-400 truncate">idp</div>
                     </div>
                 </div>
 
                 <!-- OpenShell Controller -->
-                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://openshell-controller.yourdomain.com', 'OpenShell Controller', this)">
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://openshell-controller.yourdomain.com', 'openshell-controller', this)">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
                         <svg class="w-6 h-6 text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
                         </svg>
                     </div>
                     <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div class="text-lg font-semibold text-cyan-400 truncate">OpenShell Controller</div>
+                        <div class="text-lg font-semibold text-cyan-400 truncate">openshell-controller</div>
                     </div>
                 </div>
 

@@ -136,8 +136,8 @@ get_included_resource_ids() {
         resource_ids="$resource_ids,6"
     fi
 
-    # Include mcp-gateway (8), openmemory (9), langwatch (10) if mcp-gateway component is present
-    if has_component "mcp-gateway"; then
+    # Include mcp-gateway (8), openmemory (9), langwatch (10) if mcp-gateway or agentgateway component is present
+    if has_component "mcp-gateway" || has_component "agentgateway"; then
         resource_ids="$resource_ids,8,9,10"
     fi
 
@@ -690,12 +690,31 @@ for table in "${TABLES[@]}"; do
     CSV_FILE="$EXPORT_DIR/$table.csv"
 
     if [[ "$table" == "userOrgs" ]]; then
-        # Skip userOrgs — pangctl set-admin-credentials already creates the correct
-        # userOrgs row before this script runs. The previous import logic would DELETE
-        # that row and re-import from the template CSV with broken boolean conversion
-        # (sed only converts booleans at end-of-line, but isOwner is column 4 of 5),
-        # leaving the admin user with no org association and an empty Pangolin dashboard.
-        echo "Skipping userOrgs — managed by pangctl set-admin-credentials"
+        if [[ -f "$CSV_FILE" && $(wc -l < "$CSV_FILE") -gt 1 ]]; then
+            echo "Special handling for userOrgs - adjusting userId to actual system user id"
+            ACTUAL_USER_ID=$(sqlite3 "$DB_PATH" "SELECT id FROM \"user\" LIMIT 1;")
+            if [[ -z "$ACTUAL_USER_ID" ]]; then
+                echo "  No user found in database; skipping userOrgs import. Create a user first."
+                continue
+            fi
+            
+            # Build temp CSV replacing first column value with actual user id (keep header)
+            TEMP_CSV="/tmp/userOrgs_temp.csv"
+            head -n 1 "$CSV_FILE" > "$TEMP_CSV"
+            # Replace first column with ACTUAL_USER_ID and convert booleans (t/f -> 1/0)
+            tail -n +2 "$CSV_FILE" | sed "s/^[^,]*/$ACTUAL_USER_ID/" | sed 's/,t,/,1,/g; s/,f,/,0,/g; s/,t$/,1/g; s/,f$/,0/g; s/^t,/1,/g; s/^f,/0,/g' >> "$TEMP_CSV"
+            
+            # Truncate and import
+            sqlite3 "$DB_PATH" "DELETE FROM \"userOrgs\";"
+            # Import without header
+            TEMP_CSV_NO_HEADER="/tmp/userOrgs_no_header.csv"
+            tail -n +2 "$TEMP_CSV" > "$TEMP_CSV_NO_HEADER"
+            printf '.mode csv\n.import "%s" "userOrgs"\n' "$TEMP_CSV_NO_HEADER" | sqlite3 "$DB_PATH"
+            
+            rm -f "$TEMP_CSV" "$TEMP_CSV_NO_HEADER"
+        else
+            echo "Skipped $table (missing or empty)"
+        fi
     else
         # Check if this table needs filtering for deployment type
         # Only filter if COMPONENTS_CSV or COMPONENTS is set (i.e., we have component info)

@@ -19,6 +19,8 @@
     image: docker.io/fosrl/gerbil:1.3.0
     #container_name: gerbil
     restart: unless-stopped
+    extra_hosts:
+      - host.docker.internal:host-gateway
     depends_on:
       pangolin:
         condition: service_healthy

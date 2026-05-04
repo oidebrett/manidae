@@ -21,8 +21,8 @@ create_static_page_html() {
     echo "📄 Creating static page HTML..."
     mkdir -p "$ROOT_HOST_DIR/public_html"
 
-    # Check if we're in an AgentGateway deployment (index.html already exists and has chatkit)
-    if [ -f "$ROOT_HOST_DIR/public_html/index.html" ] && grep -q "chatkit" "$ROOT_HOST_DIR/public_html/index.html"; then
+    # Check if we're in an AgentGateway deployment (index.html already exists and has specific markers)
+    if [ -f "$ROOT_HOST_DIR/public_html/index.html" ] && (grep -q "chatkit" "$ROOT_HOST_DIR/public_html/index.html" || grep -q "AgentGateway Dashboard" "$ROOT_HOST_DIR/public_html/index.html"); then
         echo "AgentGateway index.html detected - skipping static page HTML generation to preserve AgentGateway template"
         return 0
     fi
