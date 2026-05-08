@@ -289,4 +289,31 @@ http:
           - url: "http://pangolin:3000"
 EOF
 
+# Traefik WS bypass router for OpenShell Controller dashboard WebSocket upgrades
+# Pangolin's badger@http middleware sends a TCP FIN after forwarding the WS upgrade
+# request, breaking the tunnel before OpenClaw can respond. We route upgrade requests
+# on the dashboard proxy paths directly to the WS sidecar on port 3001 (no middleware),
+# using a higher-priority rule so it wins before the badger-gated router fires.
+if [ -n "${OPENSHELL_CONTROLLER_SUBDOMAIN:-}" ]; then
+    echo "🔌 Creating OpenShell Controller WebSocket bypass router..."
+    cat > "$ROOT_HOST_DIR/config/traefik/rules/openshell-ws-router.yml" << EOF
+http:
+  routers:
+    8-openshell-controller-ws-router:
+      entryPoints:
+        - websecure
+      priority: 300
+      rule: "Host(\`${OPENSHELL_CONTROLLER_SUBDOMAIN}.${DOMAIN}\`) && (PathPrefix(\`/api/openshell/dashboard/proxy\`) || PathPrefix(\`/api/openshell/instances/\`)) && HeaderRegexp(\`Upgrade\`, \`(?i)websocket\`)"
+      service: "8-openshell-controller-ws-service@file"
+      tls:
+        certResolver: "letsencrypt"
+  services:
+    8-openshell-controller-ws-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:3001"
+EOF
+    echo "✅ OpenShell Controller WebSocket bypass router configured"
+fi
+
 echo "✅ AgentGateway platform setup complete"
