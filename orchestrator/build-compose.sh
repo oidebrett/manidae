@@ -38,6 +38,9 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
   elif [[ -n "${OPENCLAW_PROVIDER:-}" && -n "${OPENCLAW_MODEL:-}" && -n "${OPENCLAW_INFERENCE_API_KEY:-}" ]]; then
     echo "[orchestrator] Detected OpenClaw platform (OPENLAW_PROVIDER, OPENCLAW_MODEL, OPENCLAW_INFERENCE_API_KEY are set)"
     COMPONENTS_RAW="openclaw"
+  elif [[ -n "${HERMES_DOMAIN:-}" && -n "${HERMES_AUTH_PASSWORD_HASH:-}" ]]; then
+    echo "[orchestrator] Detected Hermes Agent platform (HERMES_DOMAIN and HERMES_AUTH_PASSWORD_HASH are set)"
+    COMPONENTS_RAW="hermes-agent"
   elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -z "${ADMIN_USERNAME:-}" ]]; then
     echo "[orchestrator] Detected OpenAI Chatkit platform (OPENAI_API_KEY and WORKFLOW_ID are set, no Pangolin admin)"
     COMPONENTS_RAW="openai-chatkit"
@@ -181,6 +184,8 @@ detect_base_platform() {
     echo "nemoclaw"
   elif has_component "openclaw"; then
     echo "openclaw"
+  elif has_component "hermes-agent"; then
+    echo "hermes-agent"
   elif has_component "agentgateway"; then
     echo "agentgateway"
   elif has_component "openai-chatkit" && (has_component "pangolin" || has_component "middleware-manager"); then
@@ -198,6 +203,8 @@ detect_base_platform() {
       echo "nemoclaw"
     elif [[ -n "${OPENCLAW_PROVIDER:-}" && -n "${OPENCLAW_MODEL:-}" ]]; then
       echo "openclaw"
+    elif [[ -n "${HERMES_DOMAIN:-}" && -n "${HERMES_AUTH_PASSWORD_HASH:-}" ]]; then
+      echo "hermes-agent"
     elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -n "${ADMIN_USERNAME:-}" && -n "${ADMIN_PASSWORD:-}" ]]; then
       echo "agentgateway"
     elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -z "${ADMIN_USERNAME:-}" ]]; then
@@ -284,6 +291,9 @@ EOF
   elif [[ "$BASE_PLATFORM" == "openclaw" ]]; then
     # OpenClaw platform (Traefik proxy to host service)
     sed -n '1,9999p' "$ROOT_DIR/components/openclaw/compose.yaml"
+  elif [[ "$BASE_PLATFORM" == "hermes-agent" ]]; then
+    # Hermes Agent platform (Traefik proxy to host dashboard with basic-auth)
+    sed -n '1,9999p' "$ROOT_DIR/components/hermes-agent/compose.yaml"
   fi
 
   # Optional components (platform-agnostic)
@@ -444,6 +454,13 @@ networks:
     driver: bridge
     name: openclaw
 EOF
+  elif [[ "$BASE_PLATFORM" == "hermes-agent" ]]; then
+    cat <<'EOF'
+networks:
+  default:
+    driver: bridge
+    name: hermes-agent
+EOF
   fi
 } > "$compose_out"
 
@@ -486,12 +503,17 @@ export NEMOCLAW_INFERENCE_API="\${NEMOCLAW_INFERENCE_API:-}"
 export NEMOCLAW_SUBDOMAIN="\${NEMOCLAW_SUBDOMAIN:-}"
 export NEMOCLAW_DOMAIN="\${NEMOCLAW_DOMAIN:-nemoclaw.dpdns.org}"
 export NEMOCLAW_AUTH_TOKEN="\${NEMOCLAW_AUTH_TOKEN:-}"
+export NEMOCLAW_AGENT="\${NEMOCLAW_AGENT:-openclaw}"
 export TELEGRAM_BOT_TOKEN="\${TELEGRAM_BOT_TOKEN:-}"
 export TELEGRAM_USER_ID="\${TELEGRAM_USER_ID:-}"
 export DISCORD_BOT_TOKEN="\${DISCORD_BOT_TOKEN:-}"
 export SLACK_BOT_TOKEN="\${SLACK_BOT_TOKEN:-}"
 export BRAVE_API_KEY="\${BRAVE_API_KEY:-}"
 export OPENSHELL_CONTROLLER_SUBDOMAIN="\${OPENSHELL_CONTROLLER_SUBDOMAIN:-}"
+export HERMES_SUBDOMAIN="\${HERMES_SUBDOMAIN:-hermes}"
+export HERMES_DOMAIN="\${HERMES_DOMAIN:-}"
+export HERMES_AUTH_USER="\${HERMES_AUTH_USER:-admin}"
+export HERMES_AUTH_PASSWORD_HASH="\${HERMES_AUTH_PASSWORD_HASH:-}"
 
 log() { printf "%s\n" "\$*"; }
 run_component_hooks() {
@@ -560,12 +582,17 @@ export NEMOCLAW_INFERENCE_API="\${NEMOCLAW_INFERENCE_API:-}"
 export NEMOCLAW_SUBDOMAIN="\${NEMOCLAW_SUBDOMAIN:-}"
 export NEMOCLAW_DOMAIN="\${NEMOCLAW_DOMAIN:-nemoclaw.dpdns.org}"
 export NEMOCLAW_AUTH_TOKEN="\${NEMOCLAW_AUTH_TOKEN:-}"
+export NEMOCLAW_AGENT="\${NEMOCLAW_AGENT:-openclaw}"
 export TELEGRAM_BOT_TOKEN="\${TELEGRAM_BOT_TOKEN:-}"
 export TELEGRAM_USER_ID="\${TELEGRAM_USER_ID:-}"
 export DISCORD_BOT_TOKEN="\${DISCORD_BOT_TOKEN:-}"
 export SLACK_BOT_TOKEN="\${SLACK_BOT_TOKEN:-}"
 export BRAVE_API_KEY="\${BRAVE_API_KEY:-}"
 export OPENSHELL_CONTROLLER_SUBDOMAIN="\${OPENSHELL_CONTROLLER_SUBDOMAIN:-}"
+export HERMES_SUBDOMAIN="\${HERMES_SUBDOMAIN:-hermes}"
+export HERMES_DOMAIN="\${HERMES_DOMAIN:-}"
+export HERMES_AUTH_USER="\${HERMES_AUTH_USER:-admin}"
+export HERMES_AUTH_PASSWORD_HASH="\${HERMES_AUTH_PASSWORD_HASH:-}"
 
 log() { printf "%s\n" "\$*"; }
 run_component_hooks() {
@@ -610,6 +637,8 @@ info_out="$OUTPUT_DIR/DEPLOYMENT_INFO.txt"
     sed -n '1,9999p' "$ROOT_DIR/components/nemoclaw/deployment-info.txt"
   elif [[ "$BASE_PLATFORM" == "openclaw" ]]; then
     sed -n '1,9999p' "$ROOT_DIR/components/openclaw/deployment-info.txt"
+  elif [[ "$BASE_PLATFORM" == "hermes-agent" ]]; then
+    sed -n '1,9999p' "$ROOT_DIR/components/hermes-agent/deployment-info.txt"
   fi
 
   # Component-specific deployment info

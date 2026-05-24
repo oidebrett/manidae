@@ -1,0 +1,29 @@
+{
+  "name": "hermes-agent",
+  "description": "Hermes Agent (Nous Research) — web dashboard reverse-proxied via Traefik with basic-auth.",
+  "dependencies": [],
+  "env": [
+    {
+      "name": "HERMES_SUBDOMAIN",
+      "required": true,
+      "default": "hermes"
+    },
+    {
+      "name": "HERMES_DOMAIN",
+      "required": true
+    },
+    {
+      "name": "HERMES_AUTH_USER",
+      "required": true,
+      "default": "admin"
+    },
+    {
+      "name": "HERMES_AUTH_PASSWORD_HASH",
+      "required": true
+    },
+    {
+      "name": "EMAIL",
+      "required": false
+    }
+  ]
+}

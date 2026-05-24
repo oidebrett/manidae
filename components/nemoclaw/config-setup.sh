@@ -8,6 +8,15 @@ echo "Setting up NemoClaw Traefik routing..."
 NEMOCLAW_SUBDOMAIN="${NEMOCLAW_SUBDOMAIN:-nemoclaw}"
 NEMOCLAW_DOMAIN="${NEMOCLAW_DOMAIN:-nemoclaw.dpdns.org}"
 NEMOCLAW_EMAIL="${EMAIL:-admin@nemoclaw.dpdns.org}"
+NEMOCLAW_AGENT="${NEMOCLAW_AGENT:-openclaw}"
+# Port forwarded by OpenShell from the sandbox to localhost:
+#   - openclaw runtime → 18789 (browser dashboard)
+#   - hermes runtime   → 8642  (OpenAI-compatible HTTP API)
+if [ "${NEMOCLAW_AGENT}" = "hermes" ]; then
+  NEMOCLAW_TARGET_PORT=8642
+else
+  NEMOCLAW_TARGET_PORT=18789
+fi
 HOST_SETUP_DIR="${ROOT_HOST_DIR:-/host-setup}"
 
 # Create required directories
@@ -77,7 +86,7 @@ http:
     nemoclaw-service:
       loadBalancer:
         servers:
-          - url: "http://localhost:18789"
+          - url: "http://localhost:${NEMOCLAW_TARGET_PORT}"
 EOF
 
 echo "NemoClaw Traefik setup complete"
