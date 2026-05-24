@@ -9,11 +9,13 @@ NEMOCLAW_SUBDOMAIN="${NEMOCLAW_SUBDOMAIN:-nemoclaw}"
 NEMOCLAW_DOMAIN="${NEMOCLAW_DOMAIN:-nemoclaw.dpdns.org}"
 NEMOCLAW_EMAIL="${EMAIL:-admin@nemoclaw.dpdns.org}"
 NEMOCLAW_AGENT="${NEMOCLAW_AGENT:-openclaw}"
-# Port forwarded by OpenShell from the sandbox to localhost:
-#   - openclaw runtime → 18789 (browser dashboard)
-#   - hermes runtime   → 8642  (OpenAI-compatible HTTP API)
+# Port forwarded by OpenShell/nemohermes from the sandbox to localhost:
+#   - openclaw runtime → 18789 (browser dashboard, gateway-token auth built in)
+#   - hermes runtime   → 8642  (OpenAI-compatible HTTP API, NO built-in auth — we add basic-auth here)
 if [ "${NEMOCLAW_AGENT}" = "hermes" ]; then
   NEMOCLAW_TARGET_PORT=8642
+  NEMOCLAW_AUTH_USER="${NEMOCLAW_AUTH_USER:-admin}"
+  NEMOCLAW_AUTH_PASSWORD_HASH="${NEMOCLAW_AUTH_PASSWORD_HASH:-}"
 else
   NEMOCLAW_TARGET_PORT=18789
 fi
@@ -56,9 +58,48 @@ serversTransport:
   insecureSkipVerify: true
 EOF
 
-# Create Traefik dynamic configuration for NemoClaw dashboard routing
-# Routes {subdomain}.nemoclaw.dpdns.org to the OpenShell-forwarded port 18789
-cat > "${HOST_SETUP_DIR}/config/traefik/rules/dynamic_config.yml" << EOF
+# Create Traefik dynamic configuration for NemoClaw routing
+# OpenClaw runtime: gateway-token auth lives inside OpenClaw — no Traefik auth needed.
+# Hermes runtime:   API has no built-in auth — gate the public route with basic-auth.
+if [ "${NEMOCLAW_AGENT}" = "hermes" ] && [ -n "${NEMOCLAW_AUTH_PASSWORD_HASH}" ]; then
+  cat > "${HOST_SETUP_DIR}/config/traefik/rules/dynamic_config.yml" << EOF
+http:
+  middlewares:
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+    nemoclaw-auth:
+      basicAuth:
+        users:
+          - "${NEMOCLAW_AUTH_USER}:${NEMOCLAW_AUTH_PASSWORD_HASH}"
+
+  routers:
+    nemoclaw-router-redirect:
+      rule: "Host(\`${NEMOCLAW_SUBDOMAIN}.${NEMOCLAW_DOMAIN}\`)"
+      service: nemoclaw-service
+      entryPoints:
+        - web
+      middlewares:
+        - redirect-to-https
+
+    nemoclaw-router:
+      rule: "Host(\`${NEMOCLAW_SUBDOMAIN}.${NEMOCLAW_DOMAIN}\`)"
+      service: nemoclaw-service
+      entryPoints:
+        - websecure
+      middlewares:
+        - nemoclaw-auth
+      tls:
+        certResolver: letsencrypt
+
+  services:
+    nemoclaw-service:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:${NEMOCLAW_TARGET_PORT}"
+EOF
+else
+  cat > "${HOST_SETUP_DIR}/config/traefik/rules/dynamic_config.yml" << EOF
 http:
   middlewares:
     redirect-to-https:
@@ -88,6 +129,7 @@ http:
         servers:
           - url: "http://localhost:${NEMOCLAW_TARGET_PORT}"
 EOF
+fi
 
 echo "NemoClaw Traefik setup complete"
 echo "Dashboard will be available at: https://${NEMOCLAW_SUBDOMAIN}.${NEMOCLAW_DOMAIN}"
