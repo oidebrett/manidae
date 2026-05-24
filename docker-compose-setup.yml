@@ -81,6 +81,11 @@ services:
       - OPENCLAW_SUBDOMAIN=${OPENCLAW_SUBDOMAIN:-}
       - OPENCLAW_DOMAIN=${OPENCLAW_DOMAIN:-}
       - OPENCLAW_AUTH_TOKEN=${OPENCLAW_AUTH_TOKEN:-}
+      # Hermes Agent platform variables
+      - HERMES_SUBDOMAIN=${HERMES_SUBDOMAIN:-hermes}
+      - HERMES_DOMAIN=${HERMES_DOMAIN:-}
+      - HERMES_AUTH_USER=${HERMES_AUTH_USER:-admin}
+      - HERMES_AUTH_PASSWORD_HASH=${HERMES_AUTH_PASSWORD_HASH:-}
       # OpenShell Controller subdomain (for Pangolin resource routing)
       - OPENSHELL_CONTROLLER_SUBDOMAIN=${OPENSHELL_CONTROLLER_SUBDOMAIN:-}
       # Integrations
@@ -136,6 +141,7 @@ services:
         COOLIFY_VARS_SET=false
         NEMOCLAW_VARS_SET=false
         OPENCLAW_VARS_SET=false
+        HERMES_VARS_SET=false
 
         if [ -n \"$$DOMAIN\" ] && [ -n \"$$EMAIL\" ]; then
           PANGOLIN_VARS_SET=true
@@ -157,7 +163,12 @@ services:
           OPENCLAW_VARS_SET=true
         fi
 
-        if [ \"$$PANGOLIN_VARS_SET\" = false ] && [ \"$$COOLIFY_VARS_SET\" = false ] && [ \"$$NEMOCLAW_VARS_SET\" = false ] && [ \"$$OPENCLAW_VARS_SET\" = false ]; then
+        # For Hermes Agent, check if COMPONENTS includes hermes-agent OR Hermes env vars are set
+        if [ \"$$COMPONENTS\" = \"hermes-agent\" ] || echo \"$$COMPONENTS\" | grep -q \"hermes-agent\" || ([ -n \"$$HERMES_DOMAIN\" ] && [ -n \"$$HERMES_AUTH_PASSWORD_HASH\" ]); then
+          HERMES_VARS_SET=true
+        fi
+
+        if [ \"$$PANGOLIN_VARS_SET\" = false ] && [ \"$$COOLIFY_VARS_SET\" = false ] && [ \"$$NEMOCLAW_VARS_SET\" = false ] && [ \"$$OPENCLAW_VARS_SET\" = false ] && [ \"$$HERMES_VARS_SET\" = false ]; then
           echo '❌ Error: No platform detected!'
           echo ''
           echo '🐧 For Pangolin platform (required):'
@@ -241,6 +252,9 @@ services:
             elif [ -n \"$$OPENCLAW_PROVIDER\" ] && [ -n \"$$OPENCLAW_MODEL\" ] && [ -n \"$$OPENCLAW_INFERENCE_API_KEY\" ]; then
               echo \"[orchestrator] Detected OpenClaw platform (OPENLAW variables are set)\"
               COMPONENTS=\"openclaw\"
+            elif [ -n \"$$HERMES_DOMAIN\" ] && [ -n \"$$HERMES_AUTH_PASSWORD_HASH\" ]; then
+              echo \"[orchestrator] Detected Hermes Agent platform (HERMES_DOMAIN and HERMES_AUTH_PASSWORD_HASH are set)\"
+              COMPONENTS=\"hermes-agent\"
             elif [ -n \"$$DOMAIN\" ] && [ -n \"$$EMAIL\" ]; then
               echo \"[orchestrator] Detected Pangolin platform (DOMAIN and EMAIL are set)\"
               COMPONENTS=\"pangolin,middleware-manager\"
