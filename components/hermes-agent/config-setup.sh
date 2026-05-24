@@ -68,6 +68,10 @@ http:
   services:
     hermes-agent:
       loadBalancer:
+        # Hermes dashboard validates the Host header against its bind address
+        # (127.0.0.1:9119) and rejects requests forwarded with the public hostname.
+        # passHostHeader=false makes Traefik send the upstream URL's host instead.
+        passHostHeader: false
         servers:
           - url: "http://127.0.0.1:9119"
 EOF
