@@ -11,9 +11,12 @@ NEMOCLAW_EMAIL="${EMAIL:-admin@nemoclaw.dpdns.org}"
 NEMOCLAW_AGENT="${NEMOCLAW_AGENT:-openclaw}"
 # Port forwarded by OpenShell/nemohermes from the sandbox to localhost:
 #   - openclaw runtime → 18789 (browser dashboard, gateway-token auth built in)
-#   - hermes runtime   → 8642  (OpenAI-compatible HTTP API, NO built-in auth — we add basic-auth here)
+#   - hermes runtime   → 9119  (Hermes web dashboard inside sandbox, NO built-in auth
+#                                — we add Traefik basic-auth on top. NVIDIA pattern from
+#                                openshell_controller: dashboard runs IN the sandbox,
+#                                exposed via SSH tunnel set up by startup_nemoclaw.sh.j2.)
 if [ "${NEMOCLAW_AGENT}" = "hermes" ]; then
-  NEMOCLAW_TARGET_PORT=8642
+  NEMOCLAW_TARGET_PORT=9119
   NEMOCLAW_AUTH_USER="${NEMOCLAW_AUTH_USER:-admin}"
   NEMOCLAW_AUTH_PASSWORD_HASH="${NEMOCLAW_AUTH_PASSWORD_HASH:-}"
 else
@@ -95,6 +98,10 @@ http:
   services:
     nemoclaw-service:
       loadBalancer:
+        # Hermes dashboard validates the Host header against its bind address (127.0.0.1:9119)
+        # and rejects requests forwarded with the public hostname. passHostHeader=false makes
+        # Traefik send the upstream URL's host instead.
+        passHostHeader: false
         servers:
           - url: "http://localhost:${NEMOCLAW_TARGET_PORT}"
 EOF
