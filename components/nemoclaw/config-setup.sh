@@ -61,9 +61,12 @@ serversTransport:
   insecureSkipVerify: true
 EOF
 
-# Create Traefik dynamic configuration for NemoClaw routing
+# Create Traefik dynamic configuration for NemoClaw routing.
 # OpenClaw runtime: gateway-token auth lives inside OpenClaw — no Traefik auth needed.
-# Hermes runtime:   API has no built-in auth — gate the public route with basic-auth.
+# Hermes runtime:   no built-in auth — gate with basic-auth + an /api/* bypass router
+#                   because browsers don't forward HTTP basic-auth on WebSocket upgrades
+#                   (would break /api/ws, /api/events, /api/pty). Hermes' own ephemeral
+#                   session token (in the SPA HTML) protects the /api/* surface.
 if [ "${NEMOCLAW_AGENT}" = "hermes" ] && [ -n "${NEMOCLAW_AUTH_PASSWORD_HASH}" ]; then
   cat > "${HOST_SETUP_DIR}/config/traefik/rules/dynamic_config.yml" << EOF
 http:
@@ -85,9 +88,24 @@ http:
       middlewares:
         - redirect-to-https
 
+    # /api/* — gated only by Hermes' ephemeral session token (browsers don't
+    # forward basic-auth on WebSocket upgrades, so Traefik basic-auth here
+    # would break /api/ws, /api/events, /api/pty).
+    nemoclaw-router-api:
+      rule: "Host(\`${NEMOCLAW_SUBDOMAIN}.${NEMOCLAW_DOMAIN}\`) && PathPrefix(\`/api/\`)"
+      service: nemoclaw-service
+      priority: 100
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+
+    # SPA shell + static — basic-auth (so the HTML carrying the session token
+    # is gated). Lower priority means /api/* matches first.
     nemoclaw-router:
       rule: "Host(\`${NEMOCLAW_SUBDOMAIN}.${NEMOCLAW_DOMAIN}\`)"
       service: nemoclaw-service
+      priority: 10
       entryPoints:
         - websecure
       middlewares:
@@ -98,9 +116,9 @@ http:
   services:
     nemoclaw-service:
       loadBalancer:
-        # Hermes dashboard validates the Host header against its bind address (127.0.0.1:9119)
-        # and rejects requests forwarded with the public hostname. passHostHeader=false makes
-        # Traefik send the upstream URL's host instead.
+        # Hermes dashboard validates the Host header against its bind address
+        # and rejects requests forwarded with the public hostname. passHostHeader=false
+        # makes Traefik send the upstream URL's host instead.
         passHostHeader: false
         servers:
           - url: "http://localhost:${NEMOCLAW_TARGET_PORT}"
