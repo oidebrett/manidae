@@ -268,6 +268,62 @@ compose_out="$OUTPUT_DIR/compose.yaml"
 
 services:
 EOF
+  elif [[ "$BASE_PLATFORM" == "openclaw" ]]; then
+    cat <<EOF
+# OpenClaw Standalone Docker Compose Configuration
+#
+# 🚨 IMPORTANT SERVER PREREQUISITES:
+# This compose stack ONLY brings up the Traefik reverse-proxy. The OpenClaw
+# gateway runs as a HOST systemd service (not in Docker). You MUST complete
+# these steps on your server BEFORE running 'docker compose up -d'.
+# See PREREQUISITES_OPENCLAW.md (generated alongside this file) for the
+# step-by-step copy-paste commands. Summary:
+#
+# 1. curl -fsSL https://openclaw.ai/install.sh | bash
+# 2. openclaw gateway install --force
+# 3. openclaw config set gateway.auth.token "\${OPENCLAW_AUTH_TOKEN}"
+#    + provider/model/API key (see PREREQUISITES_OPENCLAW.md)
+# 4. Create /etc/systemd/system/openclaw-gateway.service
+#    (template in PREREQUISITES_OPENCLAW.md) + enable/start it
+# 5. Verify: systemctl is-active openclaw-gateway && curl http://127.0.0.1:18789/
+#
+# 📋 Then run 'docker compose up -d' to start Traefik (this file).
+# 🔗 Access: https://\${OPENCLAW_SUBDOMAIN}.\${OPENCLAW_DOMAIN}/#token=\${OPENCLAW_AUTH_TOKEN}
+# 📚 OpenClaw docs: https://openclaw.ai/docs
+
+services:
+EOF
+  elif [[ "$BASE_PLATFORM" == "hermes-agent" ]]; then
+    cat <<EOF
+# Hermes Agent Standalone Docker Compose Configuration
+#
+# 🚨 IMPORTANT SERVER PREREQUISITES:
+# This compose stack ONLY brings up the Traefik reverse-proxy with basic-auth.
+# The Hermes dashboard runs as a HOST systemd service (not in Docker). You MUST
+# complete these steps on your server BEFORE running 'docker compose up -d'.
+# See PREREQUISITES_HERMES.md (generated alongside this file) for the
+# step-by-step copy-paste commands. Summary:
+#
+# 1. sudo apt install -y git curl ca-certificates apache2-utils ufw
+# 2. curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+# 3. /usr/local/lib/hermes-agent/venv/bin/pip install 'hermes-agent[web,pty]' ptyprocess
+# 4. Configure ~/.hermes/.env (API key) + hermes config set model.provider/default
+# 5. Generate basic-auth hash:  htpasswd -nb admin '<YOUR_PASSWORD>'
+#    and paste into config/traefik/rules/hermes-agent.yml under
+#    middlewares.hermes-auth.basicAuth.users (admin:\${HERMES_AUTH_PASSWORD_HASH}
+#    is the format)
+# 6. Create /etc/systemd/system/hermes-dashboard.service (template in
+#    PREREQUISITES_HERMES.md) and start it: --host 0.0.0.0 --tui --insecure
+# 7. FIREWALL: \`ufw deny 9119/tcp\` — port 9119 MUST NOT be exposed publicly
+#    (only Traefik on localhost should reach it)
+# 8. Verify: systemctl is-active hermes-dashboard && curl http://127.0.0.1:9119/
+#
+# 📋 Then run 'docker compose up -d' to start Traefik (this file).
+# 🔗 Access: https://\${HERMES_SUBDOMAIN}.\${HERMES_DOMAIN} (login with admin + your password)
+# 📚 Hermes docs: https://hermes-agent.nousresearch.com/docs
+
+services:
+EOF
   else
     echo "services:"
   fi
@@ -647,6 +703,20 @@ info_out="$OUTPUT_DIR/DEPLOYMENT_INFO.txt"
 } > "$info_out"
 echo "[orchestrator] Wrote $info_out"
 
+# --- BYOVPS prerequisite docs (host-installed agents) ---
+# For openclaw / hermes-agent the actual agent runs natively on the host
+# (curl-installer + systemd), not in Docker. BYOVPS users need step-by-step
+# install instructions to copy alongside compose.yaml. Cloud-init paths
+# handle this via the startup script — but those scripts never run on a
+# user's own VPS, so we emit the same recipe as a markdown doc here.
+if [[ "$BASE_PLATFORM" == "openclaw" && -f "$ROOT_DIR/components/openclaw/PREREQUISITES.md" ]]; then
+  cp "$ROOT_DIR/components/openclaw/PREREQUISITES.md" "$OUTPUT_DIR/PREREQUISITES_OPENCLAW.md"
+  echo "[orchestrator] Wrote $OUTPUT_DIR/PREREQUISITES_OPENCLAW.md"
+elif [[ "$BASE_PLATFORM" == "hermes-agent" && -f "$ROOT_DIR/components/hermes-agent/PREREQUISITES.md" ]]; then
+  cp "$ROOT_DIR/components/hermes-agent/PREREQUISITES.md" "$OUTPUT_DIR/PREREQUISITES_HERMES.md"
+  echo "[orchestrator] Wrote $OUTPUT_DIR/PREREQUISITES_HERMES.md"
+fi
+
 # --- Execute setup script unless dry run ---
 if [[ "${DRY_RUN:-}" != "1" ]]; then
   echo "[orchestrator] Executing $setup_out"
@@ -660,7 +730,10 @@ fi
 if [[ "${SKIP_ENVSUBST:-}" != "1" ]]; then
   # Only run envsubst on files that are not shell scripts
   command -v envsubst >/dev/null 2>&1 || { echo "[orchestrator] envsubst not found; skipping"; exit 0; }
-  for f in "$compose_out" "$info_out"; do
+  ENVSUBST_FILES=("$compose_out" "$info_out")
+  [ -f "$OUTPUT_DIR/PREREQUISITES_OPENCLAW.md" ] && ENVSUBST_FILES+=("$OUTPUT_DIR/PREREQUISITES_OPENCLAW.md")
+  [ -f "$OUTPUT_DIR/PREREQUISITES_HERMES.md" ]   && ENVSUBST_FILES+=("$OUTPUT_DIR/PREREQUISITES_HERMES.md")
+  for f in "${ENVSUBST_FILES[@]}"; do
     tmp="$f.tmp"; envsubst < "$f" > "$tmp" && mv "$tmp" "$f"
   done
   echo "[orchestrator] Performed envsubst on outputs."
