@@ -47,6 +47,7 @@ services:
       - CLIENT_SECRET=${CLIENT_SECRET:-}
       - PROVIDER=${PROVIDER:-}
       - KEYCLOAK_AUTH_HOST=${KEYCLOAK_AUTH_HOST:-}
+      - MCPAUTH_BOOTSTRAP_CLIENTS=${MCPAUTH_BOOTSTRAP_CLIENTS:-}
       # Komodo integration (if needed)
       - KOMODO_HOST_IP=${KOMODO_HOST_IP:-} # if set you must use komodo-postgres-1 as the POSTGRES_HOST
       # OpenAI API Key for nlweb (if needed)
