@@ -14,7 +14,7 @@
       - OAUTH_DOMAIN=${OAUTH_DOMAIN:-oauth.${DOMAIN}}
       - ALLOWED_SCOPES=openid,email,profile
       - REQUIRED_SCOPES=openid,email
-      - MCPAUTH_BOOTSTRAP_CLIENTS=${MCPAUTH_BOOTSTRAP_CLIENTS}
+      - MCPAUTH_BOOTSTRAP_CLIENTS=\${MCPAUTH_BOOTSTRAP_CLIENTS}
     restart: unless-stopped
     ports:
       - "11000:11000"
