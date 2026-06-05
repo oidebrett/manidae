@@ -50,7 +50,7 @@
                 </div>
 
                 <!-- OpenShell Controller -->
-                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="window.open('https://openshell-controller.yourdomain.com', '_blank')">
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="openOpenShellController('https://openshell-controller.yourdomain.com')">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
                         <svg class="w-6 h-6 text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
@@ -170,7 +170,67 @@
 
     <script>
         let currentActiveItem = document.querySelector('.sidebar-item');
-        
+
+        // Open the OpenShell Controller in a new tab. On a fresh VPS install
+        // the controller can take 5-10 min to build, during which Pangolin
+        // returns 502 Bad Gateway. To avoid that confusing landing page, open
+        // a small waiting tab first; it polls the controller's /favicon.ico
+        // (an image request bypasses CORS) and redirects when it loads OK.
+        // When the controller is already up, the redirect happens within ~1s.
+        function openOpenShellController(target) {
+            const tab = window.open('about:blank', '_blank');
+            if (!tab) { window.location.href = target; return; }
+            const html = `<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<title>OpenShell Controller — Starting</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{margin:0;background:#111827;color:#f3f4f6;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh}
+.card{max-width:560px;padding:2rem;text-align:center}
+h1{color:#22d3ee;font-size:1.5rem;margin:0 0 .5rem;font-weight:600}
+p{color:#9ca3af;line-height:1.55;margin:.5rem 0}
+.spinner{width:48px;height:48px;border:4px solid #374151;border-top-color:#22d3ee;border-radius:50%;margin:1.5rem auto;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#status{margin-top:1rem;color:#9ca3af;font-size:.9rem;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.target{margin-top:1.5rem;color:#6b7280;font-size:.75rem;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all}
+.open-now{margin-top:1.25rem}
+.open-now a{color:#22d3ee;text-decoration:underline;font-size:.85rem}
+</style>
+</head><body>
+<div class="card">
+  <h1>OpenShell Controller is starting up</h1>
+  <div class="spinner" aria-hidden="true"></div>
+  <p>The controller is being built on your VPS. On a fresh install this takes <strong>5-10 minutes</strong>.</p>
+  <p>This tab will redirect automatically as soon as the controller responds.</p>
+  <p id="status">Checking…</p>
+  <div class="open-now"><a href="${target}">Try opening it now anyway →</a></div>
+  <div class="target">${target}</div>
+</div>
+<script>
+(function(){
+  var target=${JSON.stringify(target)};
+  var status=document.getElementById('status');
+  var attempt=0;
+  function check(){
+    attempt++;
+    status.textContent='Checking… attempt '+attempt;
+    var img=new Image();
+    var done=false;
+    var timer=setTimeout(function(){ if(!done){done=true;setTimeout(check,5000);} },8000);
+    img.onload=function(){ if(done)return; done=true; clearTimeout(timer); status.textContent='Ready — redirecting…'; location.replace(target); };
+    img.onerror=function(){ if(done)return; done=true; clearTimeout(timer); setTimeout(check,5000); };
+    img.src=target+'/favicon.ico?cb='+Date.now();
+  }
+  check();
+})();
+<\/script>
+</body></html>`;
+            tab.document.open();
+            tab.document.write(html);
+            tab.document.close();
+        }
+
         function showWelcome() {
             document.getElementById('app-iframe').classList.add('hidden');
             const welcomeScreen = document.getElementById('welcome-screen');
