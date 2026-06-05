@@ -219,7 +219,19 @@ p{color:#9ca3af;line-height:1.55;margin:.5rem 0}
     var done=false;
     var timer=setTimeout(function(){ if(!done){done=true;setTimeout(check,5000);} },8000);
     img.onload=function(){ if(done)return; done=true; clearTimeout(timer); status.textContent='Ready — redirecting…'; location.replace(target); };
-    img.onerror=function(){ if(done)return; done=true; clearTimeout(timer); setTimeout(check,5000); };
+    img.onerror=function(){ 
+      if(done)return; 
+      done=true; 
+      clearTimeout(timer);
+      // If we've tried several times and still getting errors, 
+      // assume the service is up but we're hitting auth redirect (302)
+      if (attempt >= 3) {
+        status.textContent='Service detected (may require auth) — redirecting…';
+        location.replace(target);
+      } else {
+        setTimeout(check,5000);
+      }
+    };
     img.src=target+'/favicon.ico?cb='+Date.now();
   }
   check();
