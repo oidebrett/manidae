@@ -313,7 +313,7 @@ EOF
 #    middlewares.hermes-auth.basicAuth.users (admin:\${HERMES_AUTH_PASSWORD_HASH}
 #    is the format)
 # 6. Create /etc/systemd/system/hermes-dashboard.service (template in
-#    PREREQUISITES_HERMES.md) and start it: --host 0.0.0.0 --tui --insecure
+#    PREREQUISITES_HERMES.md) and start it: --host 0.0.0.0 --insecure
 # 7. FIREWALL: \`ufw deny 9119/tcp\` — port 9119 MUST NOT be exposed publicly
 #    (only Traefik on localhost should reach it)
 # 8. Verify: systemctl is-active hermes-dashboard && curl http://127.0.0.1:9119/

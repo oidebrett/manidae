@@ -128,7 +128,7 @@ EnvironmentFile=-/root/.hermes/.env
 # and uvicorn rewrites ws.client.host via X-Forwarded-For to the original
 # public IP. _ws_client_is_allowed would otherwise reject. UFW (next step)
 # keeps the port private at the network layer.
-ExecStart=${HERMES_BIN} dashboard --host 0.0.0.0 --port 9119 --no-open --tui --insecure
+ExecStart=${HERMES_BIN} dashboard --host 0.0.0.0 --port 9119 --no-open --insecure
 Restart=always
 RestartSec=10
 TimeoutStopSec=30
