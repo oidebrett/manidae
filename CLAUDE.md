@@ -8,7 +8,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This repo is the sibling of `manidae-cloud` (the FastAPI/React platform that provisions VPSes). When manidae-cloud provisions a VPS via Terraform, its startup script clones this repo and runs `orchestrator/build-compose.sh` to set up the stack.
 
-**Branch in use:** `nemoclaw/dev` (not `main`) for the active NemoClaw/AgentGateway work.
+## ⚠️ Branch Strategy — read before touching any file
+
+> **HARD RULE: Never develop on `main` or commit directly without going through `dev` first.** All changes follow the same workflow as `manidae-cloud`.
+
+```
+dev  →  test on preprod VPS  →  PR dev → main  →  live VPS picks up main
+```
+
+- Active development branch: **`dev`**
+- Production branch: **`main`** (cloned on every live VPS provision via `MANIDAE_BRANCH=main`)
+- `whitelabel` branch was deleted (2026-06-09)
+
+How `MANIDAE_BRANCH` connects this repo to `manidae-cloud`:
+- The Terraform startup scripts and BYOVPS bootstrap in `manidae-cloud` clone this repo at the branch set by `MANIDAE_BRANCH` in the backend `.env`
+- **Live server** (`manidae-cloud`): `MANIDAE_BRANCH=main` → VPSes clone `manidae/main`
+- **Preprod server** (`manidae-cloud`): `MANIDAE_BRANCH=dev` → VPSes clone `manidae/dev`
+
+Always confirm `git branch` shows `dev` before editing anything here.
 
 ---
 
@@ -156,4 +173,4 @@ The env vars set in the Terraform templates are the contract between these two r
 - **`config-setup.sh` scripts must be idempotent** — they can be re-run on the same VPS without corrupting config. Use `>` not `>>` for files written from scratch; use guards before appending.
 - **Do not use bash-isms in `config-setup.sh`** — these run under `#!/bin/sh` (not bash). No `[[`, no `$()` inside `[`, no `local` in some shells. Test with `sh -n`.
 - **Never hardcode a domain or IP** — all config values come from env vars. Use `${DOMAIN}`, `${ADMIN_SUBDOMAIN:-pangolin}` with defaults.
-- **Branch:** active development is on `nemoclaw/dev`, not `main`. Always confirm the branch before making commits.
+- **Branch:** active development is on `dev`, not `main`. Always confirm `git branch` before making commits. See the Branch Strategy section at the top of this file.
