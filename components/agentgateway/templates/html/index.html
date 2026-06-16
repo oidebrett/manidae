@@ -83,14 +83,14 @@
                     </div>                    
                 </div>
 
-                <!-- Traefik -->
-                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://traefik.yourdomain.com/dashboard/', 'traefik', this)">
+                <!-- CrowdSec Manager -->
+                <div class="sidebar-item bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center group-hover:justify-start min-h-[3rem]" onclick="loadApp('https://crowdsec-manager.yourdomain.com/', 'crowdsec-manager', this)">
                     <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
-                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/traefik.webp" alt="Traefik Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">T</div>
+                        <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/crowdsec.webp" alt="CrowdSec Manager Icon" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="w-6 h-6 bg-cyan-400 rounded flex items-center justify-center text-xs font-bold text-gray-900" style="display:none;">C</div>
                     </div>
                     <div class="ml-2 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div class="text-lg font-semibold text-cyan-400 truncate">traefik</div>
+                        <div class="text-lg font-semibold text-cyan-400 truncate">crowdsec-manager</div>
                     </div>
                 </div>
 
@@ -286,13 +286,9 @@ p{color:#9ca3af;line-height:1.55;margin:.5rem 0}
             welcomeScreen.classList.add('hidden');
             iframe.classList.remove('hidden');
 
-            if (url.includes('traefik') && url.includes('/dashboard/')) {
-              iframe.src = url;
-            } else {
-              const timestamp = new Date().getTime();
-              const separator = url.includes('?') ? '&' : '?';
-              iframe.src = url + separator + '_t=' + timestamp;
-            }
+            const timestamp = new Date().getTime();
+            const separator = url.includes('?') ? '&' : '?';
+            iframe.src = url + separator + '_t=' + timestamp;
 
             updateActiveItem(element);
             
