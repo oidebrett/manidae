@@ -421,13 +421,45 @@ EOF
     echo "      - GIT_USER_EMAIL=backup@\${DOMAIN:-contextware.ai}"
     echo "      # Backup configuration"
     echo "      - MAX_BACKUPS=\${MAX_BACKUPS}"
+    # Per-agent: bind the host config path read-only and stage a copy into config/ before each backup.
+    # Pangolin/Coolify already write their configs directly into config/, so no extra mount needed.
+    # Only drop the stack-dir :ro flag if we actually need to stage anything into config/.
+    agent_copies=""
+    agent_mounts=""
+    if has_component openclaw; then
+      agent_mounts="${agent_mounts}      - /root/.openclaw:/agent-src/openclaw:ro\n"
+      agent_copies="${agent_copies}        ( [ -d /agent-src/openclaw ] && mkdir -p ${FULL_STACK_PATH}/config/openclaw-config && cp -a /agent-src/openclaw/. ${FULL_STACK_PATH}/config/openclaw-config/ ) 2>/dev/null || true ;\n"
+    fi
+    if has_component hermes-agent; then
+      agent_mounts="${agent_mounts}      - /root/.hermes:/agent-src/hermes:ro\n"
+      agent_copies="${agent_copies}        ( [ -d /agent-src/hermes ] && mkdir -p ${FULL_STACK_PATH}/config/hermes-config && cp -a /agent-src/hermes/. ${FULL_STACK_PATH}/config/hermes-config/ ) 2>/dev/null || true ;\n"
+    fi
+    if has_component nemoclaw || has_component agentgateway; then
+      agent_mounts="${agent_mounts}      - /root/.nemoclaw:/agent-src/nemoclaw:ro\n"
+      agent_copies="${agent_copies}        ( [ -d /agent-src/nemoclaw ] && mkdir -p ${FULL_STACK_PATH}/config/nemoclaw-config && cp -a /agent-src/nemoclaw/. ${FULL_STACK_PATH}/config/nemoclaw-config/ ) 2>/dev/null || true ;\n"
+    fi
+    if has_component agentgateway; then
+      agent_mounts="${agent_mounts}      - /opt/openshell-controller:/agent-src/openshell-controller:ro\n"
+      agent_copies="${agent_copies}        ( [ -d /agent-src/openshell-controller ] && mkdir -p ${FULL_STACK_PATH}/config/openshell-controller-config && cp -a /agent-src/openshell-controller/. ${FULL_STACK_PATH}/config/openshell-controller-config/ ) 2>/dev/null || true ;\n"
+    fi
+
     echo "    volumes:"
-    echo "      # Mount the actual directory from your VPS"
-    echo "      - ${FULL_STACK_PATH}:${FULL_STACK_PATH}:ro"
-    echo "    # Run continuously like bandwidth monitor"
+    if [ -n "$agent_mounts" ]; then
+      # Need write access to stage agent configs into config/
+      echo "      - ${FULL_STACK_PATH}:${FULL_STACK_PATH}"
+      printf "%b" "$agent_mounts"
+    else
+      # No agents — backup-job is read-only
+      echo "      - ${FULL_STACK_PATH}:${FULL_STACK_PATH}:ro"
+    fi
+
+    echo "    # Run continuously: stage agent configs, push to git, sleep"
     echo "    command: >"
     echo "      sh -c \"while true; do"
     echo "        echo 'Running backup at \$(date)' &&"
+    if [ -n "$agent_copies" ]; then
+      printf "%b" "$agent_copies"
+    fi
     echo "        /usr/local/bin/backup_script.sh &&"
     echo "        echo 'Backup completed. Sleeping for 1 day ...' &&"
     echo "        sleep 86400;"

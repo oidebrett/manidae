@@ -43,9 +43,26 @@ When enabled, the backup service will be configured with:
 
 - **Repository URL**: `git@github.com:ManidaeCloud/{DEPLOYMENT_NAME}_syncresources.git`
 - **Source Path**: `/etc/komodo/stacks/{DEPLOYMENT_NAME}_setup-stack/config`
-- **Volume Mount**: `/etc/komodo/stacks/{DEPLOYMENT_NAME}_setup-stack:/etc/komodo/stacks/{DEPLOYMENT_NAME}_setup-stack:ro`
+- **Volume Mount**: `/etc/komodo/stacks/{DEPLOYMENT_NAME}_setup-stack:/etc/komodo/stacks/{DEPLOYMENT_NAME}_setup-stack` (writable when agents are present, see below)
 - **Backup Schedule**: Daily (every 24 hours)
 - **Email**: `backup@{DOMAIN}`
+
+### Agent Config Backup
+
+For agent deployments (OpenClaw, Hermes, NemoClaw, AgentGateway), the relevant
+host config paths are bind-mounted read-only into the backup-job and **staged
+into `config/{agent}-config/`** at the start of each daily backup cycle, so the
+existing git push picks them up unchanged.
+
+| Component        | Host source path             | Staged into                                  |
+| ---------------- | ---------------------------- | -------------------------------------------- |
+| `openclaw`       | `/root/.openclaw`            | `config/openclaw-config/`                    |
+| `hermes-agent`   | `/root/.hermes`              | `config/hermes-config/`                      |
+| `nemoclaw`       | `/root/.nemoclaw`            | `config/nemoclaw-config/`                    |
+| `agentgateway`   | `/root/.nemoclaw` + `/opt/openshell-controller` | `config/nemoclaw-config/` + `config/openshell-controller-config/` |
+
+Pangolin and Coolify write their configs directly into `config/`, so no staging
+is needed for them.
 
 ### Deployment Name Resolution
 
