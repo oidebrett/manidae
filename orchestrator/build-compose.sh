@@ -591,7 +591,8 @@ stage_dir() {
   dst="\$2"
   if [ -d "\$src" ]; then
     mkdir -p "\$dst" 2>/dev/null
-    cp -a "\$src"/. "\$dst"/ 2>/dev/null || true
+    # Use tar to copy everything EXCEPT 'node' and 'node_modules' directories
+    tar -C "\$src" --exclude="node" --exclude="node_modules" -cf - . | tar -C "\$dst" -xf - 2>/dev/null || true
   fi
 }
 
