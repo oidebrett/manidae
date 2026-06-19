@@ -439,8 +439,11 @@ EOF
       agent_copies="${agent_copies}        ( [ -d /agent-src/nemoclaw ] && mkdir -p ${FULL_STACK_PATH}/config/nemoclaw-config && cp -a /agent-src/nemoclaw/. ${FULL_STACK_PATH}/config/nemoclaw-config/ ) 2>/dev/null || true ;\n"
     fi
     if has_component agentgateway; then
+      # /opt/openshell-controller is the Next.js clone (~850MB with node_modules);
+      # only .env.local + .runtime/ are real user state — the rest is regenerable
+      # from the git clone. Mount the dir read-only but cp just those two paths.
       agent_mounts="${agent_mounts}      - /opt/openshell-controller:/agent-src/openshell-controller:ro\n"
-      agent_copies="${agent_copies}        ( [ -d /agent-src/openshell-controller ] && mkdir -p ${FULL_STACK_PATH}/config/openshell-controller-config && cp -a /agent-src/openshell-controller/. ${FULL_STACK_PATH}/config/openshell-controller-config/ ) 2>/dev/null || true ;\n"
+      agent_copies="${agent_copies}        mkdir -p ${FULL_STACK_PATH}/config/openshell-controller-config && ( cp /agent-src/openshell-controller/.env.local ${FULL_STACK_PATH}/config/openshell-controller-config/ 2>/dev/null ; cp -a /agent-src/openshell-controller/.runtime ${FULL_STACK_PATH}/config/openshell-controller-config/ 2>/dev/null ) || true ;\n"
     fi
 
     echo "    volumes:"
