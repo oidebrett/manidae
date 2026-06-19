@@ -413,8 +413,11 @@ EOF
     echo "    env_file:"
     echo "      - ./.env  # Load SSH_PRIVATE_KEY and other variables"
     echo "    environment:"
+    # REPO_URL: prefer BACKUP_REPO_URL from .env (set by manidae-cloud, knows the org slug);
+    # fall back to a name built from the local dir if not provided (e.g. BYOVPS without an org).
+    REPO_URL_VALUE="${BACKUP_REPO_URL:-git@github.com:ManidaeCloud/${DEPLOYMENT_NAME}_syncresources.git}"
     echo "      # Repository configuration"
-    echo "      - REPO_URL=git@github.com:ManidaeCloud/${DEPLOYMENT_NAME}_syncresources.git"
+    echo "      - REPO_URL=${REPO_URL_VALUE}"
     echo "      - BACKUP_SOURCE_PATH=${FULL_STACK_PATH}/config"
     echo "      - BACKUP_MODE=backup"
     echo "      - GIT_USER_NAME=Backup Bot"
