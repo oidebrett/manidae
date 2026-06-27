@@ -78,6 +78,14 @@ http:
       basicAuth:
         users:
           - "${NEMOCLAW_AUTH_USER}:${NEMOCLAW_AUTH_PASSWORD_HASH}"
+    # The in-sandbox Hermes dashboard binds loopback and rejects WS upgrades whose
+    # Origin host != its bound host ("origin_mismatch") — the browser's public Origin
+    # would otherwise close the chat/events socket (code 1006, "[session ended]").
+    # Traefik already rewrites Host (passHostHeader=false); rewrite Origin to loopback too.
+    nemoclaw-ws-origin:
+      headers:
+        customRequestHeaders:
+          Origin: "http://localhost:9119"
 
   routers:
     nemoclaw-router-redirect:
@@ -95,6 +103,8 @@ http:
       rule: "Host(\`${NEMOCLAW_SUBDOMAIN}.${NEMOCLAW_DOMAIN}\`) && PathPrefix(\`/api/\`)"
       service: nemoclaw-service
       priority: 100
+      middlewares:
+        - nemoclaw-ws-origin
       entryPoints:
         - websecure
       tls:
