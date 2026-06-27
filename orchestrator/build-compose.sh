@@ -625,6 +625,13 @@ while true; do
     done
   fi
 
+  # Strip nested git repos from the staged config before backing up. OpenClaw (and
+  # agent workspaces) initialise their workspace as a git repo; a nested .git makes
+  # the backup repo's "git add ." abort with "does not have a commit checked out",
+  # silently skipping the commit/push so no backup is ever pushed. We only need the
+  # working files, not the workspace's own git history.
+  find "\${CONFIG_DIR}" -mindepth 2 -type d -name .git -prune -exec rm -rf {} + 2>/dev/null || true
+
   /usr/local/bin/backup_script.sh
   echo "Backup completed. Sleeping for 1 day ..."
   sleep 86400
