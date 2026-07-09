@@ -186,6 +186,8 @@ detect_base_platform() {
     echo "openclaw"
   elif has_component "hermes-agent"; then
     echo "hermes-agent"
+  elif has_component "opencomputer"; then
+    echo "opencomputer"
   elif has_component "agentgateway"; then
     echo "agentgateway"
   elif has_component "openai-chatkit" && (has_component "pangolin" || has_component "middleware-manager"); then
@@ -205,6 +207,8 @@ detect_base_platform() {
       echo "openclaw"
     elif [[ -n "${HERMES_DOMAIN:-}" && -n "${HERMES_AUTH_PASSWORD_HASH:-}" ]]; then
       echo "hermes-agent"
+    elif [[ -n "${OC_DOMAIN:-}" && -n "${OC_AUTH_PASSWORD_HASH:-}" ]]; then
+      echo "opencomputer"
     elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -n "${ADMIN_USERNAME:-}" && -n "${ADMIN_PASSWORD:-}" ]]; then
       echo "agentgateway"
     elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -z "${ADMIN_USERNAME:-}" ]]; then
@@ -350,6 +354,9 @@ EOF
   elif [[ "$BASE_PLATFORM" == "hermes-agent" ]]; then
     # Hermes Agent platform (Traefik proxy to host dashboard with basic-auth)
     sed -n '1,9999p' "$ROOT_DIR/components/hermes-agent/compose.yaml"
+  elif [[ "$BASE_PLATFORM" == "opencomputer" ]]; then
+    # OpenComputer platform (Traefik proxy to host agent dashboard with basic-auth)
+    sed -n '1,9999p' "$ROOT_DIR/components/opencomputer/compose.yaml"
   fi
 
   # Optional components (platform-agnostic)
@@ -689,6 +696,10 @@ export HERMES_SUBDOMAIN="\${HERMES_SUBDOMAIN:-hermes}"
 export HERMES_DOMAIN="\${HERMES_DOMAIN:-}"
 export HERMES_AUTH_USER="\${HERMES_AUTH_USER:-admin}"
 export HERMES_AUTH_PASSWORD_HASH="\${HERMES_AUTH_PASSWORD_HASH:-}"
+export OC_SUBDOMAIN="\${OC_SUBDOMAIN:-computer}"
+export OC_DOMAIN="\${OC_DOMAIN:-}"
+export OC_AUTH_USER="\${OC_AUTH_USER:-admin}"
+export OC_AUTH_PASSWORD_HASH="\${OC_AUTH_PASSWORD_HASH:-}"
 
 log() { printf "%s\n" "\$*"; }
 run_component_hooks() {
@@ -768,6 +779,10 @@ export HERMES_SUBDOMAIN="\${HERMES_SUBDOMAIN:-hermes}"
 export HERMES_DOMAIN="\${HERMES_DOMAIN:-}"
 export HERMES_AUTH_USER="\${HERMES_AUTH_USER:-admin}"
 export HERMES_AUTH_PASSWORD_HASH="\${HERMES_AUTH_PASSWORD_HASH:-}"
+export OC_SUBDOMAIN="\${OC_SUBDOMAIN:-computer}"
+export OC_DOMAIN="\${OC_DOMAIN:-}"
+export OC_AUTH_USER="\${OC_AUTH_USER:-admin}"
+export OC_AUTH_PASSWORD_HASH="\${OC_AUTH_PASSWORD_HASH:-}"
 
 log() { printf "%s\n" "\$*"; }
 run_component_hooks() {

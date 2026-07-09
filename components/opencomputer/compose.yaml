@@ -1,0 +1,18 @@
+  # Traefik reverse proxy for the OpenComputer agent dashboard.
+  # Routes {OC_SUBDOMAIN}.{OC_DOMAIN} → host 127.0.0.1:9800 (the interface-service,
+  # which serves the dashboard, agent chat, and the embedded noVNC desktop).
+  # The agent VM's QEMU forwards guest :8080 → host 127.0.0.1:9800 (loopback only).
+  # Host network mode lets Traefik reach the host's loopback interface.
+  # Single router with basic-auth on ALL paths: verified in Chromium + Firefox that
+  # the browser sends the cached basic-auth on the /ws/events and /desktop WebSocket
+  # upgrades, so no split router or Origin rewrite is needed (unlike Hermes).
+  traefik:
+    image: traefik:v3.6
+    restart: unless-stopped
+    network_mode: host
+    command:
+      - --configFile=/etc/traefik/traefik_config.yml
+    volumes:
+      - ./config/traefik:/etc/traefik:ro
+      - ./config/letsencrypt:/letsencrypt
+      - ./config/traefik/rules:/rules
