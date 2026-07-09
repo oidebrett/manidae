@@ -55,8 +55,8 @@ fi
 if [ -n "${MIDDLEWARE_MANAGER_SUBDOMAIN:-}" ]; then
     _sed_i "s/middleware-manager\.${DOMAIN}/${MIDDLEWARE_MANAGER_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/public_html/index.html"
 fi
-if [ -n "${TRAEFIK_SUBDOMAIN:-}" ]; then
-    _sed_i "s/traefik\.${DOMAIN}/${TRAEFIK_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/public_html/index.html"
+if [ -n "${CROWDSEC_MANAGER_SUBDOMAIN:-}" ]; then
+    _sed_i "s/crowdsec-manager\.${DOMAIN}/${CROWDSEC_MANAGER_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/public_html/index.html"
 fi
 if [ -n "${IDP_SUBDOMAIN:-}" ]; then
     _sed_i "s/idp\.${DOMAIN}/${IDP_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/public_html/index.html"
@@ -152,9 +152,9 @@ update_domains_in_csv() {
     if [ -f "$ROOT_HOST_DIR/postgres_export/resources.csv" ]; then
         _sed_i "s/yourdomain\.com/${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
 
-        if [ -n "${TRAEFIK_SUBDOMAIN:-}" ]; then
-            _sed_i "s/traefik\.${DOMAIN}/${TRAEFIK_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
-            echo "✅ Updated traefik subdomain to ${TRAEFIK_SUBDOMAIN}"
+        if [ -n "${CROWDSEC_MANAGER_SUBDOMAIN:-}" ]; then
+            _sed_i "s/crowdsec-manager\.${DOMAIN}/${CROWDSEC_MANAGER_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
+            echo "✅ Updated crowdsec-manager subdomain to ${CROWDSEC_MANAGER_SUBDOMAIN}"
         fi
 
         if [ -n "${OPENSHELL_CONTROLLER_SUBDOMAIN:-}" ]; then
@@ -175,7 +175,7 @@ echo "🔧 Creating Traefik configuration..."
 cat > "$ROOT_HOST_DIR/config/traefik/traefik_config.yml" << EOF
 api:
   insecure: true
-  dashboard: true
+  dashboard: false
 
 providers:
   http:

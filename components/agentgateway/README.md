@@ -96,7 +96,7 @@ After deployment, the following services will be available:
 - **Admin Dashboard**: `https://pangolin.yourdomain.com` (or your custom subdomain)
 - **AI Chat Interface**: `https://chat.yourdomain.com` (or your custom subdomain)
 - **Chat Admin**: `https://chat.yourdomain.com/admin`
-- **Traefik Dashboard**: `https://traefik.yourdomain.com/dashboard/`
+- **CrowdSec Manager**: `https://crowdsec-manager.yourdomain.com`
 - **Middleware Manager**: `https://middleware-manager.yourdomain.com`
 - **Logs Dashboard**: `https://logs.yourdomain.com`
 

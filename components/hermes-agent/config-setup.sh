@@ -56,6 +56,15 @@ http:
       basicAuth:
         users:
           - "${HERMES_AUTH_USER}:${HERMES_AUTH_PASSWORD_HASH}"
+    # Rewrite the WebSocket Origin to the loopback host. The dashboard binds
+    # 127.0.0.1 and rejects WS upgrades whose Origin host != its bound host
+    # ("pty refused: origin_mismatch"), so the browser's public Origin would
+    # otherwise close the chat socket (code 1006). Traefik already rewrites the
+    # Host (passHostHeader=false); this does the same for Origin.
+    hermes-ws-origin:
+      headers:
+        customRequestHeaders:
+          Origin: "http://127.0.0.1:9119"
 
   routers:
     # /api/* — gated only by Hermes' ephemeral session token (browsers do not
@@ -65,6 +74,8 @@ http:
       rule: "Host(\`${HERMES_SUBDOMAIN}.${HERMES_DOMAIN}\`) && PathPrefix(\`/api/\`)"
       service: hermes-agent
       priority: 100
+      middlewares:
+        - hermes-ws-origin
       entryPoints:
         - websecure
       tls:
