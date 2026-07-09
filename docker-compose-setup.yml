@@ -90,6 +90,16 @@ services:
       - HERMES_DOMAIN=${HERMES_DOMAIN:-}
       - HERMES_AUTH_USER=${HERMES_AUTH_USER:-admin}
       - HERMES_AUTH_PASSWORD_HASH=${HERMES_AUTH_PASSWORD_HASH:-}
+      # OpenComputer platform variables
+      - OC_SUBDOMAIN=${OC_SUBDOMAIN:-computer}
+      - OC_DOMAIN=${OC_DOMAIN:-}
+      - OC_AUTH_USER=${OC_AUTH_USER:-admin}
+      - OC_AUTH_PASSWORD_HASH=${OC_AUTH_PASSWORD_HASH:-}
+      - OC_PROVIDER=${OC_PROVIDER:-}
+      - OC_MODEL=${OC_MODEL:-}
+      - OC_INFERENCE_API_KEY=${OC_INFERENCE_API_KEY:-}
+      - OC_INFERENCE_BASE_URL=${OC_INFERENCE_BASE_URL:-}
+      - OC_CONTEXT_WINDOW=${OC_CONTEXT_WINDOW:-}
       # OpenShell Controller subdomain (for Pangolin resource routing)
       - OPENSHELL_CONTROLLER_SUBDOMAIN=${OPENSHELL_CONTROLLER_SUBDOMAIN:-}
       # Integrations
@@ -147,6 +157,7 @@ services:
         NEMOCLAW_VARS_SET=false
         OPENCLAW_VARS_SET=false
         HERMES_VARS_SET=false
+        OPENCOMPUTER_VARS_SET=false
 
         if [ -n \"$$DOMAIN\" ] && [ -n \"$$EMAIL\" ]; then
           PANGOLIN_VARS_SET=true
@@ -173,7 +184,12 @@ services:
           HERMES_VARS_SET=true
         fi
 
-        if [ \"$$PANGOLIN_VARS_SET\" = false ] && [ \"$$COOLIFY_VARS_SET\" = false ] && [ \"$$NEMOCLAW_VARS_SET\" = false ] && [ \"$$OPENCLAW_VARS_SET\" = false ] && [ \"$$HERMES_VARS_SET\" = false ]; then
+        # For OpenComputer, check if COMPONENTS includes opencomputer OR OpenComputer env vars are set
+        if [ \"$$COMPONENTS\" = \"opencomputer\" ] || echo \"$$COMPONENTS\" | grep -q \"opencomputer\" || ([ -n \"$$OC_DOMAIN\" ] && [ -n \"$$OC_AUTH_PASSWORD_HASH\" ]); then
+          OPENCOMPUTER_VARS_SET=true
+        fi
+
+        if [ \"$$PANGOLIN_VARS_SET\" = false ] && [ \"$$COOLIFY_VARS_SET\" = false ] && [ \"$$NEMOCLAW_VARS_SET\" = false ] && [ \"$$OPENCLAW_VARS_SET\" = false ] && [ \"$$HERMES_VARS_SET\" = false ] && [ \"$$OPENCOMPUTER_VARS_SET\" = false ]; then
           echo '❌ Error: No platform detected!'
           echo ''
           echo '🐧 For Pangolin platform (required):'
@@ -260,6 +276,9 @@ services:
             elif [ -n \"$$HERMES_DOMAIN\" ] && [ -n \"$$HERMES_AUTH_PASSWORD_HASH\" ]; then
               echo \"[orchestrator] Detected Hermes Agent platform (HERMES_DOMAIN and HERMES_AUTH_PASSWORD_HASH are set)\"
               COMPONENTS=\"hermes-agent\"
+            elif [ -n \"$$OC_DOMAIN\" ] && [ -n \"$$OC_AUTH_PASSWORD_HASH\" ]; then
+              echo \"[orchestrator] Detected OpenComputer platform (OC_DOMAIN and OC_AUTH_PASSWORD_HASH are set)\"
+              COMPONENTS=\"opencomputer\"
             elif [ -n \"$$DOMAIN\" ] && [ -n \"$$EMAIL\" ]; then
               echo \"[orchestrator] Detected Pangolin platform (DOMAIN and EMAIL are set)\"
               COMPONENTS=\"pangolin,middleware-manager\"
