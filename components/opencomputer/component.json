@@ -1,0 +1,29 @@
+{
+  "name": "opencomputer",
+  "description": "OpenComputer (Mintplex Open Computer) — KVM agent-VM dashboard reverse-proxied via Traefik with basic-auth (single router, all paths).",
+  "dependencies": [],
+  "env": [
+    {
+      "name": "OC_SUBDOMAIN",
+      "required": true,
+      "default": "computer"
+    },
+    {
+      "name": "OC_DOMAIN",
+      "required": true
+    },
+    {
+      "name": "OC_AUTH_USER",
+      "required": true,
+      "default": "admin"
+    },
+    {
+      "name": "OC_AUTH_PASSWORD_HASH",
+      "required": true
+    },
+    {
+      "name": "EMAIL",
+      "required": false
+    }
+  ]
+}
