@@ -1,8 +1,9 @@
   # Traefik reverse proxy for Hermes Agent web dashboard
   # Routes {HERMES_SUBDOMAIN}.{HERMES_DOMAIN} → host localhost:9119 (hermes dashboard)
-  # The hermes dashboard runs as a systemd service on the host bound to 127.0.0.1:9119;
-  # Hermes has no built-in auth so we protect the public route with Traefik basic-auth.
-  # Host network mode lets Traefik reach the host's loopback interface.
+  # The hermes dashboard runs as a systemd service on the host bound to 0.0.0.0:9119
+  # (UFW blocks 9119 publicly); it authenticates users itself via Hermes' built-in
+  # `basic` dashboard-auth provider, so Traefik just terminates TLS and reverse-proxies
+  # (no basic-auth middleware). Host network mode lets Traefik reach loopback:9119.
   traefik:
     image: traefik:v3.6
     restart: unless-stopped

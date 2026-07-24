@@ -45,50 +45,18 @@ EOF
 
 # --- Hermes Routing Rule ---
 # Proxies https://${HERMES_SUBDOMAIN}.${HERMES_DOMAIN} -> localhost:9119.
-# Two routers because browsers don't forward HTTP basic-auth on WebSocket upgrades:
-#   /api/*  → no basic-auth (Hermes' ephemeral session token in the SPA HTML
-#             gates these endpoints anyway). Required for /api/ws, /api/events, /api/pty.
-#   /       → basic-auth (gates the HTML so the session token isn't leaked).
+# The Hermes dashboard now owns authentication (its built-in `basic` provider — the
+# host systemd service registers it via HERMES_DASHBOARD_BASIC_AUTH_* and binds 0.0.0.0
+# so Hermes' auth gate engages). A non-loopback bind makes Hermes accept any Host/Origin
+# and honour X-Forwarded-* headers, so this is a single plain router — no basic-auth
+# middleware, no WebSocket Origin rewrite, no passHostHeader override. The chat WebSocket
+# authenticates via the session cookie + ws-tickets.
 cat > "${RULES_DIR}/hermes-agent.yml" <<EOF
 http:
-  middlewares:
-    hermes-auth:
-      basicAuth:
-        users:
-          - "${HERMES_AUTH_USER}:${HERMES_AUTH_PASSWORD_HASH}"
-    # Rewrite the WebSocket Origin to the loopback host. The dashboard binds
-    # 127.0.0.1 and rejects WS upgrades whose Origin host != its bound host
-    # ("pty refused: origin_mismatch"), so the browser's public Origin would
-    # otherwise close the chat socket (code 1006). Traefik already rewrites the
-    # Host (passHostHeader=false); this does the same for Origin.
-    hermes-ws-origin:
-      headers:
-        customRequestHeaders:
-          Origin: "http://127.0.0.1:9119"
-
   routers:
-    # /api/* — gated only by Hermes' ephemeral session token (browsers do not
-    # send HTTP basic-auth on WebSocket upgrades, so Traefik basic-auth on
-    # /api/ws, /api/events, /api/pty would break the chat tab).
-    hermes-agent-api:
-      rule: "Host(\`${HERMES_SUBDOMAIN}.${HERMES_DOMAIN}\`) && PathPrefix(\`/api/\`)"
-      service: hermes-agent
-      priority: 100
-      middlewares:
-        - hermes-ws-origin
-      entryPoints:
-        - websecure
-      tls:
-        certResolver: letsencrypt
-
-    # SPA shell + static — basic-auth (so the HTML carrying the session token
-    # is gated). Lower priority means /api/* matches first.
     hermes-agent:
       rule: "Host(\`${HERMES_SUBDOMAIN}.${HERMES_DOMAIN}\`)"
       service: hermes-agent
-      priority: 10
-      middlewares:
-        - hermes-auth
       entryPoints:
         - websecure
       tls:
@@ -97,12 +65,8 @@ http:
   services:
     hermes-agent:
       loadBalancer:
-        # Hermes dashboard validates the Host header against its bind address
-        # and rejects requests forwarded with the public hostname.
-        # passHostHeader=false makes Traefik send the upstream URL's host instead.
-        passHostHeader: false
         servers:
           - url: "http://127.0.0.1:9119"
 EOF
 
-log "✅ Hermes Agent Traefik rules generated for ${HERMES_SUBDOMAIN}.${HERMES_DOMAIN}"
+log "✅ Hermes Agent Traefik rules generated for ${HERMES_SUBDOMAIN}.${HERMES_DOMAIN} (Hermes built-in auth)"

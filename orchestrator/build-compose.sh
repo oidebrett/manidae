@@ -302,28 +302,30 @@ EOF
 # Hermes Agent Standalone Docker Compose Configuration
 #
 # 🚨 IMPORTANT SERVER PREREQUISITES:
-# This compose stack ONLY brings up the Traefik reverse-proxy with basic-auth.
-# The Hermes dashboard runs as a HOST systemd service (not in Docker). You MUST
-# complete these steps on your server BEFORE running 'docker compose up -d'.
-# See PREREQUISITES_HERMES.md (generated alongside this file) for the
-# step-by-step copy-paste commands. Summary:
+# This compose stack ONLY brings up the Traefik reverse-proxy (TLS termination).
+# The Hermes dashboard runs as a HOST systemd service (not in Docker) and now
+# authenticates users itself via Hermes' built-in \`basic\` dashboard-auth provider —
+# there is NO Traefik basic-auth middleware. You MUST complete these steps on your
+# server BEFORE running 'docker compose up -d'. See PREREQUISITES_HERMES.md (generated
+# alongside this file) for the step-by-step copy-paste commands. Summary:
 #
-# 1. sudo apt install -y git curl ca-certificates apache2-utils ufw
+# 1. sudo apt install -y git curl ca-certificates ufw
 # 2. curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
 # 3. /usr/local/lib/hermes-agent/venv/bin/pip install 'hermes-agent[web,pty]' ptyprocess
 # 4. Configure ~/.hermes/.env (API key) + hermes config set model.provider/default
-# 5. Generate basic-auth hash:  htpasswd -nb admin '<YOUR_PASSWORD>'
-#    and paste into config/traefik/rules/hermes-agent.yml under
-#    middlewares.hermes-auth.basicAuth.users (admin:\${HERMES_AUTH_PASSWORD_HASH}
-#    is the format)
+# 5. Add the built-in dashboard auth to ~/.hermes/.env (Hermes reads these directly):
+#      HERMES_DASHBOARD_BASIC_AUTH_USERNAME=admin
+#      HERMES_DASHBOARD_BASIC_AUTH_PASSWORD=<YOUR_PASSWORD>
+#      HERMES_DASHBOARD_BASIC_AUTH_SECRET=<32+ random bytes>   # keeps sessions across restarts
 # 6. Create /etc/systemd/system/hermes-dashboard.service (template in
-#    PREREQUISITES_HERMES.md) and start it: --host 0.0.0.0 --insecure
+#    PREREQUISITES_HERMES.md) and start it: --host 0.0.0.0 --no-open
+#    (0.0.0.0 is REQUIRED — Hermes only engages its auth gate on a non-loopback bind)
 # 7. FIREWALL: \`ufw deny 9119/tcp\` — port 9119 MUST NOT be exposed publicly
 #    (only Traefik on localhost should reach it)
 # 8. Verify: systemctl is-active hermes-dashboard && curl http://127.0.0.1:9119/
 #
 # 📋 Then run 'docker compose up -d' to start Traefik (this file).
-# 🔗 Access: https://\${HERMES_SUBDOMAIN}.\${HERMES_DOMAIN} (login with admin + your password)
+# 🔗 Access: https://\${HERMES_SUBDOMAIN}.\${HERMES_DOMAIN} (Hermes shows a login page — use admin + your password)
 # 📚 Hermes docs: https://hermes-agent.nousresearch.com/docs
 
 services:

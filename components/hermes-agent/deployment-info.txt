@@ -1,13 +1,15 @@
 # Hermes Agent Deployment
 
-The Hermes Agent dashboard is reverse-proxied via Traefik with HTTP basic-auth.
+The Hermes Agent dashboard is reverse-proxied via Traefik (TLS). Authentication is
+handled by Hermes itself (its built-in login page) — no Traefik basic-auth.
 
-Access:    https://${HERMES_SUBDOMAIN}.${HERMES_DOMAIN}
+Access:    https://${HERMES_SUBDOMAIN}.${HERMES_DOMAIN}   (Hermes shows a login page)
 User:      ${HERMES_AUTH_USER}
 Password:  (issued at provisioning time — check the Manidae Cloud deployment details)
 
 The dashboard runs as the `hermes-dashboard` systemd service on the host, bound
-to 127.0.0.1:9119. Configure LLM providers, tools, and integrations from the UI.
+to 0.0.0.0:9119 (UFW blocks it publicly; only Traefik reaches it on loopback).
+Configure LLM providers, tools, and integrations from the UI.
 
 Logs:      journalctl -u hermes-dashboard -f
 Restart:   systemctl restart hermes-dashboard
