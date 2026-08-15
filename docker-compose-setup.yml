@@ -100,6 +100,10 @@ services:
       - OC_INFERENCE_API_KEY=${OC_INFERENCE_API_KEY:-}
       - OC_INFERENCE_BASE_URL=${OC_INFERENCE_BASE_URL:-}
       - OC_CONTEXT_WINDOW=${OC_CONTEXT_WINDOW:-}
+      # Buzz relay platform variables (Traefik routing only — the relay stack itself
+      # is installed on the host by the manidae-cloud startup/bootstrap script)
+      - BUZZ_SUBDOMAIN=${BUZZ_SUBDOMAIN:-buzz}
+      - BUZZ_DOMAIN=${BUZZ_DOMAIN:-}
       # OpenShell Controller subdomain (for Pangolin resource routing)
       - OPENSHELL_CONTROLLER_SUBDOMAIN=${OPENSHELL_CONTROLLER_SUBDOMAIN:-}
       # Integrations
@@ -158,6 +162,7 @@ services:
         OPENCLAW_VARS_SET=false
         HERMES_VARS_SET=false
         OPENCOMPUTER_VARS_SET=false
+        BUZZ_VARS_SET=false
 
         if [ -n \"$$DOMAIN\" ] && [ -n \"$$EMAIL\" ]; then
           PANGOLIN_VARS_SET=true
@@ -189,7 +194,14 @@ services:
           OPENCOMPUTER_VARS_SET=true
         fi
 
-        if [ \"$$PANGOLIN_VARS_SET\" = false ] && [ \"$$COOLIFY_VARS_SET\" = false ] && [ \"$$NEMOCLAW_VARS_SET\" = false ] && [ \"$$OPENCLAW_VARS_SET\" = false ] && [ \"$$HERMES_VARS_SET\" = false ] && [ \"$$OPENCOMPUTER_VARS_SET\" = false ]; then
+        # For Buzz, check if COMPONENTS includes buzz OR the Buzz subdomain/domain are set.
+        # Buzz has no DOMAIN/EMAIL pair of its own, so without this branch the
+        # platform-detection gate below rejects the whole setup stack.
+        if [ \"$$COMPONENTS\" = \"buzz\" ] || echo \"$$COMPONENTS\" | grep -q \"buzz\" || ([ -n \"$$BUZZ_DOMAIN\" ] && [ -n \"$$BUZZ_SUBDOMAIN\" ]); then
+          BUZZ_VARS_SET=true
+        fi
+
+        if [ \"$$PANGOLIN_VARS_SET\" = false ] && [ \"$$COOLIFY_VARS_SET\" = false ] && [ \"$$NEMOCLAW_VARS_SET\" = false ] && [ \"$$OPENCLAW_VARS_SET\" = false ] && [ \"$$HERMES_VARS_SET\" = false ] && [ \"$$OPENCOMPUTER_VARS_SET\" = false ] && [ \"$$BUZZ_VARS_SET\" = false ]; then
           echo '❌ Error: No platform detected!'
           echo ''
           echo '🐧 For Pangolin platform (required):'
@@ -279,6 +291,9 @@ services:
             elif [ -n \"$$OC_DOMAIN\" ] && [ -n \"$$OC_AUTH_PASSWORD_HASH\" ]; then
               echo \"[orchestrator] Detected OpenComputer platform (OC_DOMAIN and OC_AUTH_PASSWORD_HASH are set)\"
               COMPONENTS=\"opencomputer\"
+            elif [ -n \"$$BUZZ_DOMAIN\" ] && [ -n \"$$BUZZ_SUBDOMAIN\" ]; then
+              echo \"[orchestrator] Detected Buzz relay platform (BUZZ_DOMAIN and BUZZ_SUBDOMAIN are set)\"
+              COMPONENTS=\"buzz\"
             elif [ -n \"$$DOMAIN\" ] && [ -n \"$$EMAIL\" ]; then
               echo \"[orchestrator] Detected Pangolin platform (DOMAIN and EMAIL are set)\"
               COMPONENTS=\"pangolin,middleware-manager\"

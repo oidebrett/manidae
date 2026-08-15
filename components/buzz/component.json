@@ -1,0 +1,20 @@
+{
+  "name": "buzz",
+  "description": "Buzz Relay (block/buzz) — Traefik TLS termination in front of the self-hosted Nostr relay running on the host at 127.0.0.1:3000. No basic-auth: Buzz authenticates its own clients over the WebSocket (NIP-42/98).",
+  "dependencies": [],
+  "env": [
+    {
+      "name": "BUZZ_SUBDOMAIN",
+      "required": true,
+      "default": "buzz"
+    },
+    {
+      "name": "BUZZ_DOMAIN",
+      "required": true
+    },
+    {
+      "name": "EMAIL",
+      "required": false
+    }
+  ]
+}

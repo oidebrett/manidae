@@ -1,0 +1,22 @@
+  # Traefik reverse proxy for the self-hosted Buzz relay.
+  # Routes {BUZZ_SUBDOMAIN}.{BUZZ_DOMAIN} → host 127.0.0.1:3000, where the Buzz
+  # production compose bundle (relay + Postgres + Redis + MinIO) publishes the
+  # relay on loopback only. Host network mode lets Traefik reach that loopback.
+  #
+  # No basic-auth middleware, deliberately: Buzz clients authenticate themselves
+  # over the WebSocket with NIP-42/NIP-98, and an HTTP 401 challenge in front of
+  # the endpoint would break the desktop app's handshake. Access control is the
+  # relay's closed-membership mode (RELAY_OWNER_PUBKEY + admitted members).
+  #
+  # Traefik proxies the Upgrade handshake natively, so wss:// needs no extra
+  # configuration here.
+  traefik:
+    image: traefik:v3.6
+    restart: unless-stopped
+    network_mode: host
+    command:
+      - --configFile=/etc/traefik/traefik_config.yml
+    volumes:
+      - ./config/traefik:/etc/traefik:ro
+      - ./config/letsencrypt:/letsencrypt
+      - ./config/traefik/rules:/rules
