@@ -94,12 +94,15 @@
       - "6002:6002"
     volumes:
       - /data/coolify/ssh:/var/www/html/storage/app/ssh
+    # Keep the ":-" form on the PUSHER_* vars: the orchestrator's envsubst pass
+    # runs before they are generated into .env and would blank a bare ${VAR},
+    # leaving the realtime service rejecting Coolify's app key.
     environment:
       APP_NAME: "${APP_NAME:-Coolify}"
       SOKETI_DEBUG: "${SOKETI_DEBUG:-false}"
-      SOKETI_DEFAULT_APP_ID: "${PUSHER_APP_ID}"
-      SOKETI_DEFAULT_APP_KEY: "${PUSHER_APP_KEY}"
-      SOKETI_DEFAULT_APP_SECRET: "${PUSHER_APP_SECRET}"
+      SOKETI_DEFAULT_APP_ID: "${PUSHER_APP_ID:-}"
+      SOKETI_DEFAULT_APP_KEY: "${PUSHER_APP_KEY:-}"
+      SOKETI_DEFAULT_APP_SECRET: "${PUSHER_APP_SECRET:-}"
     networks:
       - coolify
     healthcheck:

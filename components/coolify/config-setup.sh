@@ -138,12 +138,38 @@ http:
         - crowdsec@file
       tls:
         certResolver: letsencrypt
+    coolify-realtime-ws:
+      rule: "Host(\`${ADMIN_SUBDOMAIN}.${DOMAIN}\`) && PathPrefix(\`/app\`)"
+      service: coolify-realtime-service
+      entryPoints:
+        - https
+      middlewares:
+        - crowdsec@file
+      tls:
+        certResolver: letsencrypt
+    coolify-terminal-ws:
+      rule: "Host(\`${ADMIN_SUBDOMAIN}.${DOMAIN}\`) && PathPrefix(\`/terminal/ws\`)"
+      service: coolify-terminal-service
+      entryPoints:
+        - https
+      middlewares:
+        - crowdsec@file
+      tls:
+        certResolver: letsencrypt
 
   services:
     coolify-ui-service:
       loadBalancer:
         servers:
           - url: "http://coolify:8080"
+    coolify-realtime-service:
+      loadBalancer:
+        servers:
+          - url: "http://coolify-realtime:6001"
+    coolify-terminal-service:
+      loadBalancer:
+        servers:
+          - url: "http://coolify-realtime:6002"
 EOF
 else
     cat > /host-setup/config/coolify/proxy/dynamic/custom_domain.yml << EOF
@@ -156,12 +182,34 @@ http:
         - https
       tls:
         certResolver: letsencrypt
+    coolify-realtime-ws:
+      rule: "Host(\`${ADMIN_SUBDOMAIN}.${DOMAIN}\`) && PathPrefix(\`/app\`)"
+      service: coolify-realtime-service
+      entryPoints:
+        - https
+      tls:
+        certResolver: letsencrypt
+    coolify-terminal-ws:
+      rule: "Host(\`${ADMIN_SUBDOMAIN}.${DOMAIN}\`) && PathPrefix(\`/terminal/ws\`)"
+      service: coolify-terminal-service
+      entryPoints:
+        - https
+      tls:
+        certResolver: letsencrypt
 
   services:
     coolify-ui-service:
       loadBalancer:
         servers:
           - url: "http://coolify:8080"
+    coolify-realtime-service:
+      loadBalancer:
+        servers:
+          - url: "http://coolify-realtime:6001"
+    coolify-terminal-service:
+      loadBalancer:
+        servers:
+          - url: "http://coolify-realtime:6002"
 EOF
 fi
 
