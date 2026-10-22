@@ -87,6 +87,20 @@ postgres:
 
 EOF
 
+# PrivateInference (manidae-cloud): turn on Pangolin's integration API (port 3003,
+# never published) so the platform can create the GPU's Newt site + gpu resource
+# over SSH with a restricted key seeded by components/private-inference/seed-pangolin-key.sh.
+case "${COMPONENTS_CSV:-}" in
+    *private-inference*)
+        PANGOLIN_CONFIG_FILE="$ROOT_HOST_DIR/config/config.yml"
+        if ! grep -q "enable_integration_api" "$PANGOLIN_CONFIG_FILE"; then
+            awk '{print} /^    allow_base_domain_resources: true$/ {print "    enable_integration_api: true"}' \
+                "$PANGOLIN_CONFIG_FILE" > "$PANGOLIN_CONFIG_FILE.tmp" && mv "$PANGOLIN_CONFIG_FILE.tmp" "$PANGOLIN_CONFIG_FILE"
+        fi
+        echo "✅ Pangolin integration API enabled (private-inference)"
+        ;;
+esac
+
 # Function to check if a specific component is included
 has_component() {
     local component="$1"
