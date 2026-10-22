@@ -41,6 +41,9 @@ services:
       # Optional features
       - CROWDSEC_ENROLLMENT_KEY=${CROWDSEC_ENROLLMENT_KEY:-}
       - STATIC_PAGE_SUBDOMAIN=${STATIC_PAGE_SUBDOMAIN:-}
+      # PrivateInference (manidae-cloud) inference route
+      - PI_INFERENCE_SUBDOMAIN=${PI_INFERENCE_SUBDOMAIN:-}
+      - PII_ROUTER_UPSTREAM=${PII_ROUTER_UPSTREAM:-}
       - MAIN_STACK_PREFIX=${MAIN_STACK_PREFIX:-}
       # OAuth configuration (if needed)
       - CLIENT_ID=${CLIENT_ID:-}

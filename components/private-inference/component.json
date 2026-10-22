@@ -1,0 +1,7 @@
+{
+  "name": "private-inference",
+  "required_env": ["DOMAIN"],
+  "optional_env": ["PI_INFERENCE_SUBDOMAIN", "PII_ROUTER_UPSTREAM"],
+  "dependencies": ["pangolin"],
+  "description": "Publishes the host PII router (manidae-cloud PrivateInference package) at https://<PI_INFERENCE_SUBDOMAIN>.<DOMAIN>/v1 via a Traefik file rule. No Pangolin SSO (API clients cannot follow it); the router key is the auth; CrowdSec applies via the websecure entrypoint."
+}
