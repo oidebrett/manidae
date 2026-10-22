@@ -5,6 +5,8 @@
 # - No Pangolin SSO / badger middleware: API clients cannot follow an SSO
 #   redirect. The router's LITELLM_MASTER_KEY is the auth (no key -> 401).
 # - CrowdSec still applies: it is attached to the websecure entrypoint.
+# - Only /v1/... is published: LiteLLM's own pages (/, /ui admin UI, /docs) never
+#   reach the internet, whatever its settings (1.104 serves /ui despite DISABLE_ADMIN_UI).
 # - Upstream is the Docker bridge IP, not host.docker.internal: Pangolin+'s
 #   Traefik (in Gerbil's network namespace) has no host-gateway alias. The
 #   router binds that same IP (PII_ROUTER_HOST in manidae-cloud's install).
@@ -27,7 +29,7 @@ http:
     9-private-inference:
       entryPoints: [websecure]
       priority: 250
-      rule: "Host(\`${SUB}.${DOMAIN}\`)"
+      rule: "Host(\`${SUB}.${DOMAIN}\`) && PathPrefix(\`/v1/\`)"
       service: 9-private-inference-svc
       tls:
         certResolver: letsencrypt
