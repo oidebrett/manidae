@@ -96,6 +96,13 @@ create_static_page_html() {
             _sed_i '/<!-- COMPONENT_CONDITIONAL_CROWDSEC_START -->/d; /<!-- COMPONENT_CONDITIONAL_CROWDSEC_END -->/d' "/tmp/index.html.template"
         fi
 
+        # PrivateInference endpoint card on the welcome screen (manidae-cloud package)
+        if ! echo "${COMPONENTS_CSV:-}" | grep -q "private-inference"; then
+            _sed_i '/<!-- COMPONENT_CONDITIONAL_PRIVATE_INFERENCE_START -->/,/<!-- COMPONENT_CONDITIONAL_PRIVATE_INFERENCE_END -->/d' "/tmp/index.html.template"
+        else
+            _sed_i '/<!-- COMPONENT_CONDITIONAL_PRIVATE_INFERENCE_START -->/d; /<!-- COMPONENT_CONDITIONAL_PRIVATE_INFERENCE_END -->/d' "/tmp/index.html.template"
+        fi
+
         # If KOMODO_HOST_IP is not set, remove the Komodo section from the template
         if [ -z "${KOMODO_HOST_IP:-}" ]; then
             echo "Removing Komodo section from template as KOMODO_HOST_IP is not set"
@@ -121,6 +128,9 @@ create_static_page_html() {
             _sed_i "s/middleware-manager\.${DOMAIN}/${MIDDLEWARE_MANAGER_SUBDOMAIN}.${DOMAIN}/g" "/tmp/index.html.processing"
         fi
 
+        if [ -n "${CROWDSEC_MANAGER_SUBDOMAIN:-}" ]; then
+            _sed_i "s/crowdsec-manager\.${DOMAIN}/${CROWDSEC_MANAGER_SUBDOMAIN}.${DOMAIN}/g" "/tmp/index.html.processing"
+        fi
         if [ -n "${TRAEFIK_SUBDOMAIN:-}" ]; then
             _sed_i "s/traefik\.${DOMAIN}/${TRAEFIK_SUBDOMAIN}.${DOMAIN}/g" "/tmp/index.html.processing"
         fi

@@ -236,6 +236,16 @@
                                 <div>Metrics • Logging & Tracing</div>
                             </div>
                         </div>
+                        <!-- COMPONENT_CONDITIONAL_PRIVATE_INFERENCE_START -->
+                        <div class="bg-gray-800 p-5 rounded-lg shadow-lg mt-6 text-left">
+                            <div class="font-semibold text-cyan-400 mb-2">Private inference endpoint (OpenAI-compatible)</div>
+                            <code class="block text-gray-200 break-all">https://inference.yourdomain.com/v1</code>
+                            <div class="text-gray-400 text-sm mt-3">Model <code>pii-router</code> &middot; header <code>Authorization: Bearer &lt;endpoint key&gt;</code>. Your endpoint key is on the deployment page.</div>
+                            <pre class="text-xs text-gray-300 bg-gray-900 rounded p-3 mt-3 overflow-x-auto">curl https://inference.yourdomain.com/v1/chat/completions &#92;
+  -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" &#92;
+  -d '{"model":"pii-router","messages":[{"role":"user","content":"Hello"}]}'</pre>
+                        </div>
+                        <!-- COMPONENT_CONDITIONAL_PRIVATE_INFERENCE_END -->
                         <p class="text-md text-gray-500 mt-8">
                             Select an application from the navigation panel to get started.
                         </p>
@@ -286,6 +296,16 @@
                                 <div>Metrics • Logging & Tracing</div>
                             </div>
                         </div>
+                        <!-- COMPONENT_CONDITIONAL_PRIVATE_INFERENCE_START -->
+                        <div class="bg-gray-800 p-5 rounded-lg shadow-lg mt-6 text-left">
+                            <div class="font-semibold text-cyan-400 mb-2">Private inference endpoint (OpenAI-compatible)</div>
+                            <code class="block text-gray-200 break-all">https://inference.yourdomain.com/v1</code>
+                            <div class="text-gray-400 text-sm mt-3">Model <code>pii-router</code> &middot; header <code>Authorization: Bearer &lt;endpoint key&gt;</code>. Your endpoint key is on the deployment page.</div>
+                            <pre class="text-xs text-gray-300 bg-gray-900 rounded p-3 mt-3 overflow-x-auto">curl https://inference.yourdomain.com/v1/chat/completions &#92;
+  -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" &#92;
+  -d '{"model":"pii-router","messages":[{"role":"user","content":"Hello"}]}'</pre>
+                        </div>
+                        <!-- COMPONENT_CONDITIONAL_PRIVATE_INFERENCE_END -->
                         <p class="text-md text-gray-500 mt-8">
                             Select an application from the navigation panel to get started.
                         </p>
