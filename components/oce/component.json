@@ -1,0 +1,10 @@
+{
+  "name": "oce",
+  "description": "OpenClaw Enterprise — Traefik (TLS) on {OCE_SUBDOMAIN}.{OCE_DOMAIN}. OCE itself runs on the host in a k3d cluster installed by manidae-cloud's startup script; this stack only provides the public HTTPS entry point (phone-call webhooks for the voice bridge, which writes its own rule into the same rules directory).",
+  "dependencies": [],
+  "env": [
+    {"name": "OCE_SUBDOMAIN", "required": true, "default": "oce"},
+    {"name": "OCE_DOMAIN", "required": true},
+    {"name": "EMAIL", "required": false}
+  ]
+}

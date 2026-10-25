@@ -108,6 +108,10 @@ services:
       # is installed on the host by the manidae-cloud startup/bootstrap script)
       - BUZZ_SUBDOMAIN=${BUZZ_SUBDOMAIN:-buzz}
       - BUZZ_DOMAIN=${BUZZ_DOMAIN:-}
+      # OpenClaw Enterprise variables (Traefik only — OCE runs on the host in k3d,
+      # installed by the manidae-cloud startup/bootstrap script)
+      - OCE_SUBDOMAIN=${OCE_SUBDOMAIN:-oce}
+      - OCE_DOMAIN=${OCE_DOMAIN:-}
       # OpenShell Controller subdomain (for Pangolin resource routing)
       - OPENSHELL_CONTROLLER_SUBDOMAIN=${OPENSHELL_CONTROLLER_SUBDOMAIN:-}
       # Integrations
@@ -167,6 +171,7 @@ services:
         HERMES_VARS_SET=false
         OPENCOMPUTER_VARS_SET=false
         BUZZ_VARS_SET=false
+        OCE_VARS_SET=false
 
         if [ -n \"$$DOMAIN\" ] && [ -n \"$$EMAIL\" ]; then
           PANGOLIN_VARS_SET=true
@@ -205,7 +210,12 @@ services:
           BUZZ_VARS_SET=true
         fi
 
-        if [ \"$$PANGOLIN_VARS_SET\" = false ] && [ \"$$COOLIFY_VARS_SET\" = false ] && [ \"$$NEMOCLAW_VARS_SET\" = false ] && [ \"$$OPENCLAW_VARS_SET\" = false ] && [ \"$$HERMES_VARS_SET\" = false ] && [ \"$$OPENCOMPUTER_VARS_SET\" = false ] && [ \"$$BUZZ_VARS_SET\" = false ]; then
+        # OpenClaw Enterprise: same reason as Buzz — no DOMAIN/EMAIL pair of its own.
+        if [ \"$$COMPONENTS\" = \"oce\" ] || ([ -n \"$$OCE_DOMAIN\" ] && [ -n \"$$OCE_SUBDOMAIN\" ]); then
+          OCE_VARS_SET=true
+        fi
+
+        if [ \"$$PANGOLIN_VARS_SET\" = false ] && [ \"$$COOLIFY_VARS_SET\" = false ] && [ \"$$NEMOCLAW_VARS_SET\" = false ] && [ \"$$OPENCLAW_VARS_SET\" = false ] && [ \"$$HERMES_VARS_SET\" = false ] && [ \"$$OPENCOMPUTER_VARS_SET\" = false ] && [ \"$$BUZZ_VARS_SET\" = false ] && [ \"$$OCE_VARS_SET\" = false ]; then
           echo '❌ Error: No platform detected!'
           echo ''
           echo '🐧 For Pangolin platform (required):'
@@ -298,6 +308,9 @@ services:
             elif [ -n \"$$BUZZ_DOMAIN\" ] && [ -n \"$$BUZZ_SUBDOMAIN\" ]; then
               echo \"[orchestrator] Detected Buzz relay platform (BUZZ_DOMAIN and BUZZ_SUBDOMAIN are set)\"
               COMPONENTS=\"buzz\"
+            elif [ -n \"$$OCE_DOMAIN\" ] && [ -n \"$$OCE_SUBDOMAIN\" ]; then
+              echo \"[orchestrator] Detected OpenClaw Enterprise platform (OCE_DOMAIN and OCE_SUBDOMAIN are set)\"
+              COMPONENTS=\"oce\"
             elif [ -n \"$$DOMAIN\" ] && [ -n \"$$EMAIL\" ]; then
               echo \"[orchestrator] Detected Pangolin platform (DOMAIN and EMAIL are set)\"
               COMPONENTS=\"pangolin,middleware-manager\"

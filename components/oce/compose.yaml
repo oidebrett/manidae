@@ -1,0 +1,15 @@
+  # Traefik reverse proxy for OpenClaw Enterprise (OCE).
+  # OCE runs on the host in k3d (installed by manidae-cloud), not in this stack.
+  # Rules in ./config/traefik/rules are written by config-setup.sh and, for phone
+  # calls, by the agent-voice-bridge ensure-route.sh (it finds this rules dir).
+  # Host network mode lets Traefik reach host-loopback services.
+  traefik:
+    image: traefik:v3.6
+    restart: unless-stopped
+    network_mode: host
+    command:
+      - --configFile=/etc/traefik/traefik_config.yml
+    volumes:
+      - ./config/traefik:/etc/traefik:ro
+      - ./config/letsencrypt:/letsencrypt
+      - ./config/traefik/rules:/rules

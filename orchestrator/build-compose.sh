@@ -44,6 +44,9 @@ if [[ -z "$COMPONENTS_RAW" ]]; then
   elif [[ -n "${BUZZ_DOMAIN:-}" && -n "${BUZZ_SUBDOMAIN:-}" ]]; then
     echo "[orchestrator] Detected Buzz relay platform (BUZZ_DOMAIN and BUZZ_SUBDOMAIN are set)"
     COMPONENTS_RAW="buzz"
+  elif [[ -n "${OCE_DOMAIN:-}" && -n "${OCE_SUBDOMAIN:-}" ]]; then
+    echo "[orchestrator] Detected OpenClaw Enterprise platform (OCE_DOMAIN and OCE_SUBDOMAIN are set)"
+    COMPONENTS_RAW="oce"
   elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -z "${ADMIN_USERNAME:-}" ]]; then
     echo "[orchestrator] Detected OpenAI Chatkit platform (OPENAI_API_KEY and WORKFLOW_ID are set, no Pangolin admin)"
     COMPONENTS_RAW="openai-chatkit"
@@ -193,6 +196,8 @@ detect_base_platform() {
     echo "opencomputer"
   elif has_component "buzz"; then
     echo "buzz"
+  elif has_component "oce"; then
+    echo "oce"
   elif has_component "agentgateway"; then
     echo "agentgateway"
   elif has_component "openai-chatkit" && (has_component "pangolin" || has_component "middleware-manager"); then
@@ -216,6 +221,8 @@ detect_base_platform() {
       echo "opencomputer"
     elif [[ -n "${BUZZ_DOMAIN:-}" && -n "${BUZZ_SUBDOMAIN:-}" ]]; then
       echo "buzz"
+    elif [[ -n "${OCE_DOMAIN:-}" && -n "${OCE_SUBDOMAIN:-}" ]]; then
+      echo "oce"
     elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -n "${ADMIN_USERNAME:-}" && -n "${ADMIN_PASSWORD:-}" ]]; then
       echo "agentgateway"
     elif [[ -n "${OPENAI_API_KEY:-}" && -n "${WORKFLOW_ID:-}" && -z "${ADMIN_USERNAME:-}" ]]; then
@@ -369,6 +376,9 @@ EOF
   elif [[ "$BASE_PLATFORM" == "buzz" ]]; then
     # Buzz relay platform (Traefik TLS termination for the host relay, no basic-auth)
     sed -n '1,9999p' "$ROOT_DIR/components/buzz/compose.yaml"
+  elif [[ "$BASE_PLATFORM" == "oce" ]]; then
+    # OpenClaw Enterprise (Traefik only; OCE runs on the host in k3d)
+    sed -n '1,9999p' "$ROOT_DIR/components/oce/compose.yaml"
   fi
 
   # Optional components (platform-agnostic)
@@ -716,6 +726,8 @@ export OC_AUTH_USER="\${OC_AUTH_USER:-admin}"
 export OC_AUTH_PASSWORD_HASH="\${OC_AUTH_PASSWORD_HASH:-}"
 export BUZZ_SUBDOMAIN="\${BUZZ_SUBDOMAIN:-buzz}"
 export BUZZ_DOMAIN="\${BUZZ_DOMAIN:-}"
+export OCE_SUBDOMAIN="\${OCE_SUBDOMAIN:-oce}"
+export OCE_DOMAIN="\${OCE_DOMAIN:-}"
 
 log() { printf "%s\n" "\$*"; }
 run_component_hooks() {
@@ -801,6 +813,8 @@ export OC_AUTH_USER="\${OC_AUTH_USER:-admin}"
 export OC_AUTH_PASSWORD_HASH="\${OC_AUTH_PASSWORD_HASH:-}"
 export BUZZ_SUBDOMAIN="\${BUZZ_SUBDOMAIN:-buzz}"
 export BUZZ_DOMAIN="\${BUZZ_DOMAIN:-}"
+export OCE_SUBDOMAIN="\${OCE_SUBDOMAIN:-oce}"
+export OCE_DOMAIN="\${OCE_DOMAIN:-}"
 
 log() { printf "%s\n" "\$*"; }
 run_component_hooks() {
