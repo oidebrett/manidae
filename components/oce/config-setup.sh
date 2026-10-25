@@ -2,9 +2,10 @@
 set -e
 
 # OpenClaw Enterprise Config Setup
-# Generates the Traefik main config. OCE's console is only on the host loopback for now
-# (development launcher, see manidae-cloud docs/oce-package-plan.md), so no console router
-# is written here yet; the voice bridge adds its own /telnyx/* + /twilio/* router.
+# Generates the Traefik main config and the console route. OCE runs on the host in k3d
+# (production Helm install by manidae-cloud, docs/oce-package-plan.md); its k3d load balancer
+# listens on 127.0.0.1:18480. The install writes the same oce-console.yml; writing it here too
+# keeps the route if the stack directory is re-cloned. The voice bridge adds its own router.
 
 log() { printf "%s\n" "$*"; }
 
@@ -43,5 +44,23 @@ certificatesResolvers:
       httpChallenge:
         entryPoint: web
 EOT
+
+if [ -n "${OCE_SUBDOMAIN:-}" ] && [ -n "${OCE_DOMAIN:-}" ]; then
+cat > "${RULES_DIR}/oce-console.yml" <<EOT
+# OpenClaw Enterprise console (manidae oce component; same file as the manidae-cloud install writes)
+http:
+  routers:
+    oce-console:
+      entryPoints: [websecure]
+      rule: "Host(\`${OCE_SUBDOMAIN}.${OCE_DOMAIN}\`)"
+      service: oce-console
+      tls: { certResolver: letsencrypt }
+  services:
+    oce-console:
+      loadBalancer:
+        servers:
+          - url: "http://127.0.0.1:18480"
+EOT
+fi
 
 log "✅ OCE Traefik config generated for ${OCE_SUBDOMAIN}.${OCE_DOMAIN}"
