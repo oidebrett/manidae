@@ -55,6 +55,17 @@ http:
       rule: "Host(\`${OCE_SUBDOMAIN}.${OCE_DOMAIN}\`)"
       service: oce-console
       tls: { certResolver: letsencrypt }
+    oce-console-root:
+      entryPoints: [websecure]
+      rule: "Host(\`${OCE_SUBDOMAIN}.${OCE_DOMAIN}\`) && Path(\`/\`)"
+      middlewares: [oce-console-root]
+      service: oce-console
+      tls: { certResolver: letsencrypt }
+  middlewares:
+    oce-console-root:
+      redirectRegex:
+        regex: ".*"
+        replacement: "https://${OCE_SUBDOMAIN}.${OCE_DOMAIN}/console/"
   services:
     oce-console:
       loadBalancer:
