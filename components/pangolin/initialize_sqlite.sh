@@ -147,6 +147,11 @@ get_included_resource_ids() {
         resource_ids="$resource_ids,7,11"
     fi
 
+    # Include the Inference Router admin UI (12, behind Pangolin SSO) with its component
+    if has_component "inference-router"; then
+        resource_ids="$resource_ids,12"
+    fi
+
     # Note: komodo-core (3) is intentionally excluded from all deployments
 
     echo "$resource_ids"

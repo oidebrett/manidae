@@ -147,6 +147,11 @@ get_included_resource_ids() {
         resource_ids="$resource_ids,11"
     fi
 
+    # Include the Inference Router admin UI (12, behind Pangolin SSO) with its component
+    if has_component "inference-router"; then
+        resource_ids="$resource_ids,12"
+    fi
+
     # Note: komodo-core (3) is intentionally excluded from all deployments
 
     echo "$resource_ids"
@@ -236,6 +241,13 @@ update_domains_in_csv() {
         if [ -n "${CROWDSEC_MANAGER_SUBDOMAIN:-}" ]; then
             _sed_i "s/crowdsec-manager\.${DOMAIN}/${CROWDSEC_MANAGER_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
             echo "✅ Updated crowdsec-manager subdomain to ${CROWDSEC_MANAGER_SUBDOMAIN}"
+        fi
+
+        # Update the Inference Router admin subdomain if a custom one is provided
+        if [ -n "${IR_ADMIN_SUBDOMAIN:-}" ]; then
+            _sed_i "s/router\.${DOMAIN}/${IR_ADMIN_SUBDOMAIN}.${DOMAIN}/g" "$ROOT_HOST_DIR/postgres_export/resources.csv"
+            _sed_i "s/,inference-router-admin,router,/,inference-router-admin,${IR_ADMIN_SUBDOMAIN},/" "$ROOT_HOST_DIR/postgres_export/resources.csv"
+            echo "✅ Updated inference-router admin subdomain to ${IR_ADMIN_SUBDOMAIN}"
         fi
 
         # Update mcp-gateway subdomain if custom subdomain is provided
