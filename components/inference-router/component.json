@@ -1,0 +1,7 @@
+{
+  "name": "inference-router",
+  "required_env": ["DOMAIN"],
+  "optional_env": ["IR_API_SUBDOMAIN", "IR_ADMIN_SUBDOMAIN", "IR_API_UPSTREAM"],
+  "dependencies": ["pangolin"],
+  "description": "Publishes the host Inference Router (github.com/oidebrett/inference-router): the OpenAI-compatible API at https://<IR_API_SUBDOMAIN>.<DOMAIN>/v1 via a Traefik file rule (no SSO, API keys are the auth, CrowdSec via websecure), and its admin UI at https://<IR_ADMIN_SUBDOMAIN>.<DOMAIN> as a Pangolin resource behind Pangolin SSO (seeded by the pangolin component, resource 12)."
+}
