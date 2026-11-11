@@ -933,4 +933,16 @@ SELECT setval(pg_get_serial_sequence('roles', 'roleId'), COALESCE((SELECT MAX("r
 SELECT setval(pg_get_serial_sequence('siteResources','siteResourceId'), COALESCE((SELECT MAX("siteResourceId") FROM "siteResources"), 1), true);
 SQL
 
+echo "Applying current Pangolin defaults the CSV export predates..."
+# Same as initialize_sqlite.sh: the export predates Pangolin 1.13, so give orgs the client
+# utility subnet and give admin roles every action (the roleActions import above replaced
+# the full set Pangolin granted on first start with the export's older list).
+PGPASSWORD="$PG_PASS" $PSQL -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -v ON_ERROR_STOP=1 -q <<'SQL'
+UPDATE "orgs" SET "utilitySubnet" = '100.96.128.0/24' WHERE "utilitySubnet" IS NULL OR "utilitySubnet" = '';
+INSERT INTO "roleActions" ("roleId", "actionId", "orgId")
+SELECT r."roleId", a."actionId", r."orgId" FROM "roles" r CROSS JOIN "actions" a
+WHERE r."isAdmin" IS TRUE
+  AND NOT EXISTS (SELECT 1 FROM "roleActions" ra WHERE ra."roleId" = r."roleId" AND ra."actionId" = a."actionId");
+SQL
+
 echo "Import complete."

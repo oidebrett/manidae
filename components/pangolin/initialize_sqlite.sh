@@ -762,6 +762,22 @@ else
     echo "Then run this script again."
 fi
 
+echo "Applying current Pangolin defaults the CSV export predates..."
+# The CSVs come from an older Pangolin, and the database is created at the current
+# version, so Pangolin's own upgrade steps never run on this data:
+# - orgs get the client utility subnet Pangolin 1.13+ gives every org (private
+#   resources and their DNS aliases fail with "has no subnet or utilitySubnet" without it);
+# - admin roles get every action Pangolin defines. Pangolin grants them on first start,
+#   but the roleActions import above replaces them with the export's older list
+#   (e.g. no createSiteResource -> "User does not have permission perform this action").
+sqlite3 "$DB_PATH" <<'EOF'
+UPDATE orgs SET utilitySubnet = '100.96.128.0/24' WHERE utilitySubnet IS NULL OR utilitySubnet = '';
+INSERT INTO roleActions (roleId, actionId, orgId)
+SELECT r.roleId, a.actionId, r.orgId FROM roles r CROSS JOIN actions a
+WHERE r.isAdmin = 1
+  AND NOT EXISTS (SELECT 1 FROM roleActions ra WHERE ra.roleId = r.roleId AND ra.actionId = a.actionId);
+EOF
+
 echo "Import complete."
 
 # Display summary of imported data
